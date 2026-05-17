@@ -66,7 +66,7 @@ function specializationMatches(tech: Technician, category: string): boolean {
 
 async function loadTechnicians(societyId: string): Promise<Technician[]> {
   // Fetch techs + their open complaint count in one go
-  const { data, error } = await supabase
+  let query = supabase
     .from('technicians')
     .select(`
       id,
@@ -75,8 +75,13 @@ async function loadTechnicians(societyId: string): Promise<Technician[]> {
       is_available,
       tech_user:users!user_id ( name ),
       open_complaints:complaints!assigned_tech_id ( status )
-    `)
-    .eq('society_id', societyId);
+    `);
+
+  if (societyId) {
+    query = query.eq('society_id', societyId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 

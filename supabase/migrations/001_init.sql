@@ -15,6 +15,7 @@ create table public.societies (
   name        text not null,
   address     text not null,
   city        text not null,
+  sla_defaults jsonb not null default '{"critical":24,"high":48,"medium":72,"low":96}'::jsonb,
   created_at  timestamptz not null default now()
 );
 
@@ -42,7 +43,7 @@ create table public.apartments (
 -- 4. USERS  (extends auth.users)
 -- ============================================================
 create table public.users (
-  id           uuid primary key references auth.users (id) on delete cascade,
+  id           uuid primary key default gen_random_uuid(),
   name         text not null,
   phone        text,
   role         text not null check (role in ('resident', 'technician', 'admin', 'super_admin')),
@@ -179,6 +180,16 @@ create policy "societies: authenticated users can read their own society"
   on public.societies for select
   using (
     id = (select society_id from public.users where id = auth.uid())
+  );
+
+create policy "societies: admins can update their society"
+  on public.societies for update
+  using (
+    id = (select society_id from public.users where id = auth.uid())
+    and exists (
+      select 1 from public.users u
+      where u.id = auth.uid() and u.role in ('admin', 'super_admin')
+    )
   );
 
 -- ============================================================

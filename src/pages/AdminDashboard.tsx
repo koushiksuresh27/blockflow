@@ -89,8 +89,8 @@ function formatStatus(s: string) {
 
 // ─── Data Fetching ────────────────────────────────────────────────────────────
 
-async function fetchComplaints(): Promise<Complaint[]> {
-  const { data, error } = await supabase
+async function fetchComplaints(societyId?: string | null): Promise<Complaint[]> {
+  let query = supabase
     .from('complaints')
     .select(`
       id, title, category, priority, status,
@@ -104,6 +104,12 @@ async function fetchComplaints(): Promise<Complaint[]> {
     `)
     .order('created_at', { ascending: false })
     .limit(200);
+
+  if (societyId) {
+    query = query.eq('society_id', societyId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
 
@@ -185,9 +191,10 @@ export default function AdminDashboard() {
         .eq('id', user.id)
         .single();
 
-      setSocietyId(profile?.society_id ?? null);
+      const sid = profile?.society_id ?? null;
+      setSocietyId(sid);
 
-      const rows = await fetchComplaints();
+      const rows = await fetchComplaints(sid);
       setComplaints(rows);
       setMetrics(computeMetrics(rows));
     } catch (e: unknown) {

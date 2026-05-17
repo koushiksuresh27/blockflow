@@ -9,6 +9,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import NotificationDropdown from './NotificationDropdown';
 
 const NAV = [
   { to: '/admin',             icon: LayoutDashboard, label: 'Dashboard'    },
@@ -78,8 +79,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-gray-50">
+        <header className="flex-shrink-0 h-14 bg-white border-b border-gray-200 flex items-center justify-end px-6 z-10 relative">
+          <NotificationDropdown />
+        </header>
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
       </main>
     </div>
   );
