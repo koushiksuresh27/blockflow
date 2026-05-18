@@ -14,7 +14,7 @@ interface Notification {
 export default function NotificationDropdown() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
   const [userId, setUserId] = useState<string | null>(null);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,66 +30,56 @@ export default function NotificationDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const loadNotifications = async (uid: string) => {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('id, complaint_id, title, body, is_read, created_at')
-      .eq('recipient_id', uid)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (!error && data) {
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
-    }
-  };
-
   useEffect(() => {
-    let uid: string;
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        uid = user.id;
-        setUserId(uid);
-        loadNotifications(uid);
-
-        // Subscribe to real-time notifications
-        const channel = supabase
-          .channel('notifications-changes')
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${uid}` },
-            (payload) => {
-              const newNotif = payload.new as Notification;
-              setNotifications(prev => [newNotif, ...prev].slice(0, 20));
-              setUnreadCount(prev => prev + 1);
-            }
-          )
-          .on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${uid}` },
-            (payload) => {
-              const updated = payload.new as Notification;
-              setNotifications(prev => prev.map(n => n.id === updated.id ? updated : n));
-              // Recalculate unread (simple approach, wait for state to settle or just reload)
-              // We'll just rely on the UI update, but let's recalculate accurately:
-              setUnreadCount(prevCount => updated.is_read ? Math.max(0, prevCount - 1) : prevCount);
-            }
-          )
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      }
+      if (user) setUserId(user.id);
     });
   }, []);
+
+  useEffect(() => {
+    if (!userId) return
+
+    // Fetch initial notifications
+    const fetchNotifications = async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, complaint_id, title, body, is_read, created_at')
+        .eq('recipient_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (data) setNotifications(data)
+    }
+
+    fetchNotifications()
+
+    // Set up realtime — .on() MUST come before .subscribe()
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `recipient_id=eq.${userId}`
+        },
+        (payload) => {
+          setNotifications(prev => [payload.new as Notification, ...prev])
+        }
+      )
+      .subscribe()
+
+    // Cleanup on unmount
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
 
   const markAllRead = async () => {
     if (!userId || unreadCount === 0) return;
     
     // Optimistic update
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    setUnreadCount(0);
     setOpen(false);
 
     await supabase

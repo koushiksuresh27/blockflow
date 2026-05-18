@@ -8,6 +8,13 @@ import ComplaintsPage from './pages/admin/ComplaintsPage';
 import TechniciansPage from './pages/admin/TechniciansPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import ResidentProtectedRoute from './components/ResidentProtectedRoute';
+import ResidentLayout from './components/ResidentLayout';
+import ResidentHome from './pages/resident/ResidentHome';
+import ResidentSubmitComplaint from './pages/resident/SubmitComplaint';
+import ComplaintDetail from './pages/resident/ComplaintDetail';
+import CommunityBoard from './pages/resident/CommunityBoard';
+import Notifications from './pages/resident/Notifications';
 
 
 export default function App() {
@@ -24,6 +31,17 @@ export default function App() {
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
         <Route path="/technician" element={<TechnicianDashboard />} />
+
+        {/* Resident Dashboard */}
+        <Route path="/resident" element={<ResidentProtectedRoute />}>
+          <Route element={<ResidentLayout />}>
+            <Route index element={<ResidentHome />} />
+            <Route path="complaints/new" element={<ResidentSubmitComplaint />} />
+            <Route path="complaints/:id" element={<ComplaintDetail />} />
+            <Route path="community" element={<CommunityBoard />} />
+            <Route path="notifications" element={<Notifications />} />
+          </Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   );

@@ -44,7 +44,7 @@ export default function SettingsPage() {
       if (e) throw new Error(e.message);
       
       // Provide fallback defaults if null
-      const defaults = data.sla_defaults || { critical: 24, high: 48, medium: 72, low: 96 };
+      const defaults = data.sla_defaults || { critical: 4, high: 24, medium: 72, low: 168 };
 
       setSettings({
         id: data.id,

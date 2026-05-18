@@ -27,9 +27,9 @@ type Action =
 
 function reducer(state: Toast[], action: Action): Toast[] {
   switch (action.type) {
-    case 'ADD':    return [action.toast, ...state].slice(0, 5); // max 5 stacked
+    case 'ADD': return [action.toast, ...state].slice(0, 5); // max 5 stacked
     case 'REMOVE': return state.filter((t) => t.id !== action.id);
-    default:       return state;
+    default: return state;
   }
 }
 
