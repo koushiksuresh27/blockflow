@@ -9,7 +9,7 @@ const ROLE_ROUTES: Record<Role, string> = {
   admin:       '/admin',
   super_admin: '/admin',
   technician:  '/technician',
-  resident:    '/complaints/new',
+  resident:    '/resident',
 };
 
 export default function DashboardPage() {
@@ -27,7 +27,7 @@ export default function DashboardPage() {
       // 2. Fetch role from public.users
       const { data: profile, error: profileErr } = await supabase
         .from('users')
-        .select('role')
+        .select('role, status')
         .eq('id', user.id)
         .single();
 
@@ -39,7 +39,9 @@ export default function DashboardPage() {
         return;
       }
 
-      const dest = ROLE_ROUTES[profile.role as Role] ?? '/complaints/new';
+      // Residents route to /resident — ResidentProtectedRoute handles
+      // pending / active / rejected status checks with a realtime pending screen
+      const dest = ROLE_ROUTES[profile.role as Role] ?? '/resident';
       navigate(dest, { replace: true });
     }
 

@@ -8,6 +8,7 @@ import ComplaintsPage from './pages/admin/ComplaintsPage';
 import TechniciansPage from './pages/admin/TechniciansPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import ResidentsPage from './pages/admin/ResidentsPage';
 import ResidentProtectedRoute from './components/ResidentProtectedRoute';
 import ResidentLayout from './components/ResidentLayout';
 import ResidentHome from './pages/resident/ResidentHome';
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/complaints/new" element={<SubmitComplaint />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/residents" element={<ResidentsPage />} />
         <Route path="/admin/complaints" element={<ComplaintsPage />} />
         <Route path="/admin/technicians" element={<TechniciansPage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />

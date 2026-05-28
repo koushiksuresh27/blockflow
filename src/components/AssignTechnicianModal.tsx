@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 
 export interface Technician {
   id: string;
+  user_id: string;
   name: string;
   specializations: string[];
   performance_score: number;
@@ -13,10 +14,20 @@ export interface Technician {
   open_task_count: number;
 }
 
+export interface ComplaintSummary {
+  title: string;
+  description: string;
+  priority: string;
+  sla_deadline: string;
+  location: string | null;
+}
+
 export interface AssignTechnicianModalProps {
   complaintId: string;
   complaintCategory: string; // used for specialization match sorting
   societyId: string;
+  /** Complaint fields needed for the WhatsApp notification */
+  complaint: ComplaintSummary;
   onClose: () => void;
   /** Called with the technician name so the parent can update its UI row immediately */
   onAssigned: (techName: string) => void;
@@ -70,6 +81,7 @@ async function loadTechnicians(societyId: string): Promise<Technician[]> {
     .from('technicians')
     .select(`
       id,
+      user_id,
       specializations,
       performance_score,
       is_available,
@@ -94,6 +106,7 @@ async function loadTechnicians(societyId: string): Promise<Technician[]> {
 
     return {
       id:                row.id,
+      user_id:           row.user_id,
       name:              row.tech_user?.name ?? 'Unknown',
       specializations:   row.specializations ?? [],
       performance_score: row.performance_score ?? 0,
@@ -109,6 +122,7 @@ export default function AssignTechnicianModal({
   complaintId,
   complaintCategory,
   societyId,
+  complaint,
   onClose,
   onAssigned,
   onError,
@@ -164,6 +178,37 @@ export default function AssignTechnicianModal({
         note:         `Assigned to ${selectedTech.name}.`,
       });
       if (logErr) console.warn('Log insert failed:', logErr.message);
+
+      // ── Fire-and-forget WhatsApp notification ────────────────────────────
+      // Do NOT await — UI resolves immediately regardless of delivery status.
+      ;(async () => {
+        try {
+          const { data: techUser } = await supabase
+            .from('users')
+            .select('name, phone')
+            .eq('id', selectedTech.user_id)
+            .single();
+
+          if (techUser?.phone) {
+            await supabase.functions.invoke('send-whatsapp', {
+              body: {
+                technicianPhone:       techUser.phone,
+                technicianName:        techUser.name ?? selectedTech.name,
+                complaintTitle:        complaint.title,
+                complaintDescription:  complaint.description,
+                flatLocation:          complaint.location ?? 'See app for details',
+                priority:              complaint.priority,
+                slaDeadline:           new Date(complaint.sla_deadline)
+                  .toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+              },
+            });
+          }
+        } catch (waErr) {
+          // Non-fatal — assignment already succeeded
+          console.warn('WhatsApp notification failed (non-fatal):', waErr);
+        }
+      })();
+      // ─────────────────────────────────────────────────────────────────────
 
       onAssigned(selectedTech.name);
       onClose();
