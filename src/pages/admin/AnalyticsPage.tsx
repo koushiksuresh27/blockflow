@@ -140,6 +140,29 @@ export default function AnalyticsPage() {
           <p className="text-sm text-gray-500 mt-0.5">Overview of complaint metrics and performance</p>
         </div>
 
+        {/* TEMP: WhatsApp test button */}
+        <button
+          onClick={async () => {
+            const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+              body: {
+                technicianPhone: '+919886218304',
+                technicianName: 'John',
+                complaintTitle: 'Test complaint',
+                complaintDescription: 'Test description',
+                flatLocation: 'A-101',
+                priority: 'high',
+                slaDeadline: '2 Jun 10:00 AM'
+              }
+            })
+            console.log('data:', JSON.stringify(data))
+            console.log('error:', JSON.stringify(error))
+            alert(JSON.stringify({ data, error }))
+          }}
+          className="bg-red-500 text-white px-4 py-2 rounded mb-6"
+        >
+          Test WhatsApp
+        </button>
+
         {error && (
           <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-6">
             <AlertCircle className="w-4 h-4" />{error}

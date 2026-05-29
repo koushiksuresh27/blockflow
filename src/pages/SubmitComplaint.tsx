@@ -215,7 +215,65 @@ export default function SubmitComplaint() {
       });
       if (logErr) console.warn('Log insert failed:', logErr.message);
 
-      // 6. Show success screen
+      // 6. Watch for DB auto-assignment trigger → send WhatsApp once, fire-and-forget
+      // The DB trigger may assign a technician asynchronously after insert.
+      // We subscribe to that specific row's UPDATE events and call the edge function
+      // the moment status flips to 'assigned'. The channel cleans itself up after firing.
+      const channel = supabase
+        .channel(`complaint-assigned-${complaintId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'complaints',
+            filter: `id=eq.${complaintId}`,
+          },
+          async (payload) => {
+            const updated = payload.new as Record<string, unknown>;
+            if (
+              updated.status === 'assigned' &&
+              updated.assigned_tech_id
+            ) {
+              try {
+                const { data: tech } = await supabase
+                  .from('technicians')
+                  .select('user_id, tech_user:users!user_id(name, phone)')
+                  .eq('id', updated.assigned_tech_id as string)
+                  .single();
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const techUser = (tech as any)?.tech_user;
+                if (techUser?.phone) {
+                  await supabase.functions.invoke('send-whatsapp', {
+                    body: {
+                      technicianPhone:      techUser.phone,
+                      technicianName:       techUser.name ?? 'Technician',
+                      complaintTitle:       updated.title as string,
+                      complaintDescription: updated.description as string,
+                      flatLocation:         'See app for details',
+                      priority:             updated.priority as string,
+                      slaDeadline:          new Date(updated.sla_deadline as string)
+                        .toLocaleString('en-IN', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        }),
+                    },
+                  });
+                }
+              } catch (waErr) {
+                // Non-fatal — complaint submission already succeeded
+                console.warn('Auto-assign WhatsApp notification failed:', waErr);
+              } finally {
+                // Clean up: this subscription is single-use
+                supabase.removeChannel(channel);
+              }
+            }
+          }
+        )
+        .subscribe();
+
+      // 7. Show success screen
       setSuccess(complaintId);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
