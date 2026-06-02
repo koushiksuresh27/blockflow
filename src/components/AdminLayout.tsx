@@ -6,9 +6,13 @@ import NotificationDropdown from './NotificationDropdown';
 const NAV = [
   { to: '/admin',              icon: 'dashboard',   label: 'Dashboard'    },
   { to: '/admin/residents',    icon: 'group',        label: 'Residents'    },
-  { to: '/admin/technicians',  icon: 'engineering',  label: 'Technicians'  },
   { to: '/admin/complaints',   icon: 'handyman',     label: 'Complaints'   },
+  { to: '/admin/technicians',  icon: 'engineering',  label: 'Technicians'  },
+  { to: '/admin/housekeeping', icon: 'cleaning_services', label: 'Housekeeping'},
+  { to: '/admin/equipment',    icon: 'precision_manufacturing', label: 'Equipment'  },
+  { to: '/admin/maintenance',  icon: 'build_circle', label: 'Maintenance'  },
   { to: '/admin/analytics',    icon: 'assessment',   label: 'Analytics'    },
+  { to: '/admin/settings',     icon: 'settings',     label: 'Settings'     },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

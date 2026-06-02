@@ -46,6 +46,9 @@ interface DashMetrics {
   openComplaints: number;
   slaBreachesThisMonth: number;
   avgTechRating: number;
+  equipmentCritical: number;
+  maintenanceOverdue: number;
+  housekeepingDueToday: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -164,6 +167,26 @@ async function fetchDashboard(societyId: string | null) {
       `)
       .order('created_at', { ascending: false })
       .limit(20),
+
+    // 8. Equipment critical count
+    supabase.from('equipment')
+      .select('id', { count: 'exact', head: true })
+      .eq('society_id', societyId ?? '')
+      .eq('status', 'critical'),
+
+    // 9. Maintenance overdue count
+    supabase.from('maintenance_schedules')
+      .select('id', { count: 'exact', head: true })
+      .eq('society_id', societyId ?? '')
+      .not('status', 'eq', 'completed')
+      .lt('next_due', nowIso),
+
+    // 10. Housekeeping tasks due today
+    supabase.from('housekeeping_tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('society_id', societyId ?? '')
+      .not('status', 'eq', 'completed')
+      .lt('next_due', new Date(now.setHours(23, 59, 59, 999)).toISOString()),
   ]);
 
   const [
@@ -174,6 +197,9 @@ async function fetchDashboard(societyId: string | null) {
     { data: breachRaw },
     { data: techRaw },
     { data: activityRaw },
+    { count: equipmentCritical },
+    { count: maintenanceOverdue },
+    { count: housekeepingDueToday },
   ] = queries;
 
   // Avg rating
@@ -187,6 +213,9 @@ async function fetchDashboard(societyId: string | null) {
     openComplaints: openComplaints ?? 0,
     slaBreachesThisMonth: slaBreachesThisMonth ?? 0,
     avgTechRating,
+    equipmentCritical: equipmentCritical ?? 0,
+    maintenanceOverdue: maintenanceOverdue ?? 0,
+    housekeepingDueToday: housekeepingDueToday ?? 0,
   };
 
   // SLA breach list
@@ -268,6 +297,7 @@ function MetricCard({
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<DashMetrics>({
     pendingResidents: 0, openComplaints: 0, slaBreachesThisMonth: 0, avgTechRating: 0,
+    equipmentCritical: 0, maintenanceOverdue: 0, housekeepingDueToday: 0
   });
   const [breachList, setBreachList] = useState<BreachComplaint[]>([]);
   const [leaderboard, setLeaderboard] = useState<TechLeader[]>([]);
@@ -513,6 +543,37 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+        </section>
+
+        {/* ── Row 3: Quick Status Cards ── */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <Link to="/admin/equipment" className="glass-card p-6 rounded-2xl flex items-center justify-between group hover:bg-surface-variant/10 transition-colors">
+            <div>
+              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Equipment Critical</p>
+              <h3 className={`text-2xl font-bold ${metrics.equipmentCritical > 0 ? 'text-status-emergency' : 'text-on-surface'}`}>{metrics.equipmentCritical}</h3>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-status-emergency/10 border border-status-emergency/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <AlertCircle className="w-6 h-6 text-status-emergency" />
+            </div>
+          </Link>
+          <Link to="/admin/maintenance" className="glass-card p-6 rounded-2xl flex items-center justify-between group hover:bg-surface-variant/10 transition-colors">
+            <div>
+              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Maintenance Overdue</p>
+              <h3 className={`text-2xl font-bold ${metrics.maintenanceOverdue > 0 ? 'text-status-emergency' : 'text-on-surface'}`}>{metrics.maintenanceOverdue}</h3>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <span className="material-symbols-outlined text-amber-500">build_circle</span>
+            </div>
+          </Link>
+          <Link to="/admin/housekeeping" className="glass-card p-6 rounded-2xl flex items-center justify-between group hover:bg-surface-variant/10 transition-colors">
+            <div>
+              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Housekeeping Tasks Due</p>
+              <h3 className={`text-2xl font-bold ${metrics.housekeepingDueToday > 0 ? 'text-primary' : 'text-on-surface'}`}>{metrics.housekeepingDueToday}</h3>
+            </div>
+            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <span className="material-symbols-outlined text-primary">cleaning_services</span>
+            </div>
+          </Link>
         </section>
 
         {/* ── Row 3: Activity Feed ── */}

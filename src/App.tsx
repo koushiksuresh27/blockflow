@@ -9,6 +9,9 @@ import TechniciansPage from './pages/admin/TechniciansPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import ResidentsPage from './pages/admin/ResidentsPage';
+import HousekeepingPage from './pages/admin/HousekeepingPage';
+import EquipmentPage from './pages/admin/EquipmentPage';
+import MaintenancePage from './pages/admin/MaintenancePage';
 import ResidentProtectedRoute from './components/ResidentProtectedRoute';
 import ResidentLayout from './components/ResidentLayout';
 import ResidentHome from './pages/resident/ResidentHome';
@@ -30,6 +33,9 @@ export default function App() {
         <Route path="/admin/residents" element={<ResidentsPage />} />
         <Route path="/admin/complaints" element={<ComplaintsPage />} />
         <Route path="/admin/technicians" element={<TechniciansPage />} />
+        <Route path="/admin/housekeeping" element={<HousekeepingPage />} />
+        <Route path="/admin/equipment" element={<EquipmentPage />} />
+        <Route path="/admin/maintenance" element={<MaintenancePage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
         <Route path="/technician" element={<TechnicianDashboard />} />
