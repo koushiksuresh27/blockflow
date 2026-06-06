@@ -10,6 +10,7 @@ export default function PendingPage() {
   const [status, setStatus]     = useState<Status>('pending');
   const [name, setName]         = useState('');
   const [signingOut, setSigningOut] = useState(false);
+  const [userId, setUserId]     = useState<string | null>(null);
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -23,6 +24,7 @@ export default function PendingPage() {
         navigate('/login', { replace: true });
         return;
       }
+      setUserId(user.id);
 
       // 2. Try to read the profile row.
       //    Use maybeSingle() so missing rows return null instead of an error.
@@ -182,16 +184,36 @@ export default function PendingPage() {
           ))}
         </div>
 
-        {/* Sign out */}
-        <button
-          id="pending-signout-btn"
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition mx-auto"
-        >
-          <LogOut className="w-4 h-4" />
-          {signingOut ? 'Signing out…' : 'Sign out'}
-        </button>
+        {/* Sign out & Manual Check */}
+        <div className="flex flex-col items-center gap-4 mt-6">
+          <button
+            onClick={async () => {
+              if (!userId) return;
+              const { data } = await supabase
+                .from('users')
+                .select('status, role')
+                .eq('id', userId)
+                .single();
+              
+              if (data?.status === 'active') {
+                routeByRole(data.role, navigate);
+              }
+            }}
+            className="px-6 py-2 bg-white border border-amber-200 text-amber-700 text-sm font-semibold rounded-xl hover:bg-amber-50 transition shadow-sm"
+          >
+            Check Approval Status
+          </button>
+
+          <button
+            id="pending-signout-btn"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition"
+          >
+            <LogOut className="w-4 h-4" />
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
       </div>
     </div>
   );

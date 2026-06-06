@@ -87,7 +87,11 @@ export default function ResidentsPage() {
         .order('created_at', { ascending: false });
 
       if (sid) {
-        query = query.eq('society_id', sid);
+        if (tab === 'pending') {
+          query = query.or(`society_id.eq.${sid},society_id.is.null`);
+        } else {
+          query = query.eq('society_id', sid);
+        }
       }
 
       const { data, error: e } = await query;
@@ -124,7 +128,13 @@ export default function ResidentsPage() {
       const counts = await Promise.all(
         statuses.map((s) => {
           let q = supabase.from('users').select('id', { count: 'exact', head: true }).eq('status', s);
-          if (sid) q = q.eq('society_id', sid);
+          if (sid) {
+            if (s === 'pending') {
+              q = q.or(`society_id.eq.${sid},society_id.is.null`);
+            } else {
+              q = q.eq('society_id', sid);
+            }
+          }
           return q;
         })
       );
@@ -153,11 +163,33 @@ export default function ResidentsPage() {
   const updateStatus = async (id: string, newStatus: 'active' | 'rejected') => {
     setProcessingId(id);
     try {
-      const { error: e } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('users').select('society_id').eq('id', user?.id).single();
+      const adminSocietyId = profile?.society_id;
+
+      const updateData: { status: string; society_id?: string } = { status: newStatus };
+      if (newStatus === 'active' && adminSocietyId) {
+        updateData.society_id = adminSocietyId;
+      }
+
+      const { error: e, data } = await supabase
         .from('users')
-        .update({ status: newStatus })
-        .eq('id', id);
-      if (e) throw new Error(e.message);
+        .update(updateData)
+        .eq('id', id)
+        .select('id');
+
+      if (e) {
+        console.error('Approval failed:', e);
+        toast('error', 'Approval failed', e.message);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        console.error('Approval failed: User not found or permission denied by RLS');
+        toast('error', 'Approval failed', 'Permission denied or user not found');
+        return;
+      }
+
       // Remove from current tab list immediately
       setResidents(prev => prev.filter(r => r.id !== id));
       // Update counts: decrement source tab, increment destination tab
@@ -168,9 +200,10 @@ export default function ResidentsPage() {
           prev[newStatus === 'active' ? 'active' : 'rejected'] + 1,
       }));
       toast('success',
-        newStatus === 'active' ? 'Resident Approved' : 'Resident Rejected',
+        newStatus === 'active' ? 'Resident approved!' : 'Resident rejected!',
         newStatus === 'active' ? 'The resident now has full access.' : 'Resident application has been rejected.');
     } catch (e: unknown) {
+      console.error('Update Status Error:', e);
       toast('error', 'Update failed', e instanceof Error ? e.message : 'Error');
     } finally {
       setProcessingId(null);
@@ -181,17 +214,45 @@ export default function ResidentsPage() {
     if (residents.length === 0) return;
     setApprovingAll(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('users').select('society_id').eq('id', user?.id).single();
+      const adminSocietyId = profile?.society_id;
+
       const ids = residents.map(r => r.id);
-      const { error: e } = await supabase
+      const updateData: { status: string; society_id?: string } = { status: 'active' };
+      if (adminSocietyId) {
+        updateData.society_id = adminSocietyId;
+      }
+
+      const { error: e, data } = await supabase
         .from('users')
-        .update({ status: 'active' })
-        .in('id', ids);
-      if (e) throw new Error(e.message);
-      // Clear pending list immediately
-      setResidents([]);
-      setTabCounts(prev => ({ ...prev, pending: 0, active: prev.active + ids.length }));
-      toast('success', 'All Approved', `${ids.length} user${ids.length !== 1 ? 's' : ''} approved successfully.`);
+        .update(updateData)
+        .in('id', ids)
+        .select('id');
+
+      if (e) {
+        console.error('Approve All failed:', e);
+        toast('error', 'Approve All failed', e.message);
+        return;
+      }
+      
+      const approvedIds = data?.map(d => d.id) || [];
+      if (approvedIds.length === 0) {
+        console.error('Approve All failed: Permission denied by RLS');
+        toast('error', 'Approve All failed', 'Permission denied');
+        return;
+      }
+
+      // Clear approved users from pending list immediately
+      setResidents(prev => prev.filter(r => !approvedIds.includes(r.id)));
+      setTabCounts(prev => ({ 
+        ...prev, 
+        pending: Math.max(0, prev.pending - approvedIds.length), 
+        active: prev.active + approvedIds.length 
+      }));
+      toast('success', 'All Approved', `${approvedIds.length} user${approvedIds.length !== 1 ? 's' : ''} approved successfully.`);
     } catch (e: unknown) {
+      console.error('Approve All Error:', e);
       toast('error', 'Approve All failed', e instanceof Error ? e.message : 'Error');
     } finally {
       setApprovingAll(false);
