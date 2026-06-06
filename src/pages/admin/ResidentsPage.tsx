@@ -10,6 +10,7 @@ interface Resident {
   id: string;
   name: string;
   phone: string | null;
+  role: string;
   status: 'pending' | 'active' | 'rejected';
   created_at?: string;
   flat_number: string | null;
@@ -30,16 +31,30 @@ function fmtDate(iso: string | undefined) {
   return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function timeAgo(iso: string | undefined): string {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60_000);
+  const hours = Math.floor(diff / 3_600_000);
+  const days  = Math.floor(diff / 86_400_000);
+  if (mins  < 1)  return 'just now';
+  if (mins  < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ResidentsPage() {
   const toast = useToast();
-  const [residents, setResidents] = useState<Resident[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
-  const [tab, setTab]               = useState<TabKey>('pending');
+  const [residents, setResidents]       = useState<Resident[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [tab, setTab]                   = useState<TabKey>('pending');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
+  // Separate counts for each tab (since we only load the current tab's rows)
+  const [tabCounts, setTabCounts]       = useState<Record<TabKey, number>>({ pending: 0, active: 0, rejected: 0 });
 
 
   const load = useCallback(async () => {
@@ -56,17 +71,19 @@ export default function ResidentsPage() {
 
       const sid = profile?.society_id ?? null;
 
-
+      // Fetch ALL users with status matching the current tab.
+      // No role filter — pending Google sign-ups may have any role.
+      // society_id scoping ensures cross-society isolation.
       let query = supabase
         .from('users')
         .select(`
-          id, name, phone, status, created_at,
+          id, name, phone, role, status, created_at,
           apartment:apartments!apartment_id(
             flat_number, floor_number,
             tower:towers!tower_id(name)
           )
         `)
-        .eq('role', 'resident')
+        .eq('status', tab)
         .order('created_at', { ascending: false });
 
       if (sid) {
@@ -79,8 +96,9 @@ export default function ResidentsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setResidents((data ?? []).map((r: any) => ({
         id:           r.id,
-        name:         r.name,
+        name:         r.name ?? 'Unnamed User',
         phone:        r.phone,
+        role:         r.role ?? 'resident',
         status:       r.status ?? 'pending',
         created_at:   r.created_at,
         flat_number:  r.apartment?.flat_number ?? null,
@@ -92,18 +110,45 @@ export default function ResidentsPage() {
     } finally {
       setLoading(false);
     }
+  }, [tab]);  // re-fetch when tab changes
+
+  // Lightweight count query for all 3 tabs (so tab badges stay accurate)
+  const loadCounts = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase.from('users').select('society_id').eq('id', user.id).single();
+      const sid = profile?.society_id ?? null;
+
+      const statuses: TabKey[] = ['pending', 'active', 'rejected'];
+      const counts = await Promise.all(
+        statuses.map((s) => {
+          let q = supabase.from('users').select('id', { count: 'exact', head: true }).eq('status', s);
+          if (sid) q = q.eq('society_id', sid);
+          return q;
+        })
+      );
+      setTabCounts({
+        pending:  counts[0].count ?? 0,
+        active:   counts[1].count ?? 0,
+        rejected: counts[2].count ?? 0,
+      });
+    } catch { /* non-critical */ }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadCounts(); }, [load, loadCounts]);
+
+  // Reload rows when tab switches
+  useEffect(() => { setLoading(true); load(); }, [tab, load]);
 
   // Realtime on user status changes
   useEffect(() => {
     const channel = supabase
       .channel('admin-residents-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { load(); loadCounts(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [load]);
+  }, [load, loadCounts]);
 
   const updateStatus = async (id: string, newStatus: 'active' | 'rejected') => {
     setProcessingId(id);
@@ -113,10 +158,17 @@ export default function ResidentsPage() {
         .update({ status: newStatus })
         .eq('id', id);
       if (e) throw new Error(e.message);
-      setResidents(prev =>
-        prev.map(r => r.id === id ? { ...r, status: newStatus } : r)
-      );
-      toast('success', newStatus === 'active' ? 'Resident Approved' : 'Resident Rejected',
+      // Remove from current tab list immediately
+      setResidents(prev => prev.filter(r => r.id !== id));
+      // Update counts: decrement source tab, increment destination tab
+      setTabCounts(prev => ({
+        ...prev,
+        [tab]:      Math.max(0, prev[tab] - 1),
+        [newStatus === 'active' ? 'active' : 'rejected']:
+          prev[newStatus === 'active' ? 'active' : 'rejected'] + 1,
+      }));
+      toast('success',
+        newStatus === 'active' ? 'Resident Approved' : 'Resident Rejected',
         newStatus === 'active' ? 'The resident now has full access.' : 'Resident application has been rejected.');
     } catch (e: unknown) {
       toast('error', 'Update failed', e instanceof Error ? e.message : 'Error');
@@ -126,20 +178,19 @@ export default function ResidentsPage() {
   };
 
   const approveAll = async () => {
-    const pending = residents.filter(r => r.status === 'pending');
-    if (pending.length === 0) return;
+    if (residents.length === 0) return;
     setApprovingAll(true);
     try {
-      const ids = pending.map(r => r.id);
+      const ids = residents.map(r => r.id);
       const { error: e } = await supabase
         .from('users')
         .update({ status: 'active' })
         .in('id', ids);
       if (e) throw new Error(e.message);
-      setResidents(prev =>
-        prev.map(r => ids.includes(r.id) ? { ...r, status: 'active' as const } : r)
-      );
-      toast('success', 'All Approved', `${ids.length} resident${ids.length !== 1 ? 's' : ''} approved successfully.`);
+      // Clear pending list immediately
+      setResidents([]);
+      setTabCounts(prev => ({ ...prev, pending: 0, active: prev.active + ids.length }));
+      toast('success', 'All Approved', `${ids.length} user${ids.length !== 1 ? 's' : ''} approved successfully.`);
     } catch (e: unknown) {
       toast('error', 'Approve All failed', e instanceof Error ? e.message : 'Error');
     } finally {
@@ -147,8 +198,9 @@ export default function ResidentsPage() {
     }
   };
 
-  const displayed = residents.filter(r => r.status === tab);
-  const pendingCount = residents.filter(r => r.status === 'pending').length;
+  // Since rows are fetched by status=tab, displayed is the full list
+  const displayed    = residents;
+  const pendingCount = tabCounts.pending;
 
 
   return (
@@ -188,7 +240,7 @@ export default function ResidentsPage() {
         {/* ── Tabs ── */}
         <div className="flex items-center gap-1 p-1 bg-surface-container-low rounded-xl w-fit">
           {TABS.map(({ key, label, icon }) => {
-            const count = residents.filter(r => r.status === key).length;
+            const count = tabCounts[key];
             return (
               <button
                 key={key}
@@ -257,18 +309,31 @@ export default function ResidentsPage() {
                 <tbody className="divide-y divide-outline-variant/10">
                   {displayed.map(r => (
                     <tr key={r.id} className="hover:bg-surface-variant/10 transition-colors">
-                      {/* Name */}
+                    {/* Name + role badge */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
                             <span className="text-primary text-xs font-bold">{r.name.charAt(0).toUpperCase()}</span>
                           </div>
-                          <span className="font-medium text-on-surface">{r.name}</span>
+                          <div>
+                            <p className="font-medium text-on-surface">{r.name}</p>
+                            {r.role !== 'resident' && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">
+                                {r.role}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      {/* Phone */}
+                      {/* Phone / sign-in method */}
                       <td className="px-6 py-4 text-on-surface-variant">
-                        {r.phone ?? <span className="italic text-on-surface-variant/40">—</span>}
+                        {r.phone
+                          ? r.phone
+                          : <span className="inline-flex items-center gap-1 text-xs">
+                              <img src="/google-icon.svg" alt="Google" className="w-3.5 h-3.5" />
+                              <span className="text-on-surface-variant/60 italic">Google user</span>
+                            </span>
+                        }
                       </td>
                       {/* Flat */}
                       <td className="px-6 py-4 text-on-surface-variant">
@@ -280,11 +345,14 @@ export default function ResidentsPage() {
                       <td className="px-6 py-4 text-on-surface-variant">
                         {r.tower_name ?? <span className="italic text-on-surface-variant/40">—</span>}
                       </td>
-                      {/* Date */}
+                      {/* Date — show relative time for pending, absolute for others */}
                       <td className="px-6 py-4 text-on-surface-variant">
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 opacity-50" />
-                          {fmtDate(r.created_at)}
+                          {tab === 'pending'
+                            ? <span title={fmtDate(r.created_at)}>{timeAgo(r.created_at)}</span>
+                            : fmtDate(r.created_at)
+                          }
                         </div>
                       </td>
                       {/* Actions (pending tab) */}
