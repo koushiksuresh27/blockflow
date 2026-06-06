@@ -3,7 +3,6 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import SubmitComplaint from './pages/SubmitComplaint';
 import AdminDashboard from './pages/AdminDashboard';
-import TechnicianDashboard from './pages/TechnicianDashboard';
 import ComplaintsPage from './pages/admin/ComplaintsPage';
 import TechniciansPage from './pages/admin/TechniciansPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
@@ -19,6 +18,11 @@ import ResidentSubmitComplaint from './pages/resident/SubmitComplaint';
 import ComplaintDetail from './pages/resident/ComplaintDetail';
 import CommunityBoard from './pages/resident/CommunityBoard';
 import Notifications from './pages/resident/Notifications';
+import TechnicianProtectedRoute from './pages/technician/TechnicianProtectedRoute';
+import TechnicianLayout from './pages/technician/TechnicianLayout';
+import HomeTab from './pages/technician/HomeTab';
+import JobsTab from './pages/technician/JobsTab';
+import ProfileTab from './pages/technician/ProfileTab';
 
 
 export default function App() {
@@ -38,7 +42,14 @@ export default function App() {
         <Route path="/admin/maintenance" element={<MaintenancePage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
-        <Route path="/technician" element={<TechnicianDashboard />} />
+        {/* Technician Dashboard */}
+        <Route path="/technician" element={<TechnicianProtectedRoute />}>
+          <Route element={<TechnicianLayout />}>
+            <Route index element={<HomeTab />} />
+            <Route path="jobs" element={<JobsTab />} />
+            <Route path="profile" element={<ProfileTab />} />
+          </Route>
+        </Route>
 
         {/* Resident Dashboard */}
         <Route path="/resident" element={<ResidentProtectedRoute />}>
