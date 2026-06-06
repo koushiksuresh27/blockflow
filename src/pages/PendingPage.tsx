@@ -67,6 +67,8 @@ export default function PendingPage() {
             setStatus(newStatus);
             if (newStatus === 'active') {
               setTimeout(() => routeByRole(row.role, navigate), 1500);
+            } else if (newStatus === 'rejected') {
+              navigate('/access-revoked', { replace: true });
             }
           }
         )
@@ -197,6 +199,8 @@ export default function PendingPage() {
               
               if (data?.status === 'active') {
                 routeByRole(data.role, navigate);
+              } else if (data?.status === 'rejected') {
+                navigate('/access-revoked', { replace: true });
               }
             }}
             className="px-6 py-2 bg-white border border-amber-200 text-amber-700 text-sm font-semibold rounded-xl hover:bg-amber-50 transition shadow-sm"

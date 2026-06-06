@@ -43,13 +43,42 @@ export default function AuthCallback() {
       if (cancelled) return;
 
       if (!profile) {
-        // New Google OAuth user — redirect to the welcome/role selection page
+        // Not found by ID — check if they are a pre-registered technician by phone
+        if (session.user.user_metadata?.phone) {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('*')
+            .eq('phone', session.user.user_metadata.phone)
+            .eq('role', 'technician')
+            .single();
+
+          if (existingUser) {
+            // Link their Google auth id to existing profile
+            const { error: linkErr } = await supabase
+              .from('users')
+              .update({ id: session.user.id })
+              .eq('id', existingUser.id);
+            
+            if (!linkErr) {
+              navigate('/technician', { replace: true });
+              return;
+            } else {
+              console.error('[AuthCallback] Error linking ID:', linkErr);
+            }
+          }
+        }
+        
+        // New user — treat as resident
         navigate('/select-role', { replace: true });
         return;
       }
 
       // Existing user — check status first, then route by role
-      if (profile.status === 'pending' || profile.status === 'rejected') {
+      if (profile.status === 'rejected') {
+        navigate('/access-revoked', { replace: true });
+        return;
+      }
+      if (profile.status === 'pending') {
         navigate('/pending', { replace: true });
         return;
       }

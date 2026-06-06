@@ -159,6 +159,15 @@ function AddTechModal({
               })}
             </div>
           </div>
+
+          <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl">
+            <p className="text-xs text-primary font-medium flex gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>
+                <strong>Note:</strong> Send them the app link and ask them to sign in with Google using their phone number. Their account will be automatically activated and linked.
+              </span>
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-3 px-6 pb-5">

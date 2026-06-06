@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, AlertCircle, CheckCircle, XCircle, Users, Clock } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, XCircle, Users, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
 import { useToast } from '../../components/Toast';
@@ -53,6 +53,7 @@ export default function ResidentsPage() {
   const [tab, setTab]                   = useState<TabKey>('pending');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
+  const [removingUser, setRemovingUser] = useState<Resident | null>(null);
   // Separate counts for each tab (since we only load the current tab's rows)
   const [tabCounts, setTabCounts]       = useState<Record<TabKey, number>>({ pending: 0, active: 0, rejected: 0 });
 
@@ -259,6 +260,38 @@ export default function ResidentsPage() {
     }
   };
 
+  const removeResident = async (userId: string) => {
+    try {
+      const { error, data } = await supabase
+        .from('users')
+        .update({ status: 'rejected', society_id: null })
+        .eq('id', userId)
+        .select('id');
+
+      if (error) {
+        toast('error', 'Failed to remove', error.message);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        toast('error', 'Failed to remove', 'Permission denied or user not found');
+        return;
+      }
+
+      setResidents(prev => prev.filter(u => u.id !== userId));
+      setTabCounts(prev => ({
+        ...prev,
+        active: Math.max(0, prev.active - 1),
+        rejected: prev.rejected + 1,
+      }));
+      toast('success', 'Resident removed', 'Resident removed successfully.');
+    } catch (e: unknown) {
+      toast('error', 'Remove failed', e instanceof Error ? e.message : 'Error');
+    } finally {
+      setRemovingUser(null);
+    }
+  };
+
   // Since rows are fetched by status=tab, displayed is the full list
   const displayed    = residents;
   const pendingCount = tabCounts.pending;
@@ -449,20 +482,32 @@ export default function ResidentsPage() {
                           </div>
                         </td>
                       )}
-                      {/* Status badge (non-pending tabs) */}
+                      {/* Actions / Status badge (non-pending tabs) */}
                       {tab !== 'pending' && (
                         <td className="px-6 py-4">
-                          {r.status === 'active' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-status-available/10 text-status-available border border-status-available/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-status-available inline-block" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-status-emergency/10 text-status-emergency border border-status-emergency/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-status-emergency inline-block" />
-                              Rejected
-                            </span>
-                          )}
+                          <div className="flex items-center justify-between">
+                            {r.status === 'active' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-status-available/10 text-status-available border border-status-available/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-status-available inline-block" />
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-status-emergency/10 text-status-emergency border border-status-emergency/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-status-emergency inline-block" />
+                                Rejected
+                              </span>
+                            )}
+                            
+                            {tab === 'active' && (
+                              <button
+                                onClick={() => setRemovingUser(r)}
+                                className="p-1.5 text-on-surface-variant hover:text-status-emergency hover:bg-status-emergency/10 rounded-lg transition"
+                                title="Remove Resident"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -474,6 +519,39 @@ export default function ResidentsPage() {
         </div>
 
       </div>
+
+      {/* Confirmation Modal */}
+      {removingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setRemovingUser(null)}>
+          <div className="bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl w-full max-w-sm animate-fadeIn" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-status-emergency/10 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-6 h-6 text-status-emergency" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-on-surface mb-2">Remove {removingUser.name}?</h3>
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  Are you sure you want to remove <strong className="text-on-surface">{removingUser.name}</strong>? They will lose access to BlockFlow immediately.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setRemovingUser(null)}
+                  className="flex-1 py-2.5 text-sm font-semibold text-on-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => removeResident(removingUser.id)}
+                  className="flex-1 py-2.5 text-sm font-bold text-white bg-status-emergency hover:brightness-110 rounded-xl transition shadow-lg shadow-status-emergency/20"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
