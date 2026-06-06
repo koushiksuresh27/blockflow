@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AuthCallback from './pages/AuthCallback';
 import PendingPage from './pages/PendingPage';
+import SelectRole from './pages/SelectRole';
 import SubmitComplaint from './pages/SubmitComplaint';
 import AdminDashboard from './pages/AdminDashboard';
 import ComplaintsPage from './pages/admin/ComplaintsPage';
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/select-role" element={<SelectRole />} />
         <Route path="/pending" element={<PendingPage />} />
         <Route path="/complaints/new" element={<SubmitComplaint />} />
         <Route path="/admin" element={<AdminDashboard />} />

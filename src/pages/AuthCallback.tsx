@@ -43,37 +43,8 @@ export default function AuthCallback() {
       if (cancelled) return;
 
       if (!profile) {
-        // New Google OAuth user — look up the first available society
-        // (in a multi-tenant setup this would use an invite code or domain matching)
-        const { data: society } = await supabase
-          .from('societies')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-
-        // Create a default resident profile pending approval.
-        // Use upsert so repeated redirects (e.g. browser back) don't error.
-        const { error: insertErr } = await supabase.from('users').upsert(
-          {
-            id:         session.user.id,
-            name:       session.user.user_metadata?.full_name
-                          ?? session.user.user_metadata?.name
-                          ?? session.user.email
-                          ?? 'New User',
-            role:       'resident',
-            status:     'pending',
-            society_id: society?.id ?? null,
-          },
-          { onConflict: 'id', ignoreDuplicates: false }
-        );
-
-        if (insertErr) {
-          console.error('[AuthCallback] profile upsert error:', insertErr);
-          // Profile creation failed (likely missing INSERT RLS policy).
-          // Still navigate to /pending — the page handles the no-profile case gracefully.
-        }
-
-        navigate('/pending', { replace: true });
+        // New Google OAuth user — redirect to the welcome/role selection page
+        navigate('/select-role', { replace: true });
         return;
       }
 
