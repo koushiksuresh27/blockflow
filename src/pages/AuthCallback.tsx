@@ -15,17 +15,59 @@ export default function AuthCallback() {
       if (sessErr) console.error('[AuthCallback] getSession error:', sessErr);
       if (cancelled) return;
 
+      console.log('Session email:', session?.user?.email);
+
       if (!session) {
         navigate('/login', { replace: true });
         return;
       }
 
-      // Step 1: Check if profile already exists with this auth id
+      // Step 1: Check pre-created profile by EMAIL first (before id check)
+      const { data: preCreated, error: preCreatedError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', session.user.email)
+        .in('role', ['technician', 'security'])
+        .eq('status', 'active')
+        .maybeSingle();
+
+      console.log('Pre-created profile by email:', preCreated);
+      console.log('Pre-created error:', preCreatedError);
+
+      if (cancelled) return;
+
+      if (preCreated && preCreated.id !== session.user.id) {
+        // Link Google auth id to pre-created profile
+        await supabase
+          .from('users')
+          .update({ id: session.user.id })
+          .eq('email', session.user.email)
+          .in('role', ['technician', 'security']);
+
+        // Delete any wrongly-created resident profile
+        await supabase
+          .from('users')
+          .delete()
+          .eq('id', session.user.id)
+          .eq('role', 'resident');
+
+        switch (preCreated.role) {
+          case 'technician':
+            navigate('/technician', { replace: true }); break;
+          case 'security':
+            navigate('/security', { replace: true }); break;
+        }
+        return;
+      }
+
+      // Step 2: Check existing profile by auth id
       const { data: existingProfile } = await supabase
         .from('users')
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
+
+      console.log('Existing profile by id:', existingProfile);
 
       if (cancelled) return;
 
@@ -48,36 +90,6 @@ export default function AuthCallback() {
           }
         }
         return;
-      }
-
-      // Step 2: Check if admin pre-created a profile matching their Google email
-      const googleEmail = session.user.email;
-
-      if (googleEmail) {
-        const { data: preCreated } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', googleEmail)
-          .in('role', ['technician', 'security'])
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (cancelled) return;
-
-        if (preCreated) {
-          await supabase
-            .from('users')
-            .update({ id: session.user.id })
-            .eq('id', preCreated.id);
-
-          switch (preCreated.role) {
-            case 'technician':
-              navigate('/technician', { replace: true }); break;
-            case 'security':
-              navigate('/security', { replace: true }); break;
-          }
-          return;
-        }
       }
 
       // Step 3: Brand new user — create as pending resident
