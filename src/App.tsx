@@ -23,11 +23,18 @@ import ResidentSubmitComplaint from './pages/resident/SubmitComplaint';
 import ComplaintDetail from './pages/resident/ComplaintDetail';
 import CommunityBoard from './pages/resident/CommunityBoard';
 import Notifications from './pages/resident/Notifications';
+import GatePassTab from './pages/resident/GatePassTab';
 import TechnicianProtectedRoute from './pages/technician/TechnicianProtectedRoute';
 import TechnicianLayout from './pages/technician/TechnicianLayout';
 import HomeTab from './pages/technician/HomeTab';
 import JobsTab from './pages/technician/JobsTab';
 import ProfileTab from './pages/technician/ProfileTab';
+import SecurityProtectedRoute from './pages/security/SecurityProtectedRoute';
+import SecurityLayout from './pages/security/SecurityLayout';
+import VerifyTab from './pages/security/VerifyTab';
+import VisitorsTab from './pages/security/VisitorsTab';
+import StaffTab from './pages/security/StaffTab';
+import LogTab from './pages/security/LogTab';
 
 
 export default function App() {
@@ -52,6 +59,7 @@ export default function App() {
         <Route path="/admin/maintenance" element={<MaintenancePage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
+
         {/* Technician Dashboard */}
         <Route path="/technician" element={<TechnicianProtectedRoute />}>
           <Route element={<TechnicianLayout />}>
@@ -68,11 +76,21 @@ export default function App() {
             <Route path="complaints/new" element={<ResidentSubmitComplaint />} />
             <Route path="complaints/:id" element={<ComplaintDetail />} />
             <Route path="community" element={<CommunityBoard />} />
+            <Route path="gatepass" element={<GatePassTab />} />
             <Route path="notifications" element={<Notifications />} />
+          </Route>
+        </Route>
+
+        {/* Security Dashboard */}
+        <Route path="/security" element={<SecurityProtectedRoute />}>
+          <Route element={<SecurityLayout />}>
+            <Route index element={<VerifyTab />} />
+            <Route path="visitors" element={<VisitorsTab />} />
+            <Route path="staff" element={<StaffTab />} />
+            <Route path="log" element={<LogTab />} />
           </Route>
         </Route>
       </Routes>
     </BrowserRouter>
   );
 }
-

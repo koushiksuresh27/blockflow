@@ -3,16 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-type Role = 'admin' | 'super_admin' | 'technician' | 'security' | 'resident';
-
-const ROLE_ROUTES: Record<Role, string> = {
-  admin:       '/admin',
-  super_admin: '/admin',
-  technician:  '/technician',
-  security:    '/security',
-  resident:    '/resident',
-};
-
 export default function AuthCallback() {
   const navigate = useNavigate();
 
@@ -20,8 +10,6 @@ export default function AuthCallback() {
     let cancelled = false;
 
     async function handleCallback() {
-      // Wait for Supabase to exchange the OAuth code for a session.
-      // getSession() reads from localStorage / URL hash — no network needed.
       const { data: { session }, error: sessErr } = await supabase.auth.getSession();
 
       if (sessErr) console.error('[AuthCallback] getSession error:', sessErr);
@@ -32,64 +20,90 @@ export default function AuthCallback() {
         return;
       }
 
-      // Check if user already has a profile row
-      const { data: profile, error: profileErr } = await supabase
+      // Step 1: Check if profile already exists with this auth id
+      const { data: existingProfile } = await supabase
         .from('users')
-        .select('role, status')
+        .select('*')
         .eq('id', session.user.id)
-        .maybeSingle(); // maybeSingle → null (not error) when 0 rows
+        .maybeSingle();
 
-      if (profileErr) console.error('[AuthCallback] profile fetch error:', profileErr);
       if (cancelled) return;
 
-      if (!profile) {
-        // Not found by ID — check if they are a pre-registered technician by phone
-        if (session.user.user_metadata?.phone) {
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('phone', session.user.user_metadata.phone)
-            .eq('role', 'technician')
-            .single();
-
-          if (existingUser) {
-            // Link their Google auth id to existing profile
-            const { error: linkErr } = await supabase
-              .from('users')
-              .update({ id: session.user.id })
-              .eq('id', existingUser.id);
-            
-            if (!linkErr) {
-              navigate('/technician', { replace: true });
-              return;
-            } else {
-              console.error('[AuthCallback] Error linking ID:', linkErr);
-            }
+      if (existingProfile) {
+        if (existingProfile.status === 'rejected') {
+          navigate('/access-revoked', { replace: true });
+        } else if (existingProfile.status === 'pending') {
+          navigate('/pending', { replace: true });
+        } else {
+          switch (existingProfile.role) {
+            case 'admin':
+            case 'super_admin':
+              navigate('/admin', { replace: true }); break;
+            case 'technician':
+              navigate('/technician', { replace: true }); break;
+            case 'security':
+              navigate('/security', { replace: true }); break;
+            default:
+              navigate('/resident', { replace: true }); break;
           }
         }
-        
-        // New user — treat as resident
-        navigate('/select-role', { replace: true });
         return;
       }
 
-      // Existing user — check status first, then route by role
-      if (profile.status === 'rejected') {
-        navigate('/access-revoked', { replace: true });
-        return;
-      }
-      if (profile.status === 'pending') {
-        navigate('/pending', { replace: true });
-        return;
+      // Step 2: Check if admin pre-created a profile matching their Google email
+      const googleEmail = session.user.email;
+
+      if (googleEmail) {
+        const { data: preCreated } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', googleEmail)
+          .in('role', ['technician', 'security'])
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (preCreated) {
+          await supabase
+            .from('users')
+            .update({ id: session.user.id })
+            .eq('id', preCreated.id);
+
+          switch (preCreated.role) {
+            case 'technician':
+              navigate('/technician', { replace: true }); break;
+            case 'security':
+              navigate('/security', { replace: true }); break;
+          }
+          return;
+        }
       }
 
-      const dest = ROLE_ROUTES[profile.role as Role] ?? '/resident';
-      navigate(dest, { replace: true });
+      // Step 3: Brand new user — create as pending resident
+      const { data: society } = await supabase
+        .from('societies')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      await supabase.from('users').insert({
+        id: session.user.id,
+        name: session.user.user_metadata?.full_name || session.user.email,
+        email: session.user.email,
+        role: 'resident',
+        status: 'pending',
+        society_id: society?.id || null,
+      });
+
+      navigate('/pending', { replace: true });
     }
 
     handleCallback();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

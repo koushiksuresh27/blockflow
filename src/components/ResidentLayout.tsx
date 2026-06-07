@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, Users, Bell } from 'lucide-react';
+import { Home, Users, Bell, KeyRound } from 'lucide-react';
 
 export default function ResidentLayout() {
   const location = useLocation();
@@ -29,6 +29,13 @@ export default function ResidentLayout() {
           >
             <Users className="w-6 h-6" />
             <span className="text-[10px] font-medium">Community</span>
+          </Link>
+          <Link 
+            to="/resident/gatepass" 
+            className={`flex flex-col items-center gap-1 ${isActive('/resident/gatepass') ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <KeyRound className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Gate Pass</span>
           </Link>
           <Link 
             to="/resident/notifications" 

@@ -8,7 +8,7 @@ const NAV = [
   { to: '/admin/residents',    icon: 'group',        label: 'Residents'    },
   { to: '/admin/alerts',       icon: 'campaign',     label: 'Alerts'       },
   { to: '/admin/complaints',   icon: 'handyman',     label: 'Complaints'   },
-  { to: '/admin/technicians',  icon: 'engineering',  label: 'Technicians'  },
+  { to: '/admin/technicians',  icon: 'engineering',  label: 'Technicians & Security'  },
   { to: '/admin/housekeeping', icon: 'cleaning_services', label: 'Housekeeping'},
   { to: '/admin/equipment',    icon: 'precision_manufacturing', label: 'Equipment'  },
   { to: '/admin/maintenance',  icon: 'build_circle', label: 'Maintenance'  },
