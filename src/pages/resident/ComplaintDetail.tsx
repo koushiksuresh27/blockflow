@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Loader2, ArrowLeft, CheckCircle2, User, Camera, CalendarClock } from 'lucide-react';
+import { Loader2, ArrowLeft, User, Camera, CalendarClock, Star } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ComplaintDetail {
@@ -11,6 +11,7 @@ interface ComplaintDetail {
   status: string;
   created_at: string;
   preferred_slot: string | null;
+  assigned_tech_id: string | null;
   technician: { name: string } | null;
   logs: { action: string; created_at: string; note: string }[];
   attachments: { url: string; attachment_type: string }[];
@@ -22,6 +23,8 @@ export default function ComplaintDetail() {
   const [data, setData] = useState<ComplaintDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showRatingScreen, setShowRatingScreen] = useState(false);
+  const [selectedStars, setSelectedStars] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -30,7 +33,7 @@ export default function ComplaintDetail() {
       const { data: complaint, error } = await supabase
         .from('complaints')
         .select(`
-          id, title, description, status, created_at, preferred_slot,
+          id, title, description, status, created_at, preferred_slot, assigned_tech_id,
           technician:assigned_tech_id(user:user_id(name)),
           logs:complaint_logs(action, created_at, note),
           attachments:complaint_attachments(url, attachment_type)
@@ -47,6 +50,7 @@ export default function ComplaintDetail() {
           status: c.status,
           created_at: c.created_at,
           preferred_slot: c.preferred_slot,
+          assigned_tech_id: c.assigned_tech_id,
           technician: c.technician?.user ? { name: c.technician.user.name } : null,
           logs: (c.logs || []).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
           attachments: c.attachments || []
@@ -78,6 +82,46 @@ export default function ComplaintDetail() {
     setUpdating(false);
   };
 
+  const submitRating = async () => {
+    if (!id || !data || selectedStars === 0) return;
+    setUpdating(true);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (data.assigned_tech_id) {
+      await supabase.from('ratings').insert({
+        complaint_id: id,
+        rated_by: user.id,
+        technician_id: data.assigned_tech_id,
+        score: selectedStars
+      });
+
+      const { data: allRatings } = await supabase
+        .from('ratings')
+        .select('score')
+        .eq('technician_id', data.assigned_tech_id);
+
+      if (allRatings && allRatings.length > 0) {
+        const avgScore = allRatings.reduce((sum, r) => sum + r.score, 0) / allRatings.length;
+        await supabase.from('technicians').update({ performance_score: avgScore }).eq('id', data.assigned_tech_id);
+      }
+    }
+
+    await supabase.from('complaints').update({ status: 'closed' }).eq('id', id);
+    
+    alert('Thank you for your rating!');
+    navigate('/resident');
+  };
+
+  const skipRating = async () => {
+    if (!id || !data) return;
+    setUpdating(true);
+    
+    await supabase.from('complaints').update({ status: 'closed' }).eq('id', id);
+    navigate('/resident');
+  };
+
   if (loading) {
     return <div className="min-h-full flex justify-center p-20"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
   }
@@ -88,6 +132,50 @@ export default function ComplaintDetail() {
 
   const beforePhotos = data.attachments.filter(a => a.attachment_type === 'general' || a.attachment_type === 'before');
   const afterPhotos = data.attachments.filter(a => a.attachment_type === 'after');
+
+  if (showRatingScreen) {
+    return (
+      <div className="min-h-full bg-white flex flex-col pt-20 px-6 items-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Rate the service</h1>
+        <p className="text-gray-500 mb-10 text-center">How was the technician's work?</p>
+        
+        <div className="flex gap-4 mb-12">
+          {[1, 2, 3, 4, 5].map(star => (
+            <button
+              key={star}
+              onClick={() => setSelectedStars(star)}
+              className="p-2 -m-2 transition-transform active:scale-90"
+            >
+              <Star 
+                className={`w-12 h-12 ${
+                  star <= selectedStars 
+                    ? 'fill-blue-500 text-blue-500' 
+                    : 'text-gray-300'
+                }`} 
+              />
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={submitRating}
+          disabled={selectedStars === 0 || updating}
+          className="w-full max-w-sm bg-blue-600 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition flex items-center justify-center gap-2 mb-4"
+        >
+          {updating && <Loader2 className="w-5 h-5 animate-spin" />}
+          Submit Rating
+        </button>
+        
+        <button
+          onClick={skipRating}
+          disabled={updating}
+          className="text-sm font-semibold text-gray-400 hover:text-gray-600 py-2"
+        >
+          Skip
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-gray-50 pb-20">
@@ -130,12 +218,11 @@ export default function ComplaintDetail() {
             <p className="text-xs text-blue-700 mb-4">The technician marked this as resolved. Please verify if the issue is fixed, or reopen it.</p>
             <div className="flex gap-3">
               <button 
-                onClick={() => updateStatus('verified')}
+                onClick={() => setShowRatingScreen(true)}
                 disabled={updating}
                 className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"
               >
-                {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                Verify & Close
+                Verify
               </button>
               <button 
                 onClick={() => updateStatus('reopened')}
