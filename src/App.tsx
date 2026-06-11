@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import Landing from './pages/Landing';
 import DashboardPage from './pages/DashboardPage';
 import AuthCallback from './pages/AuthCallback';
 import PendingPage from './pages/PendingPage';
@@ -41,7 +42,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

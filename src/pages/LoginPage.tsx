@@ -192,14 +192,7 @@ export default function LoginPage() {
 
         {/* Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4 shadow-[0_8px_30px_rgba(37,99,235,0.35)]">
-            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" />
-              <rect x="14" y="3" width="7" height="7" rx="1.5" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" />
-              <rect x="14" y="14" width="7" height="7" rx="1.5" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="BlockFlow Logo" className="h-14 mx-auto mb-4 object-contain" />
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">BlockFlow</h1>
           <p className="mt-1.5 text-sm text-gray-500">Apartment maintenance, simplified</p>
         </div>
