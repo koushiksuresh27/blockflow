@@ -3,6 +3,7 @@ import {
   ChevronDown, X, Loader2, AlertCircle,
   Clock, MapPin, Paperclip, Flag, MessageSquare, AlertTriangle,
 } from 'lucide-react';
+import { Eye, WarningCircle } from 'iconoir-react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
 import { useToast } from '../../components/Toast';
@@ -27,28 +28,26 @@ interface LogEntry {
 interface Attachment { id: string; url: string; attachment_type: string; }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const PRIORITY_BADGE: Record<Priority, string> = {
-  low: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-  medium: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-  high: 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
-  critical: 'bg-red-500/10 text-red-400 border border-red-500/20',
+const PRIORITY_BADGE_STYLE: Record<Priority, React.CSSProperties> = {
+  critical: { background: '#FFF1F2', color: '#BE123C' },
+  high:     { background: '#FEF3C7', color: '#92400E' },
+  medium:   { background: '#EFF6FF', color: '#1D4ED8' },
+  low:      { background: '#F0FDF4', color: '#15803D' },
 };
-const PRIORITY_DOT: Record<Priority, string> = {
-  low: 'bg-emerald-400', medium: 'bg-amber-400', high: 'bg-orange-400', critical: 'bg-red-500',
+const STATUS_BADGE_STYLE: Partial<Record<Status, React.CSSProperties>> = {
+  open:        { background: '#F5F3F0', color: '#6B6560' },
+  triaged:     { background: '#F5F3FF', color: '#6D28D9' },
+  assigned:    { background: '#F5F3FF', color: '#6D28D9' },
+  accepted:    { background: '#EFF6FF', color: '#1D4ED8' },
+  in_progress: { background: '#EFF6FF', color: '#1D4ED8' },
+  on_hold:     { background: '#F5F3F0', color: '#6B6560' },
+  resolved:    { background: '#F0FDF4', color: '#15803D' },
+  verified:    { background: '#F0FDF4', color: '#15803D' },
+  closed:      { background: '#F5F3F0', color: '#9C9894' },
+  escalated:   { background: '#FFF1F2', color: '#BE123C' },
+  reopened:    { background: '#FEF3C7', color: '#92400E' },
 };
-const STATUS_PILL: Partial<Record<Status, string>> = {
-  open: 'bg-blue-500/10 text-blue-400',
-  triaged: 'bg-purple-500/10 text-purple-400',
-  assigned: 'bg-indigo-500/10 text-indigo-400',
-  accepted: 'bg-cyan-500/10 text-cyan-400',
-  in_progress: 'bg-amber-500/10 text-amber-400',
-  on_hold: 'bg-gray-500/10 text-gray-400',
-  resolved: 'bg-emerald-500/10 text-emerald-400',
-  verified: 'bg-teal-500/10 text-teal-400',
-  closed: 'bg-gray-500/10 text-gray-500',
-  escalated: 'bg-red-500/10 text-red-400',
-  reopened: 'bg-orange-500/10 text-orange-400',
-};
+import type React from 'react';
 const ALL_STATUSES: Status[] = [
   'open', 'triaged', 'assigned', 'accepted', 'in_progress',
   'on_hold', 'resolved', 'verified', 'closed', 'escalated', 'reopened',
@@ -63,12 +62,12 @@ const fmt = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperC
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-function slaClass(dl: string, status: Status) {
-  if (['closed', 'verified'].includes(status)) return 'text-on-surface-variant/40';
+function slaStyle(dl: string, status: Status): React.CSSProperties {
+  if (['closed', 'verified'].includes(status)) return { color: '#9C9894' };
   const diff = new Date(dl).getTime() - Date.now();
-  if (diff < 0) return 'text-status-emergency font-semibold';
-  if (diff < 7200000) return 'text-amber-400 font-semibold';
-  return 'text-on-surface-variant';
+  if (diff < 0) return { color: '#DC2626', fontWeight: 700 };
+  if (diff < 7200000) return { color: '#D97706', fontWeight: 700 };
+  return { color: '#9C9894' };
 }
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -226,37 +225,36 @@ function DetailPanel({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-container border-l border-outline-variant/20 w-full max-w-lg h-full overflow-y-auto shadow-2xl flex flex-col z-10">
+      <div className="relative w-full max-w-lg h-full overflow-y-auto shadow-2xl flex flex-col z-10" style={{ background: '#FFFFFF', borderLeft: '1px solid #E0DDD9' }}>
 
         {/* Header */}
-        <div className="sticky top-0 bg-surface-container border-b border-outline-variant/20 px-6 py-4 flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-on-surface leading-snug truncate">{c.title}</h2>
-            <p className="text-xs text-on-surface-variant/50 mt-0.5 font-mono">{c.id.slice(0, 18)}…</p>
+        <div style={{ position: 'sticky', top: 0, background: '#FFFFFF', borderBottom: '1px solid #E0DDD9', padding: '16px 24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</h2>
+            <p style={{ fontSize: 11, color: '#9C9894', margin: '4px 0 0', fontFamily: 'monospace' }}>{c.id.slice(0, 18)}…</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high transition flex-shrink-0">
-            <X className="w-4 h-4 text-on-surface-variant" />
+          <button onClick={onClose} style={{ padding: '6px', borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: '#6B6560', display: 'flex', alignItems: 'center' }}>
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex-1 px-6 py-5 space-y-6">
+        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           {/* Badges */}
-          <div className="flex flex-wrap gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${PRIORITY_BADGE[c.priority]}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[c.priority]}`} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ ...PRIORITY_BADGE_STYLE[c.priority], borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
               {fmt(c.priority)}
             </span>
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_PILL[c.status] ?? 'bg-surface-container-high text-on-surface-variant'}`}>
+            <span style={{ ...(STATUS_BADGE_STYLE[c.status] ?? { background: '#F5F3F0', color: '#6B6560' }), borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
               {fmt(c.status)}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface-variant">
+            <span style={{ background: '#F5F3F0', color: '#6B6560', borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
               {c.category}
             </span>
           </div>
 
           {/* Meta */}
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {[
               ['Submitted by', c.submitted_by_name],
               ['Assigned to', c.assigned_tech_name ?? 'Unassigned'],
@@ -264,16 +262,16 @@ function DetailPanel({
               ['Created', fmtDate(c.created_at)],
             ].map(([l, v]) => (
               <div key={l}>
-                <p className="text-on-surface-variant/60 mb-0.5">{l}</p>
-                <p className={`font-medium ${l === 'SLA Deadline' ? slaClass(c.sla_deadline, c.status) : 'text-on-surface'}`}>
+                <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: '0 0 2px' }}>{l}</p>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, margin: 0, ...(l === 'SLA Deadline' ? slaStyle(c.sla_deadline, c.status) : { color: '#1C1917' }) }}>
                   {v}
                 </p>
               </div>
             ))}
             {c.location_apt && (
-              <div className="col-span-2">
-                <p className="text-on-surface-variant/60 mb-0.5">Location</p>
-                <p className="font-medium text-on-surface flex items-center gap-1">
+              <div style={{ gridColumn: 'span 2' }}>
+                <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: '0 0 2px' }}>Location</p>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <MapPin className="w-3 h-3" />{c.location_apt}
                 </p>
               </div>
@@ -282,8 +280,8 @@ function DetailPanel({
 
           {/* Description */}
           <div>
-            <p className="text-xs font-bold text-on-surface-variant/60 uppercase tracking-widest mb-2">Description</p>
-            <p className="text-sm text-on-surface/80 leading-relaxed whitespace-pre-wrap">{c.description}</p>
+            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>Description</p>
+            <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#1C1917', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{c.description}</p>
           </div>
 
           {/* Attachments */}
@@ -307,8 +305,8 @@ function DetailPanel({
           )}
 
           {/* ── Admin Actions (read-only + specific actions) ── */}
-          <div className="space-y-4 border-t border-outline-variant/15 pt-4">
-            <p className="text-xs font-bold text-on-surface-variant/60 uppercase tracking-widest">Admin Actions</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid #E0DDD9', paddingTop: 16 }}>
+            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Admin Actions</p>
 
             {/* Priority change */}
             <div>
@@ -393,26 +391,26 @@ function DetailPanel({
 
           {/* Activity Timeline */}
           <div>
-            <p className="text-xs font-bold text-on-surface-variant/60 uppercase tracking-widest mb-3 flex items-center gap-1">
+            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
               <Clock className="w-3 h-3" />Activity ({logs.length})
             </p>
             {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#D97706' }} />
             ) : (
-              <ol className="relative border-l border-outline-variant/20 space-y-4 ml-2">
+              <ol style={{ position: 'relative', borderLeft: '1px solid #E0DDD9', marginLeft: 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {logs.map(log => (
-                  <li key={log.id} className="ml-4">
-                    <div className="absolute -left-1.5 w-3 h-3 rounded-full bg-primary border-2 border-surface-container" />
-                    <p className="text-xs font-semibold text-on-surface">
+                  <li key={log.id} style={{ marginLeft: 16 }}>
+                    <div style={{ position: 'absolute', left: -5, width: 10, height: 10, borderRadius: '50%', background: '#D97706', border: '2px solid #FFFFFF' }} />
+                    <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: '0 0 2px' }}>
                       {fmt(log.action)}
                       {log.new_status && (
-                        <span className="ml-1 font-normal text-on-surface-variant">→ {fmt(log.new_status)}</span>
+                        <span style={{ fontWeight: 400, color: '#6B6560', marginLeft: 4 }}>→ {fmt(log.new_status)}</span>
                       )}
                     </p>
                     {log.note && (
-                      <p className="text-xs text-on-surface-variant/70 mt-0.5 italic">"{log.note}"</p>
+                      <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#6B6560', fontStyle: 'italic', margin: '0 0 2px' }}>"{log.note}"</p>
                     )}
-                    <p className="text-[10px] text-on-surface-variant/50 mt-0.5">
+                    <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: 0 }}>
                       {log.actor_name} · {fmtDate(log.created_at)}
                     </p>
                   </li>
@@ -433,18 +431,25 @@ function Select({
   label: string; value: string; options: string[]; onChange: (v: string) => void;
 }) {
   return (
-    <div className="relative">
+    <div style={{ position: 'relative' }}>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={`appearance-none pl-3 pr-8 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 transition bg-surface-container-lowest text-on-surface ${
-          value ? 'border-primary/30' : 'border-outline-variant/30'
-        }`}
+        style={{
+          appearance: 'none',
+          paddingLeft: 12, paddingRight: 32, paddingTop: 6, paddingBottom: 6,
+          fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13,
+          background: value ? '#1C1917' : '#FFFFFF',
+          color: value ? '#FFFFFF' : '#6B6560',
+          border: '1px solid #E0DDD9',
+          borderRadius: 8, cursor: 'pointer',
+          outline: 'none',
+        }}
       >
-        <option value="">{label}</option>
-        {options.map(o => <option key={o} value={o}>{fmt(o)}</option>)}
+        <option value="" style={{ background: '#FFFFFF', color: '#6B6560' }}>{label}</option>
+        {options.map(o => <option key={o} value={o} style={{ background: '#FFFFFF', color: '#1C1917' }}>{fmt(o)}</option>)}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-on-surface-variant/50" />
+      <ChevronDown className="pointer-events-none" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: value ? '#FFFFFF' : '#9C9894' }} />
     </div>
   );
 }
@@ -484,26 +489,23 @@ export default function ComplaintsPage() {
 
   return (
     <AdminLayout>
-      <div className="px-margin-desktop py-10 max-w-screen-xl mx-auto space-y-8">
-
-        {/* ── Header ── */}
-        <div>
-          <h2 className="font-headline-md text-headline-md text-on-surface mb-1">Complaints</h2>
-          <p className="font-body-lg text-body-lg text-on-surface-variant">
-            {filteredComplaints.length} complaint{filteredComplaints.length !== 1 ? 's' : ''} {hasFilter ? '(filtered)' : ''}
-            <span className="ml-2 text-sm text-on-surface-variant/50">— View only. Auto-assignment handles technician routing.</span>
-          </p>
-        </div>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
 
         {/* ── Filter bar ── */}
-        <div className="flex flex-wrap gap-2">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
           <Select label="All statuses"   value={filterStatus}   options={ALL_STATUSES}   onChange={setFilterStatus} />
           <Select label="All priorities" value={filterPriority} options={ALL_PRIORITIES} onChange={setFilterPriority} />
           <Select label="All categories" value={filterCategory} options={CATEGORIES}     onChange={setFilterCategory} />
           {hasFilter && (
             <button
               onClick={() => { setFilterStatus(''); setFilterPriority(''); setFilterCategory(''); }}
-              className="flex items-center gap-1 px-3 py-2 text-sm text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '6px 14px',
+                fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13,
+                color: '#6B6560',
+                background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 8, cursor: 'pointer',
+              }}
             >
               <X className="w-3.5 h-3.5" />Clear
             </button>
@@ -512,62 +514,92 @@ export default function ComplaintsPage() {
 
         {/* ── Error ── */}
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-error-container/20 border border-error-container/40 rounded-2xl text-sm text-error">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 16, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
             <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
 
-        {/* ── Table ── */}
-        <div className="glass-card rounded-2xl overflow-hidden">
+        {/* ── Table card ── */}
+        <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <div style={{ padding: 48 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ display: 'flex', gap: 16, marginBottom: 16, alignItems: 'center' }}>
+                  <div className="skeleton" style={{ height: 14, flex: 2 }} />
+                  <div className="skeleton" style={{ height: 20, width: 80, borderRadius: 6 }} />
+                  <div className="skeleton" style={{ height: 20, width: 80, borderRadius: 6 }} />
+                  <div className="skeleton" style={{ height: 14, flex: 1 }} />
+                </div>
+              ))}
             </div>
           ) : filteredComplaints.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/40 gap-2">
-              <span className="material-symbols-outlined text-[40px]">inbox</span>
-              <p className="text-sm">No complaints match your filters.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 8 }}>
+              <WarningCircle width={40} height={40} style={{ color: '#E0DDD9' }} />
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#9C9894', margin: 0 }}>No complaints found</p>
+              <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>Try adjusting your filters.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr className="border-b border-outline-variant/20 bg-surface-container-lowest/60">
-                    {['ID', 'Title', 'Category', 'Priority', 'Status', 'Submitted By', 'Assigned To', 'SLA', 'Created'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant whitespace-nowrap">
+                  <tr style={{ background: '#F5F3F0', borderBottom: '1px solid #E0DDD9' }}>
+                    {['Title', 'Category', 'Priority', 'Status', 'Submitted By', 'Assigned To', 'SLA', 'Created', 'Action'].map(h => (
+                      <th key={h} style={{
+                        padding: '12px 20px',
+                        textAlign: 'left',
+                        fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12,
+                        color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/10">
-                  {filteredComplaints.map(c => (
-                    <tr key={c.id} className="hover:bg-surface-variant/10 transition-colors group cursor-pointer" onClick={() => setSelected(c)}>
-                      <td className="px-4 py-3.5 font-mono text-xs text-on-surface-variant/40">{c.id.slice(0, 8)}…</td>
-                      <td className="px-4 py-3.5 max-w-[160px]">
-                        <p className="font-medium text-on-surface truncate" title={c.title}>{c.title}</p>
+                <tbody>
+                  {filteredComplaints.map((c, i) => (
+                    <tr
+                      key={c.id}
+                      style={{ borderBottom: i < filteredComplaints.length - 1 ? '1px solid #F5F3F0' : 'none', cursor: 'pointer', transition: 'background 0.1s' }}
+                      onClick={() => setSelected(c)}
+                      onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#FAFAF9'}
+                      onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}
+                    >
+                      <td style={{ padding: '14px 20px', maxWidth: 200 }}>
+                        <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.title}>{c.title}</p>
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap text-on-surface-variant text-xs">{c.category}</td>
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${PRIORITY_BADGE[c.priority]}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[c.priority]}`} />
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>{c.category}</span>
+                      </td>
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                        <span style={{ ...PRIORITY_BADGE_STYLE[c.priority], borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
                           {fmt(c.priority)}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_PILL[c.status] ?? 'bg-surface-container-high text-on-surface-variant'}`}>
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                        <span style={{ ...(STATUS_BADGE_STYLE[c.status] ?? { background: '#F5F3F0', color: '#6B6560' }), borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
                           {fmt(c.status)}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap text-on-surface-variant text-xs">{c.submitted_by_name}</td>
-                      <td className="px-4 py-3.5 whitespace-nowrap text-xs">
-                        {c.assigned_tech_name ?? <span className="text-on-surface-variant/30 italic">Auto-assigned</span>}
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#1C1917' }}>{c.submitted_by_name}</td>
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#1C1917' }}>
+                        {c.assigned_tech_name ?? <span style={{ color: '#9C9894', fontStyle: 'italic' }}>Auto-assigned</span>}
                       </td>
-                      <td className={`px-4 py-3.5 whitespace-nowrap text-xs ${slaClass(c.sla_deadline, c.status)}`}>
-                        {fmtDate(c.sla_deadline)}
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontFamily: 'Inter', fontSize: 14, ...slaStyle(c.sla_deadline, c.status) }}>{fmtDate(c.sla_deadline)}</span>
                       </td>
-                      <td className="px-4 py-3.5 whitespace-nowrap text-xs text-on-surface-variant/50">
+                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#9C9894' }}>
                         {fmtDate(c.created_at)}
+                      </td>
+                      <td style={{ padding: '14px 20px' }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); setSelected(c); }}
+                          style={{ width: 30, height: 30, border: '1px solid #E0DDD9', borderRadius: 8, background: 'transparent', color: '#6B6560', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1C1917'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
+                        >
+                          <Eye width={14} height={14} strokeWidth={1.5} />
+                        </button>
                       </td>
                     </tr>
                   ))}

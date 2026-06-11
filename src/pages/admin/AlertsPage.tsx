@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import type React from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/Toast';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, Plus, X, Loader2 } from 'lucide-react';
+import AdminLayout from '../../components/AdminLayout';
 
 interface Alert {
   id: string;
@@ -131,127 +133,142 @@ export default function AlertsPage() {
     }
   };
 
+  const TYPE_COLORS: Record<string, React.CSSProperties> = {
+    emergency: { background: '#FFF1F2', color: '#BE123C' },
+    security:  { background: '#FEF3C7', color: '#92400E' },
+    maintenance: { background: '#F5F3FF', color: '#6D28D9' },
+    event:     { background: '#EFF6FF', color: '#1D4ED8' },
+    general:   { background: '#F5F3F0', color: '#6B6560' },
+  };
+
   return (
-    <div className="p-gutter max-w-7xl mx-auto animate-fade-in pb-32">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-display-sm font-bold text-on-surface tracking-tight mb-2">Society Alerts</h1>
-          <p className="text-body-lg text-on-surface-variant">Manage and broadcast alerts to residents.</p>
-        </div>
-        
+    <AdminLayout>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>Broadcast alerts to all residents.</p>
         <button
           onClick={() => setShowNewAlert(true)}
-          className="bg-primary hover:bg-primary/90 text-on-primary px-6 py-3 rounded-full font-label-lg transition-all shadow-md shadow-primary/20 flex items-center gap-2"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', background: '#D97706', color: '#FFFFFF', borderRadius: 10, border: 'none', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           Send Alert
         </button>
       </div>
 
-      <div className="grid gap-4">
-        {loading ? (
-          <div className="flex justify-center p-10">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : alerts.length === 0 ? (
-          <div className="bg-surface text-center py-12 rounded-3xl border border-outline-variant/30">
-            <p className="text-on-surface-variant">No alerts have been sent yet.</p>
-          </div>
-        ) : (
-          alerts.map(alert => (
-            <div key={alert.id} className="bg-surface border border-outline-variant/30 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start gap-4 transition-all hover:shadow-md">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border ${getTypeColor(alert.type)}`}>
-                    {alert.type}
-                  </span>
-                  <span className="text-xs text-on-surface-variant font-medium">
-                    Sent: {formatDistanceToNow(new Date(alert.created_at))} ago
-                  </span>
+      {/* List */}
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+              <div className="skeleton" style={{ height: 16, width: '30%', marginBottom: 8 }} />
+              <div className="skeleton" style={{ height: 14, width: '80%' }} />
+            </div>
+          ))}
+        </div>
+      ) : alerts.length === 0 ? (
+        <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: '48px 0', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#9C9894', margin: 0 }}>No alerts sent yet.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {alerts.map(alert => {
+            const typeStyle = TYPE_COLORS[alert.type] ?? TYPE_COLORS.general;
+            return (
+              <div key={alert.id} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ ...typeStyle, borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {alert.type}
+                    </span>
+                    <span style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894' }}>
+                      {formatDistanceToNow(new Date(alert.created_at))} ago
+                    </span>
+                  </div>
+                  <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 4px' }}>{alert.title}</h3>
+                  <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#6B6560', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{alert.body}</p>
                 </div>
-                <h3 className="text-title-lg font-bold text-on-surface mb-1">{alert.title}</h3>
-                <p className="text-body-md text-on-surface-variant whitespace-pre-wrap">{alert.body}</p>
+                <button
+                  onClick={() => handleDeleteAlert(alert.id)}
+                  style={{ padding: 8, borderRadius: 8, background: 'transparent', border: 'none', color: '#9C9894', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#DC2626'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#9C9894'; }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-              
-              <button 
-                onClick={() => handleDeleteAlert(alert.id)}
-                className="text-outline hover:text-status-emergency transition p-2 bg-surface-variant/30 hover:bg-status-emergency/10 rounded-full"
-                title="Delete Alert"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
+      {/* New Alert Modal */}
       {showNewAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-surface w-full max-w-lg rounded-3xl p-6 shadow-xl relative animate-scale-in">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-headline-sm font-bold text-on-surface">Send New Alert</h2>
-              <button 
-                onClick={() => setShowNewAlert(false)}
-                className="p-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, boxShadow: '0 24px 48px rgba(0,0,0,0.15)', width: '100%', maxWidth: 480 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E0DDD9' }}>
+              <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 17, color: '#1C1917', margin: 0 }}>Send New Alert</h2>
+              <button onClick={() => setShowNewAlert(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6560', padding: 4 }}><X className="w-4 h-4" /></button>
             </div>
-            
-            <div className="space-y-5">
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-label-md font-medium text-on-surface-variant mb-1">Title</label>
-                <input 
-                  type="text" 
+                <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Title</label>
+                <input
+                  type="text"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
                   placeholder="Alert title..."
-                  className="w-full border border-outline-variant/50 rounded-xl px-4 py-3 bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-on-surface"
+                  style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
-              
               <div>
-                <label className="block text-label-md font-medium text-on-surface-variant mb-1">Message</label>
-                <textarea 
+                <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Message</label>
+                <textarea
                   value={formBody}
                   onChange={(e) => setFormBody(e.target.value)}
                   placeholder="Details of the alert..."
                   rows={4}
-                  className="w-full border border-outline-variant/50 rounded-xl px-4 py-3 bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all resize-none text-on-surface"
+                  style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
                 />
               </div>
-              
               <div>
-                <label className="block text-label-md font-medium text-on-surface-variant mb-2">Type</label>
-                <div className="flex flex-wrap gap-2">
+                <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 8 }}>Type</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {ALERT_TYPES.map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => setFormType(cat.id)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
-                        formType === cat.id 
-                          ? 'border-primary bg-primary-container text-on-primary-container' 
-                          : 'border-outline-variant/50 bg-surface text-on-surface-variant hover:bg-surface-variant/30'
-                      }`}
+                      style={{
+                        padding: '5px 12px', borderRadius: 6,
+                        fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 12,
+                        background: formType === cat.id ? '#1C1917' : '#F5F3F0',
+                        color: formType === cat.id ? '#FFFFFF' : '#6B6560',
+                        border: 'none', cursor: 'pointer',
+                      }}
                     >
                       {cat.label}
                     </button>
                   ))}
                 </div>
               </div>
-              
               <button
                 onClick={handleSendAlert}
                 disabled={isSubmitting || !formTitle.trim() || !formBody.trim()}
-                className="w-full bg-primary text-on-primary font-label-lg py-3.5 rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex justify-center items-center gap-2 shadow-md"
+                style={{
+                  padding: '12px', background: isSubmitting ? '#B45309' : '#D97706', color: '#FFFFFF',
+                  borderRadius: 10, border: 'none', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14,
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.8 : 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
               >
-                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Send to All Residents
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

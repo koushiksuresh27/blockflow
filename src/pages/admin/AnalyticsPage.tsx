@@ -17,17 +17,17 @@ interface Complaint {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  open: '#3b82f6',        // blue-500
-  triaged: '#a855f7',     // purple-500
-  assigned: '#6366f1',    // indigo-500
-  accepted: '#06b6d4',    // cyan-500
-  in_progress: '#f59e0b', // amber-500
-  on_hold: '#6b7280',     // gray-500
-  resolved: '#10b981',    // emerald-500
-  verified: '#14b8a6',    // teal-500
-  closed: '#9ca3af',      // gray-400
-  escalated: '#f43f5e',   // rose-500
-  reopened: '#f97316',    // orange-500
+  open: '#3B82F6',        
+  triaged: '#8B5CF6',     
+  assigned: '#6366F1',    
+  accepted: '#06B6D4',    
+  in_progress: '#F59E0B', 
+  on_hold: '#6B6560',     
+  resolved: '#10B981',    
+  verified: '#14B8A6',    
+  closed: '#9C9894',      
+  escalated: '#F43F5E',   
+  reopened: '#F97316',    
 };
 
 export default function AnalyticsPage() {
@@ -134,10 +134,10 @@ export default function AnalyticsPage() {
 
   return (
     <AdminLayout>
-      <div className="px-8 py-8 max-w-screen-xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Overview of complaint metrics and performance</p>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 0' }}>
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 24, color: '#1C1917', margin: '0 0 4px' }}>Analytics</h1>
+          <p style={{ fontFamily: 'Inter', fontSize: 15, color: '#6B6560', margin: 0 }}>Overview of complaint metrics and performance</p>
         </div>
 
         {/* TEMP: WhatsApp test button */}
@@ -158,70 +158,72 @@ export default function AnalyticsPage() {
             console.log('error:', JSON.stringify(error))
             alert(JSON.stringify({ data, error }))
           }}
-          className="bg-red-500 text-white px-4 py-2 rounded mb-6"
+          style={{ background: '#BE123C', color: '#FFFFFF', padding: '8px 16px', borderRadius: 8, border: 'none', marginBottom: 24, cursor: 'pointer', fontFamily: 'Inter', fontSize: 13 }}
         >
           Test WhatsApp
         </button>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-6">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 24, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
             <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1C1917' }} />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Total This Month</p>
-                <p className="text-3xl font-bold text-gray-900">{metrics.thisMonthCount}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px' }}>Total This Month</p>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 32, color: '#1C1917', margin: 0 }}>{metrics.thisMonthCount}</p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Avg Resolution Time</p>
-                <p className="text-3xl font-bold text-blue-600">{metrics.avgResolutionHours} <span className="text-lg font-medium text-gray-500">hrs</span></p>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px' }}>Avg Resolution Time</p>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 32, color: '#1C1917', margin: 0 }}>
+                  {metrics.avgResolutionHours} <span style={{ fontSize: 18, color: '#9C9894' }}>hrs</span>
+                </p>
               </div>
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">SLA Compliance</p>
-                <p className={`text-3xl font-bold ${metrics.slaComplianceRate >= 80 ? 'text-green-600' : 'text-amber-500'}`}>
+              <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px' }}>SLA Compliance</p>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 32, color: metrics.slaComplianceRate >= 80 ? '#15803D' : '#D97706', margin: 0 }}>
                   {metrics.slaComplianceRate}%
                 </p>
               </div>
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
               {/* Top Categories Bar Chart */}
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-                <h2 className="text-sm font-bold text-gray-800 mb-6">Top 5 Complaint Categories</h2>
-                <div className="h-72">
+              <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 24 }}>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 24px' }}>Top 5 Complaint Categories</h2>
+                <div style={{ height: 288 }}>
                   {metrics.topCategories.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={metrics.topCategories} layout="vertical" margin={{ top: 0, right: 0, left: 20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} />
-                        <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#374151' }} width={100} />
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E0DDD9" />
+                        <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontFamily: 'Inter', fontSize: 12, fill: '#6B6560' }} />
+                        <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontFamily: 'Inter', fontSize: 12, fill: '#1C1917' }} width={100} />
                         <RechartsTooltip 
-                          cursor={{ fill: '#f3f4f6' }}
-                          contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          cursor={{ fill: '#F5F3F0' }}
+                          contentStyle={{ borderRadius: 8, border: '1px solid #E0DDD9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontSize: 13 }}
                         />
-                        <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={32} />
+                        <Bar dataKey="count" fill="#1C1917" radius={[0, 4, 4, 0]} barSize={32} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-sm text-gray-400">No data available</div>
+                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter', fontSize: 14, color: '#9C9894' }}>No data available</div>
                   )}
                 </div>
               </div>
 
               {/* Status Pie Chart */}
-              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-                <h2 className="text-sm font-bold text-gray-800 mb-6">Complaints by Status</h2>
-                <div className="h-72">
+              <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 24 }}>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 24px' }}>Complaints by Status</h2>
+                <div style={{ height: 288 }}>
                   {metrics.statusData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -235,17 +237,17 @@ export default function AnalyticsPage() {
                           dataKey="value"
                         >
                           {metrics.statusData.map((entry) => (
-                            <Cell key={entry.name} fill={STATUS_COLORS[entry.rawStatus] || '#9ca3af'} stroke="none" />
+                            <Cell key={entry.name} fill={STATUS_COLORS[entry.rawStatus] || '#E0DDD9'} stroke="none" />
                           ))}
                         </Pie>
                         <RechartsTooltip 
-                          contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          contentStyle={{ borderRadius: 8, border: '1px solid #E0DDD9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontSize: 13 }}
                         />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend iconType="circle" wrapperStyle={{ fontFamily: 'Inter', fontSize: 12, color: '#6B6560' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-sm text-gray-400">No data available</div>
+                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter', fontSize: 14, color: '#9C9894' }}>No data available</div>
                   )}
                 </div>
               </div>

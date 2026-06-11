@@ -95,16 +95,22 @@ export default function SettingsPage() {
 
   return (
     <AdminLayout>
-      <div className="px-8 py-8 max-w-screen-md mx-auto">
-        <div className="flex items-center justify-between mb-8">
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Manage your society preferences</p>
+            <h1 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 24, color: '#1C1917', margin: '0 0 4px' }}>Settings</h1>
+            <p style={{ fontFamily: 'Inter', fontSize: 15, color: '#6B6560', margin: 0 }}>Manage your society preferences</p>
           </div>
           <button
             onClick={handleSave}
             disabled={saving || !settings}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 rounded-lg transition"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px',
+              background: saving || !settings ? '#2C2925' : '#D97706',
+              color: '#FFFFFF', borderRadius: 10, border: 'none',
+              fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14,
+              cursor: saving || !settings ? 'not-allowed' : 'pointer'
+            }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Changes
@@ -112,79 +118,82 @@ export default function SettingsPage() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 mb-6">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 24, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
             <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
 
         {loading || !settings ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1C1917' }} />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Society Profile */}
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                <h2 className="text-sm font-bold text-gray-800">Society Profile</h2>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid #E0DDD9', background: '#F5F3F0' }}>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: 0 }}>Society Profile</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Society Name</label>
+                  <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Society Name</label>
                   <input
                     type="text"
                     value={settings.name}
                     onChange={e => setSettings({ ...settings, name: e.target.value })}
-                    className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Address</label>
                   <textarea
                     rows={2}
                     value={settings.address}
                     onChange={e => setSettings({ ...settings, address: e.target.value })}
-                    className="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none"
+                    style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>City</label>
                   <input
                     type="text"
                     value={settings.city}
                     onChange={e => setSettings({ ...settings, city: e.target.value })}
-                    className="w-full md:w-1/2 px-3.5 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    style={{ width: '100%', maxWidth: 400, padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
             </div>
 
             {/* SLA Defaults */}
-            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                <h2 className="text-sm font-bold text-gray-800">SLA Defaults (Hours)</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Set the default resolution deadline per priority level.</p>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid #E0DDD9', background: '#F5F3F0' }}>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: 0 }}>SLA Defaults (Hours)</h2>
+                <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#6B6560', margin: '2px 0 0' }}>Set the default resolution deadline per priority level.</p>
               </div>
-              <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                 {[
-                  { key: 'critical', label: 'Critical', color: 'border-red-200 bg-red-50 text-red-700' },
-                  { key: 'high', label: 'High', color: 'border-orange-200 bg-orange-50 text-orange-700' },
-                  { key: 'medium', label: 'Medium', color: 'border-yellow-200 bg-yellow-50 text-yellow-700' },
-                  { key: 'low', label: 'Low', color: 'border-gray-200 bg-gray-50 text-gray-700' },
+                  { key: 'critical', label: 'Critical', bg: '#FFF1F2', color: '#BE123C', border: '#FCA5A5' },
+                  { key: 'high', label: 'High', bg: '#FFF7ED', color: '#C2410C', border: '#FDBA74' },
+                  { key: 'medium', label: 'Medium', bg: '#FEFCE8', color: '#A16207', border: '#FDE047' },
+                  { key: 'low', label: 'Low', bg: '#F5F3F0', color: '#6B6560', border: '#E0DDD9' },
                 ].map((item) => (
                   <div key={item.key}>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wider">
+                    <label style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>
                       {item.label}
                     </label>
-                    <div className="relative">
+                    <div style={{ position: 'relative' }}>
                       <input
                         type="number"
                         min="1"
                         value={settings.sla_defaults[item.key as keyof SlaDefaults]}
                         onChange={e => updateSla(item.key as keyof SlaDefaults, e.target.value)}
-                        className={`w-full px-3.5 py-2 text-sm font-medium border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${item.color}`}
+                        style={{
+                          width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, fontWeight: 500,
+                          background: item.bg, color: item.color, border: `1px solid ${item.border}`, borderRadius: 8, outline: 'none', boxSizing: 'border-box'
+                        }}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium opacity-60">
+                      <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontFamily: 'Inter', fontSize: 12, fontWeight: 500, color: item.color, opacity: 0.6 }}>
                         hrs
                       </span>
                     </div>

@@ -1,27 +1,170 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import NotificationDropdown from './NotificationDropdown';
+import {
+  GridMinus, StatsReport, ClipboardCheck, Community, Wrench,
+  Map, Database, Calendar, Bell, Settings,
+  LogOut, Search, Refresh,
+} from 'iconoir-react';
 
-const NAV = [
-  { to: '/admin',              icon: 'dashboard',   label: 'Dashboard'    },
-  { to: '/admin/residents',    icon: 'group',        label: 'Residents'    },
-  { to: '/admin/alerts',       icon: 'campaign',     label: 'Alerts'       },
-  { to: '/admin/complaints',   icon: 'handyman',     label: 'Complaints'   },
-  { to: '/admin/technicians',  icon: 'engineering',  label: 'Technicians & Security'  },
-  { to: '/admin/housekeeping', icon: 'cleaning_services', label: 'Housekeeping'},
-  { to: '/admin/equipment',    icon: 'precision_manufacturing', label: 'Equipment'  },
-  { to: '/admin/maintenance',  icon: 'build_circle', label: 'Maintenance'  },
-  { to: '/admin/analytics',    icon: 'assessment',   label: 'Analytics'    },
-  { to: '/admin/settings',     icon: 'settings',     label: 'Settings'     },
+// ── Page title map ────────────────────────────────────────────────────────────
+const PAGE_TITLES: Record<string, string> = {
+  '/admin':              'Dashboard',
+  '/admin/analytics':    'Analytics',
+  '/admin/complaints':   'Complaints',
+  '/admin/residents':    'Residents',
+  '/admin/technicians':  'Technicians & Security',
+  '/admin/housekeeping': 'Housekeeping',
+  '/admin/equipment':    'Equipment',
+  '/admin/maintenance':  'Maintenance',
+  '/admin/alerts':       'Alerts',
+  '/admin/settings':     'Settings',
+};
+
+// ── Nav groups ────────────────────────────────────────────────────────────────
+const NAV_GROUPS = [
+  {
+    label: 'OVERVIEW',
+    items: [
+      { to: '/admin',           icon: GridMinus,      label: 'Dashboard'    },
+      { to: '/admin/analytics', icon: StatsReport,    label: 'Analytics'    },
+    ],
+  },
+  {
+    label: 'OPERATIONS',
+    items: [
+      { to: '/admin/complaints',   icon: ClipboardCheck, label: 'Complaints'   },
+      { to: '/admin/residents',    icon: Community,      label: 'Residents'    },
+      { to: '/admin/technicians',  icon: Wrench,         label: 'Technicians & Security' },
+      { to: '/admin/housekeeping', icon: Map,            label: 'Housekeeping' },
+    ],
+  },
+  {
+    label: 'FACILITIES',
+    items: [
+      { to: '/admin/equipment',   icon: Database,       label: 'Equipment'    },
+      { to: '/admin/maintenance',  icon: Calendar,       label: 'Maintenance'  },
+    ],
+  },
+  {
+    label: 'COMMUNITY',
+    items: [
+      { to: '/admin/alerts', icon: Bell, label: 'Alerts' },
+    ],
+  },
+  {
+    label: 'SYSTEM',
+    items: [
+      { to: '/admin/settings', icon: Settings, label: 'Settings' },
+    ],
+  },
 ];
 
-export default function AdminLayout({ 
-  children
-}: { 
+// ── Notification bell with data ───────────────────────────────────────────────
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false)
+        .then(({ count }) => setUnreadCount(count ?? 0));
+    });
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: 36, height: 36,
+          background: '#FFFFFF',
+          border: '1px solid #E0DDD9',
+          borderRadius: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: '#6B6560',
+          transition: 'all 0.15s',
+          position: 'relative',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1C1917'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
+      >
+        <Bell width={16} height={16} strokeWidth={1.5} />
+        {unreadCount > 0 && (
+          <span style={{
+            position: 'absolute', top: 7, right: 7,
+            width: 7, height: 7,
+            background: '#D97706',
+            borderRadius: '50%',
+            border: '1.5px solid #D7DADC',
+          }} />
+        )}
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: 44,
+          background: '#FFFFFF',
+          border: '1px solid #E0DDD9',
+          borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          width: 280,
+          zIndex: 50,
+          padding: '12px 0',
+        }}>
+          <p style={{ padding: '4px 16px 8px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#1C1917' }}>
+            Notifications
+          </p>
+          {unreadCount === 0 ? (
+            <p style={{ padding: '8px 16px', fontFamily: 'Inter', fontSize: 13, color: '#9C9894' }}>No unread notifications.</p>
+          ) : (
+            <p style={{ padding: '8px 16px', fontFamily: 'Inter', fontSize: 13, color: '#6B6560' }}>{unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Layout ───────────────────────────────────────────────────────────────
+export default function AdminLayout({
+  children,
+  onRefresh,
+  isRefreshing,
+}: {
   children: ReactNode;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [adminName, setAdminName] = useState('Admin');
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  const pageTitle = PAGE_TITLES[pathname] ?? 'Admin';
+  const initials = adminName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('users').select('name').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.name) setAdminName(data.name); });
+    });
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -29,79 +172,301 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-on-surface">
-      {/* Background Ambient Blobs */}
-      <div className="ambient-blob bg-primary-container top-[-200px] left-[-200px]"></div>
-      <div className="ambient-blob bg-on-primary-fixed-variant bottom-[-100px] right-[-100px]"></div>
+    <div style={{ minHeight: '100vh', background: '#D7DADC' }}>
 
-      {/* ── SideNavBar ── */}
-      <aside className="w-64 h-screen fixed left-0 top-0 border-r border-outline-variant/30 bg-surface-container-lowest/90 backdrop-blur-xl flex flex-col py-margin-desktop z-50">
-        <div className="px-gutter mb-12">
-          <h1 className="font-display-lg text-display-lg text-primary tracking-tighter">BlockFlow</h1>
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest opacity-80">Admin Console</p>
+      {/* ── Sidebar ── */}
+      <aside style={{
+        width: 240,
+        minWidth: 240,
+        maxWidth: 240,
+        height: '100vh',
+        background: '#FFFFFF',
+        borderRight: '1px solid #E0DDD9',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        left: 0, top: 0,
+        zIndex: 20,
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}>
+        {/* Logo */}
+        <div style={{ position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 1, padding: '24px 20px 0', overflow: 'hidden', width: 240 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src="/logo.png" height={28} alt="BlockFlow logo" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            <span style={{
+              fontFamily: 'Space Grotesk',
+              fontWeight: 700,
+              fontSize: 18,
+              color: '#1C1917',
+              letterSpacing: '-0.3px',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
+              maxWidth: 140,
+              display: 'inline-block'
+            }}>BlockFlow</span>
+          </div>
+          <div style={{ height: 1, background: '#E0DDD9', margin: '16px 0 8px' }} />
         </div>
 
-        <nav className="flex-grow">
-          <ul className="space-y-1">
-            {NAV.map(({ to, icon, label }) => (
-              <li key={to}>
+        {/* Nav Container */}
+        <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <nav className="sidebar-nav" style={{ padding: '0 12px', flex: 1, overflowY: 'auto' }}>
+          {NAV_GROUPS.map(group => (
+            <div key={group.label}>
+              <span style={{
+                fontFamily: 'Inter',
+                fontWeight: 500,
+                fontSize: 10,
+                color: '#9C9894',
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+                padding: '16px 8px 4px',
+                display: 'block',
+              }}>
+                {group.label}
+              </span>
+              {group.items.map(({ to, icon: Icon, label }) => (
                 <NavLink
+                  key={to}
                   to={to}
                   end={to === '/admin'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-4 px-gutter py-3 transition-all duration-300 ${
-                      isActive
-                        ? 'sidebar-active text-primary font-bold'
-                        : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20'
-                    }`
-                  }
+                  style={({ isActive }) => ({
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '9px 12px',
+                    borderRadius: 10,
+                    fontFamily: 'Space Grotesk',
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: 13,
+                    color: isActive ? '#1C1917' : '#6B6560',
+                    textDecoration: 'none',
+                    background: isActive ? '#FEF3C7' : 'transparent',
+                    marginBottom: 1,
+                    userSelect: 'none',
+                    position: 'relative',
+                    transition: 'all 0.15s ease',
+                  })}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLAnchorElement;
+                    if (!el.classList.contains('active') && el.style.background !== 'rgb(254, 243, 199)') {
+                      el.style.background = '#F5F3F0';
+                      el.style.color = '#1C1917';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLAnchorElement;
+                    if (el.style.background === 'rgb(245, 243, 240)') {
+                      el.style.background = 'transparent';
+                      el.style.color = '#6B6560';
+                    }
+                  }}
                 >
-                  <span className="material-symbols-outlined">{icon}</span>
-                  <span className="font-body-md text-body-md">{label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <span style={{
+                          position: 'absolute',
+                          left: -12,
+                          top: 6,
+                          bottom: 6,
+                          width: 3,
+                          background: '#D97706',
+                          borderRadius: '0 3px 3px 0',
+                        }} />
+                      )}
+                      <Icon width={18} height={18} strokeWidth={1.5} style={{ color: 'inherit', flexShrink: 0 }} />
+                      <span>{label}</span>
+                    </>
+                  )}
                 </NavLink>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          ))}
         </nav>
+        
+        {/* Gradient fade */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '40px',
+          background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))',
+          pointerEvents: 'none',
+          borderRadius: '0 0 0 0'
+        }} />
+        </div>
 
-        <div className="mt-auto px-gutter space-y-6">
-          <ul className="space-y-1">
-            <li>
-              <a className="flex items-center gap-4 py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
-                <span className="material-symbols-outlined">help</span>
-                <span className="font-label-sm">Support</span>
-              </a>
-            </li>
-            <li>
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center gap-4 py-2 text-on-surface-variant hover:text-status-emergency transition-colors bg-transparent text-left focus:outline-none"
-              >
-                <span className="material-symbols-outlined">logout</span>
-                <span className="font-label-sm">Logout</span>
-              </button>
-            </li>
-          </ul>
+        {/* Bottom: admin profile */}
+        <div style={{ padding: '16px 16px 20px', background: '#FFFFFF', zIndex: 1 }}>
+          <div style={{ height: 1, background: '#E0DDD9', marginBottom: 12 }} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 8px',
+            borderRadius: 10,
+          }}>
+            {/* Avatar */}
+            <div style={{
+              width: 36, height: 36,
+              background: '#1C1917',
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'Space Grotesk',
+              fontWeight: 700,
+              fontSize: 13,
+              color: '#D7DADC',
+              flexShrink: 0,
+            }}>
+              {initials}
+            </div>
+            {/* Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {adminName}
+              </p>
+              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 11, color: '#9C9894', margin: 0 }}>
+                Society Admin
+              </p>
+            </div>
+            {/* Logout */}
+            <button
+              onClick={handleSignOut}
+              title="Logout"
+              style={{
+                width: 28, height: 28,
+                borderRadius: 8,
+                background: 'transparent',
+                border: 'none',
+                color: '#9C9894',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#F5F3F0'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#9C9894'; }}
+            >
+              <LogOut width={15} height={15} strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* ── Main Content Area ── */}
-      <main className="ml-64 flex-1 flex flex-col min-w-0">
-        {/* ── TopAppBar ── */}
-        <header className="h-20 fixed top-0 right-0 left-64 z-40 bg-background/80 backdrop-blur-md border-b border-outline-variant/20 flex justify-between items-center px-gutter">
-          <div className="flex items-center gap-6 flex-grow max-w-2xl">
+      {/* ── Header ── */}
+      <header style={{
+        marginLeft: 240,
+        height: 64,
+        background: '#D7DADC',
+        borderBottom: '1px solid #E0DDD9',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 28px',
+        gap: 16,
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        flexShrink: 0,
+      }}>
+          {/* Page title */}
+          <span style={{
+            fontFamily: 'Space Grotesk',
+            fontWeight: 700,
+            fontSize: 20,
+            color: '#1C1917',
+            whiteSpace: 'nowrap',
+          }}>
+            {pageTitle}
+          </span>
+
+          {/* Center search */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <div style={{
+              background: '#FFFFFF',
+              border: `1px solid ${searchFocused ? '#D97706' : '#E0DDD9'}`,
+              borderRadius: 10,
+              height: 38,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '0 14px',
+              maxWidth: 380,
+              width: '100%',
+              transition: 'border-color 0.15s',
+            }}>
+              <Search width={15} height={15} style={{ color: '#9C9894', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Search..."
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 400,
+                  fontSize: 14,
+                  color: '#1C1917',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  flex: 1,
+                }}
+              />
+            </div>
           </div>
-          
-          <div className="flex items-center gap-6">
-            <NotificationDropdown />
+
+          {/* Right actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Refresh */}
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                title="Refresh"
+                style={{
+                  width: 36, height: 36,
+                  background: '#FFFFFF',
+                  border: '1px solid #E0DDD9',
+                  borderRadius: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#6B6560',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1C1917'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
+              >
+                <Refresh width={15} height={15} strokeWidth={1.5} style={{ transition: 'transform 0.3s' }} className={isRefreshing ? 'animate-spin' : ''} />
+              </button>
+            )}
+
+            {/* Bell */}
+            <NotificationBell />
+
+            {/* Admin avatar */}
+            <div style={{
+              width: 32, height: 32,
+              background: '#1C1917',
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontFamily: 'Space Grotesk',
+              fontWeight: 700,
+              fontSize: 12,
+              color: '#D7DADC',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}>
+              {initials}
+            </div>
           </div>
         </header>
 
-        {/* ── Dynamic Content ── */}
-        <div className="pt-20 flex-1 overflow-y-auto">
+        {/* ── Page content ── */}
+        <main style={{ marginLeft: 240, padding: 28, minHeight: 'calc(100vh - 64px)' }}>
           {children}
-        </div>
-      </main>
+        </main>
     </div>
   );
 }

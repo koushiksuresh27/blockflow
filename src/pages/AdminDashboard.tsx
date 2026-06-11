@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { ClipboardCheck, Timer, Clock, Community, CheckCircle, WarningCircle } from 'iconoir-react';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
 
@@ -12,14 +12,18 @@ type Status =
   | 'in_progress' | 'on_hold' | 'resolved'
   | 'verified' | 'closed' | 'escalated' | 'reopened';
 
-interface BreachComplaint {
+interface RecentComplaint {
   id: string;
   title: string;
   category: string;
   priority: Priority;
   status: Status;
-  sla_deadline: string;
-  assigned_tech_name: string | null;
+  created_at: string;
+}
+
+interface BreachComplaint {
+  id: string;
+  title: string;
   hoursOverdue: number;
 }
 
@@ -30,6 +34,7 @@ interface TechLeader {
   avg_rating: number;
   completed_jobs: number;
   sla_compliance: number;
+  specializations: string[];
 }
 
 interface ActivityEntry {
@@ -42,41 +47,13 @@ interface ActivityEntry {
 }
 
 interface DashMetrics {
-  pendingResidents: number;
   openComplaints: number;
-  slaBreachesThisMonth: number;
-  avgTechRating: number;
-  equipmentCritical: number;
-  maintenanceOverdue: number;
-  housekeepingDueToday: number;
+  overdueSlа: number;
+  avgResolutionHours: number;
+  pendingResidents: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const PRIORITY_BADGE: Record<Priority, string> = {
-  low: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-  medium: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-  high: 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
-  critical: 'bg-red-500/10 text-red-400 border border-red-500/20',
-};
-
-const STATUS_PILL: Partial<Record<Status, string>> = {
-  open: 'bg-blue-500/10 text-blue-400',
-  triaged: 'bg-purple-500/10 text-purple-400',
-  assigned: 'bg-indigo-500/10 text-indigo-400',
-  accepted: 'bg-cyan-500/10 text-cyan-400',
-  in_progress: 'bg-amber-500/10 text-amber-400',
-  on_hold: 'bg-gray-500/10 text-gray-400',
-  resolved: 'bg-emerald-500/10 text-emerald-400',
-  verified: 'bg-teal-500/10 text-teal-400',
-  closed: 'bg-gray-500/10 text-gray-500',
-  escalated: 'bg-red-500/10 text-red-400',
-  reopened: 'bg-orange-500/10 text-orange-400',
-};
-
-function fmt(s: string) {
-  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -88,150 +65,116 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function Stars({ score, size = 'sm' }: { score: number; size?: 'sm' | 'xs' }) {
-  const filled = Math.round((score / 100) * 5);
-  const sz = size === 'xs' ? 'text-[10px]' : 'text-xs';
-  return (
-    <span className={`flex gap-0.5 ${sz}`}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={i < filled ? 'text-amber-400' : 'text-surface-container-highest'}>★</span>
-      ))}
-    </span>
-  );
+function fmt(s: string) {
+  return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// ─── Data Fetching ────────────────────────────────────────────────────────────
+const PRIORITY_DOT: Record<Priority, string> = {
+  critical: '#DC2626',
+  high: '#D97706',
+  medium: '#2563EB',
+  low: '#9C9894',
+};
+
+const STATUS_BADGE: Partial<Record<Status, { bg: string; text: string }>> = {
+  open:        { bg: '#FEF3C7', text: '#92400E' },
+  in_progress: { bg: '#EFF6FF', text: '#1D4ED8' },
+  resolved:    { bg: '#F0FDF4', text: '#15803D' },
+  escalated:   { bg: '#FFF1F2', text: '#BE123C' },
+  closed:      { bg: '#F5F3F0', text: '#6B6560' },
+};
+
+// ─── Data Fetch ──────────────────────────────────────────────────────────────
 
 async function fetchDashboard(societyId: string | null) {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const nowIso = now.toISOString();
 
-  const queries = await Promise.all([
-    // 1. Pending residents
-    supabase.from('users')
-      .select('id', { count: 'exact', head: true })
-      .eq('role', 'resident')
-      .eq('status', 'pending')
-      .eq('society_id', societyId ?? ''),
-
-    // 2. Open complaints
+  const [
+    { count: openComplaints },
+    { count: overdueCount },
+    { data: resolvedRaw },
+    { count: pendingResidents },
+    { data: recentRaw },
+    { data: breachRaw },
+    { data: techRaw },
+    { data: activityRaw },
+  ] = await Promise.all([
     supabase.from('complaints')
       .select('id', { count: 'exact', head: true })
       .eq('society_id', societyId ?? '')
       .in('status', ['open', 'triaged', 'assigned', 'accepted', 'in_progress']),
 
-    // 3. SLA breaches this month
     supabase.from('complaints')
       .select('id', { count: 'exact', head: true })
       .eq('society_id', societyId ?? '')
       .not('status', 'in', '("closed","verified")')
-      .lt('sla_deadline', nowIso)
-      .gte('created_at', startOfMonth),
+      .lt('sla_deadline', nowIso),
 
-    // 4. Avg technician rating
-    supabase.from('ratings').select('score'),
-
-    // 5. SLA breach list
     supabase.from('complaints')
-      .select(`
-        id, title, category, priority, status, sla_deadline,
-        assigned_tech:technicians!assigned_tech_id(
-          tech_user:users!user_id(name)
-        )
-      `)
+      .select('created_at, updated_at')
+      .eq('society_id', societyId ?? '')
+      .eq('status', 'closed')
+      .gte('updated_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()),
+
+    supabase.from('users')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending'),
+
+    supabase.from('complaints').select(`
+      id, title, category, priority, status, created_at,
+      submitted_user:users!submitted_by(name)
+    `).eq('society_id', societyId ?? '').order('created_at', { ascending: false }).limit(6),
+
+    supabase.from('complaints').select('id, title, sla_deadline')
       .eq('society_id', societyId ?? '')
       .not('status', 'in', '("closed","verified")')
       .lt('sla_deadline', nowIso)
-      .order('sla_deadline', { ascending: true })
-      .limit(20),
+      .order('sla_deadline', { ascending: true }).limit(10),
 
-    // 6. Technician leaderboard
-    supabase.from('technicians')
-      .select(`
-        id, performance_score, specializations,
-        tech_user:users!user_id(name),
-        completed:complaints!assigned_tech_id(status, sla_deadline, updated_at),
-        ratings_data:ratings!technician_id(score)
-      `)
-      .eq('society_id', societyId ?? '')
-      .order('performance_score', { ascending: false })
-      .limit(10),
+    supabase.from('technicians').select(`
+      id, performance_score, specializations,
+      tech_user:users!user_id(name),
+      completed:complaints!assigned_tech_id(status, sla_deadline, updated_at),
+      ratings_data:ratings!technician_id(score)
+    `).eq('society_id', societyId ?? '').order('performance_score', { ascending: false }).limit(5),
 
-    // 7. Activity feed
-    supabase.from('complaint_logs')
-      .select(`
-        id, action, note, created_at,
-        complaint:complaints!complaint_id(title),
-        actor:users!actor_id(name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(20),
-
-    // 8. Equipment critical count
-    supabase.from('equipment')
-      .select('id', { count: 'exact', head: true })
-      .eq('society_id', societyId ?? '')
-      .eq('status', 'critical'),
-
-    // 9. Maintenance overdue count
-    supabase.from('maintenance_schedules')
-      .select('id', { count: 'exact', head: true })
-      .eq('society_id', societyId ?? '')
-      .not('status', 'eq', 'completed')
-      .lt('next_due', nowIso),
-
-    // 10. Housekeeping tasks due today
-    supabase.from('housekeeping_tasks')
-      .select('id', { count: 'exact', head: true })
-      .eq('society_id', societyId ?? '')
-      .not('status', 'eq', 'completed')
-      .lt('next_due', new Date(now.setHours(23, 59, 59, 999)).toISOString()),
+    supabase.from('complaint_logs').select(`
+      id, action, note, created_at,
+      complaint:complaints!complaint_id(title),
+      actor:users!actor_id(name)
+    `).order('created_at', { ascending: false }).limit(20),
   ]);
 
-  const [
-    { count: pendingResidents },
-    { count: openComplaints },
-    { count: slaBreachesThisMonth },
-    { data: ratingsData },
-    { data: breachRaw },
-    { data: techRaw },
-    { data: activityRaw },
-    { count: equipmentCritical },
-    { count: maintenanceOverdue },
-    { count: housekeepingDueToday },
-  ] = queries;
-
-  // Avg rating
-  const scores = (ratingsData ?? []).map((r: { score: number }) => r.score);
-  const avgTechRating = scores.length > 0
-    ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
-    : 0;
+  // Avg resolution hours
+  const resolvedList = resolvedRaw ?? [];
+  let avgResolutionHours = 0;
+  if (resolvedList.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalMs = resolvedList.reduce((sum: number, r: any) =>
+      sum + (new Date(r.updated_at).getTime() - new Date(r.created_at).getTime()), 0);
+    avgResolutionHours = totalMs / resolvedList.length / 3600000;
+  }
 
   const metrics: DashMetrics = {
-    pendingResidents: pendingResidents ?? 0,
     openComplaints: openComplaints ?? 0,
-    slaBreachesThisMonth: slaBreachesThisMonth ?? 0,
-    avgTechRating,
-    equipmentCritical: equipmentCritical ?? 0,
-    maintenanceOverdue: maintenanceOverdue ?? 0,
-    housekeepingDueToday: housekeepingDueToday ?? 0,
+    overdueSlа: overdueCount ?? 0,
+    avgResolutionHours,
+    pendingResidents: pendingResidents ?? 0,
   };
 
-  // SLA breach list
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recentComplaints: RecentComplaint[] = (recentRaw ?? []).map((r: any) => ({
+    id: r.id, title: r.title, category: r.category,
+    priority: r.priority, status: r.status, created_at: r.created_at,
+  }));
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const breachList: BreachComplaint[] = (breachRaw ?? []).map((r: any) => ({
-    id: r.id,
-    title: r.title,
-    category: r.category,
-    priority: r.priority,
-    status: r.status,
-    sla_deadline: r.sla_deadline,
-    assigned_tech_name: r.assigned_tech?.tech_user?.name ?? null,
+    id: r.id, title: r.title,
     hoursOverdue: Math.floor((Date.now() - new Date(r.sla_deadline).getTime()) / 3600000),
   }));
 
-  // Leaderboard
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leaderboard: TechLeader[] = (techRaw ?? []).map((r: any) => {
     const completed = (r.completed ?? []).filter((c: { status: string }) =>
@@ -247,48 +190,89 @@ async function fetchDashboard(societyId: string | null) {
       avg_rating: avgRating,
       completed_jobs: completed.length,
       sla_compliance: completed.length > 0 ? Math.round((slaCompliant / completed.length) * 100) : 0,
+      specializations: r.specializations ?? [],
     };
   });
 
-  // Activity feed
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const activity: ActivityEntry[] = (activityRaw ?? []).map((r: any) => ({
-    id: r.id,
-    action: r.action,
-    note: r.note,
+    id: r.id, action: r.action, note: r.note,
     complaint_title: r.complaint?.title ?? '—',
     actor_name: r.actor?.name ?? 'System',
     created_at: r.created_at,
   }));
 
-  return { metrics, breachList, leaderboard, activity };
+  return { metrics, recentComplaints, breachList, leaderboard, activity };
 }
 
 // ─── Metric Card ─────────────────────────────────────────────────────────────
 
 function MetricCard({
-  label, value, icon, accent, sub, loading,
+  label, value, icon: Icon, sub, loading, accentValue,
 }: {
   label: string;
   value: string | number;
-  icon: string;
-  accent: string;
-  sub?: string;
-  loading?: boolean;
+  icon: React.ComponentType<{ width?: number; height?: number; strokeWidth?: number; style?: React.CSSProperties }>;
+  sub: string;
+  loading: boolean;
+  accentValue?: boolean;
 }) {
   return (
-    <div className="glass-card p-6 rounded-2xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-300">
-      <div className={`absolute -right-3 -top-3 opacity-[0.06] ${accent}`}>
-        <span className="material-symbols-outlined text-[100px]">{icon}</span>
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E0DDD9',
+      borderRadius: 16,
+      padding: 24,
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <span style={{
+          fontFamily: 'Inter',
+          fontWeight: 500,
+          fontSize: 12,
+          color: '#9C9894',
+          textTransform: 'uppercase',
+          letterSpacing: '0.8px',
+        }}>{label}</span>
+        <div style={{
+          width: 32, height: 32,
+          background: '#F5F3F0',
+          borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon width={16} height={16} style={{ color: '#6B6560' }} />
+        </div>
       </div>
-      <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-3">{label}</p>
       {loading ? (
-        <div className="h-9 w-16 bg-surface-variant/20 rounded-lg animate-pulse mt-1" />
+        <div className="skeleton" style={{ height: 44, width: '60%', marginBottom: 8 }} />
       ) : (
-        <h3 className={`font-headline-md text-headline-md ${accent}`}>{value}</h3>
+        <div style={{
+          fontFamily: 'Space Grotesk',
+          fontWeight: 700,
+          fontSize: 36,
+          color: accentValue ? '#D97706' : '#1C1917',
+          lineHeight: 1,
+          marginBottom: 8,
+        }}>
+          {value}
+        </div>
       )}
-      {sub && <p className="font-label-sm text-label-sm text-on-surface-variant/60 mt-1">{sub}</p>}
+      <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, color: '#9C9894', margin: 0 }}>{sub}</p>
     </div>
+  );
+}
+
+// ─── Stars ────────────────────────────────────────────────────────────────────
+
+function Stars({ score }: { score: number }) {
+  const filled = Math.round((score / 100) * 5);
+  return (
+    <span style={{ display: 'flex', gap: 2 }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ fontSize: 12, color: i < filled ? '#D97706' : '#E0DDD9' }}>★</span>
+      ))}
+    </span>
   );
 }
 
@@ -296,15 +280,42 @@ function MetricCard({
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<DashMetrics>({
-    pendingResidents: 0, openComplaints: 0, slaBreachesThisMonth: 0, avgTechRating: 0,
-    equipmentCritical: 0, maintenanceOverdue: 0, housekeepingDueToday: 0
+    openComplaints: 0, overdueSlа: 0, avgResolutionHours: 0, pendingResidents: 0,
   });
+  const [recentComplaints, setRecentComplaints] = useState<RecentComplaint[]>([]);
   const [breachList, setBreachList] = useState<BreachComplaint[]>([]);
   const [leaderboard, setLeaderboard] = useState<TechLeader[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [adminName, setAdminName] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('users').select('name').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.name) setAdminName(data.name); });
+    });
+  }, []);
+
+  const load = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { data: profile } = await supabase.from('users').select('society_id').eq('id', user.id).single();
+      const sid = profile?.society_id ?? null;
+      const result = await fetchDashboard(sid);
+      setMetrics(result.metrics);
+      setRecentComplaints(result.recentComplaints);
+      setBreachList(result.breachList);
+      setLeaderboard(result.leaderboard);
+      setActivity(result.activity);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -312,39 +323,10 @@ export default function AdminDashboard() {
     setIsRefreshing(false);
   };
 
-  const load = useCallback(async () => {
-    setError('');
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('users')
-        .select('society_id')
-        .eq('id', user.id)
-        .single();
-
-      const sid = profile?.society_id ?? null;
-
-
-      const result = await fetchDashboard(sid);
-      setMetrics(result.metrics);
-      setBreachList(result.breachList);
-      setLeaderboard(result.leaderboard);
-      setActivity(result.activity);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to load dashboard.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => { load(); }, [load]);
 
-  // Realtime subscription — refresh on complaint or user changes
   useEffect(() => {
-    const channel = supabase
-      .channel('admin-dashboard-rt')
+    const channel = supabase.channel('admin-dashboard-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'complaints' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'complaint_logs' }, () => load())
@@ -352,288 +334,300 @@ export default function AdminDashboard() {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = adminName.split(' ')[0] || 'Admin';
+
+  const avgResText = metrics.avgResolutionHours > 0
+    ? metrics.avgResolutionHours >= 24
+      ? `${(metrics.avgResolutionHours / 24).toFixed(1)}d`
+      : `${Math.round(metrics.avgResolutionHours)}h`
+    : '—';
+
+  const cardStyle: React.CSSProperties = {
+    background: '#FFFFFF',
+    border: '1px solid #E0DDD9',
+    borderRadius: 16,
+    padding: 24,
+  };
+
   return (
-    <AdminLayout>
-      <div className="px-margin-desktop py-10 max-w-screen-2xl mx-auto space-y-8">
+    <AdminLayout onRefresh={handleRefresh} isRefreshing={isRefreshing}>
+      {/* ── Greeting ── */}
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{
+          fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 22,
+          color: '#1C1917', margin: '0 0 6px',
+        }}>
+          {greeting}, {firstName} 👋
+        </h2>
+        <p style={{
+          fontFamily: 'Inter', fontWeight: 400, fontSize: 14,
+          color: '#9C9894', margin: 0,
+        }}>
+          Here's what's happening in your society today.
+        </p>
+      </div>
 
-        {/* ── Header ── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-headline-md text-headline-md text-on-surface mb-1">Monitoring Dashboard</h2>
-            <p className="font-body-lg text-body-lg text-on-surface-variant">Real-time overview of your society's maintenance operations.</p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={loading || isRefreshing}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface bg-surface-container-low border border-outline-variant/30 rounded-xl hover:bg-surface-variant/20 transition disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
+      {/* ── Row 1: Metric Cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+        <MetricCard
+          label="Open Complaints"
+          value={metrics.openComplaints}
+          icon={ClipboardCheck}
+          sub="Active complaints"
+          loading={loading}
+          accentValue={metrics.openComplaints > 10}
+        />
+        <MetricCard
+          label="Overdue SLA"
+          value={metrics.overdueSlа}
+          icon={Timer}
+          sub="Past deadline"
+          loading={loading}
+          accentValue={metrics.overdueSlа > 0}
+        />
+        <MetricCard
+          label="Avg Resolution"
+          value={avgResText}
+          icon={Clock}
+          sub="Average this month"
+          loading={loading}
+        />
+        <MetricCard
+          label="Pending Approvals"
+          value={metrics.pendingResidents}
+          icon={Community}
+          sub="Awaiting your approval"
+          loading={loading}
+          accentValue={metrics.pendingResidents > 0}
+        />
+      </div>
 
-        {/* ── Error ── */}
-        {error && (
-          <div className="flex items-center gap-3 p-4 bg-error-container/20 border border-error-container/40 rounded-2xl text-sm text-error">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            {error}
-          </div>
-        )}
+      {/* ── Row 2: Recent Complaints + Activity Feed ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16, marginBottom: 16 }}>
 
-        {/* ── Row 1: Metric Cards ── */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <MetricCard
-            label="Pending Approvals"
-            value={metrics.pendingResidents}
-            icon="pending_actions"
-            accent="text-amber-400"
-            sub="Residents awaiting review"
-            loading={loading}
-          />
-          <MetricCard
-            label="Open Complaints"
-            value={metrics.openComplaints}
-            icon="handyman"
-            accent="text-primary"
-            sub="Active across all stages"
-            loading={loading}
-          />
-          <MetricCard
-            label="SLA Breaches (Month)"
-            value={metrics.slaBreachesThisMonth}
-            icon="warning"
-            accent="text-status-emergency"
-            sub="Overdue this month"
-            loading={loading}
-          />
-          <MetricCard
-            label="Avg Tech Rating"
-            value={metrics.avgTechRating > 0 ? `${metrics.avgTechRating.toFixed(1)} / 5` : '—'}
-            icon="star"
-            accent="text-tertiary"
-            sub="Across all ratings"
-            loading={loading}
-          />
-        </section>
-
-        {/* ── Row 2: SLA Breach List + Leaderboard ── */}
-        <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-          {/* SLA Breach List */}
-          <div className="glass-card rounded-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-5 border-b border-outline-variant/20 flex items-center justify-between">
-              <div>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface">SLA Breach List</h4>
-                <p className="text-[11px] text-on-surface-variant mt-0.5">Complaints past their deadline</p>
-              </div>
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-status-emergency/10 text-status-emergency border border-status-emergency/20">
-                {loading ? '…' : breachList.length} overdue
-              </span>
-            </div>
-            <div className="flex-1 overflow-y-auto max-h-[380px]">
-              {loading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                </div>
-              ) : breachList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant/40 gap-2">
-                  <span className="material-symbols-outlined text-[40px]">check_circle</span>
-                  <p className="text-sm font-medium">No SLA breaches — great work!</p>
-                </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-surface-container-lowest/80 backdrop-blur-sm">
-                    <tr className="border-b border-outline-variant/20">
-                      {['Title', 'Priority', 'Assigned To', 'Overdue', 'Status'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant/10">
-                    {breachList.map(c => (
-                      <tr key={c.id} className="hover:bg-surface-variant/10 transition-colors">
-                        <td className="px-4 py-3 max-w-[140px]">
-                          <p className="text-on-surface font-medium text-xs truncate" title={c.title}>{c.title}</p>
-                          <p className="text-on-surface-variant/50 text-[10px] capitalize">{c.category}</p>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${PRIORITY_BADGE[c.priority]}`}>
-                            {c.priority}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-on-surface-variant whitespace-nowrap">
-                          {c.assigned_tech_name ?? <span className="italic text-on-surface-variant/40">Unassigned</span>}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-status-emergency font-bold text-xs">{c.hoursOverdue}h</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_PILL[c.status] ?? 'bg-surface-variant/20 text-on-surface-variant'}`}>
-                            {fmt(c.status)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            <div className="px-6 py-3 border-t border-outline-variant/10">
-              <Link to="/admin/complaints" className="text-xs text-primary font-bold hover:underline">
-                View all complaints →
-              </Link>
-            </div>
-          </div>
-
-          {/* Technician Leaderboard */}
-          <div className="glass-card rounded-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-5 border-b border-outline-variant/20">
-              <h4 className="font-headline-sm text-headline-sm text-on-surface">Technician Leaderboard</h4>
-              <p className="text-[11px] text-on-surface-variant mt-0.5">Ranked by performance score</p>
-            </div>
-            <div className="flex-1 overflow-y-auto max-h-[380px]">
-              {loading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                </div>
-              ) : leaderboard.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant/40 gap-2">
-                  <span className="material-symbols-outlined text-[40px]">engineering</span>
-                  <p className="text-sm font-medium">No technicians yet.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-outline-variant/10">
-                  {leaderboard.map((t, i) => (
-                    <div key={t.id} className="flex items-center gap-4 px-5 py-4 hover:bg-surface-variant/10 transition-colors">
-                      {/* Rank */}
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                        ${i === 0 ? 'bg-amber-400/20 text-amber-400' :
-                          i === 1 ? 'bg-gray-400/20 text-gray-400' :
-                          i === 2 ? 'bg-orange-400/20 text-orange-400' :
-                          'bg-surface-container-high text-on-surface-variant'}`}>
-                        {i + 1}
-                      </div>
-                      {/* Avatar */}
-                      <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                        <span className="text-primary font-bold text-sm">{t.name.charAt(0).toUpperCase()}</span>
-                      </div>
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-on-surface truncate">{t.name}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Stars score={t.performance_score} size="xs" />
-                          {t.avg_rating > 0 && (
-                            <span className="text-[10px] text-on-surface-variant ml-1">
-                              {t.avg_rating.toFixed(1)} avg
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* Stats */}
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-bold text-on-surface">{t.completed_jobs} jobs</p>
-                        <p className={`text-[10px] font-medium mt-0.5 ${t.sla_compliance >= 80 ? 'text-status-available' : t.sla_compliance >= 60 ? 'text-amber-400' : 'text-status-emergency'}`}>
-                          {t.sla_compliance}% SLA
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="px-6 py-3 border-t border-outline-variant/10">
-              <Link to="/admin/technicians" className="text-xs text-primary font-bold hover:underline">
-                Manage technicians →
-              </Link>
-            </div>
-          </div>
-
-        </section>
-
-        {/* ── Row 3: Quick Status Cards ── */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <Link to="/admin/equipment" className="glass-card p-6 rounded-2xl flex items-center justify-between group hover:bg-surface-variant/10 transition-colors">
-            <div>
-              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Equipment Critical</p>
-              <h3 className={`text-2xl font-bold ${metrics.equipmentCritical > 0 ? 'text-status-emergency' : 'text-on-surface'}`}>{metrics.equipmentCritical}</h3>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-status-emergency/10 border border-status-emergency/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <AlertCircle className="w-6 h-6 text-status-emergency" />
-            </div>
-          </Link>
-          <Link to="/admin/maintenance" className="glass-card p-6 rounded-2xl flex items-center justify-between group hover:bg-surface-variant/10 transition-colors">
-            <div>
-              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Maintenance Overdue</p>
-              <h3 className={`text-2xl font-bold ${metrics.maintenanceOverdue > 0 ? 'text-status-emergency' : 'text-on-surface'}`}>{metrics.maintenanceOverdue}</h3>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-amber-500">build_circle</span>
-            </div>
-          </Link>
-          <Link to="/admin/housekeeping" className="glass-card p-6 rounded-2xl flex items-center justify-between group hover:bg-surface-variant/10 transition-colors">
-            <div>
-              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Housekeeping Tasks Due</p>
-              <h3 className={`text-2xl font-bold ${metrics.housekeepingDueToday > 0 ? 'text-primary' : 'text-on-surface'}`}>{metrics.housekeepingDueToday}</h3>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-primary">cleaning_services</span>
-            </div>
-          </Link>
-        </section>
-
-        {/* ── Row 3: Activity Feed ── */}
-        <section className="glass-card rounded-2xl overflow-hidden">
-          <div className="px-6 py-5 border-b border-outline-variant/20">
-            <h4 className="font-headline-sm text-headline-sm text-on-surface">Activity Feed</h4>
-            <p className="text-[11px] text-on-surface-variant mt-0.5">Latest 20 actions across all complaints</p>
+        {/* Recent Complaints */}
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <span style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917' }}>
+              Recent Complaints
+            </span>
+            <Link to="/admin/complaints" style={{
+              fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#D97706',
+              textDecoration: 'none',
+            }}>
+              View All
+            </Link>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-5 h-5 text-primary animate-spin" />
-            </div>
-          ) : activity.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant/40 gap-2">
-              <span className="material-symbols-outlined text-[40px]">inbox</span>
-              <p className="text-sm font-medium">No activity yet.</p>
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid #F5F3F0', alignItems: 'center' }}>
+                <div className="skeleton" style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0 }} />
+                <div className="skeleton" style={{ flex: 1, height: 14 }} />
+                <div className="skeleton" style={{ width: 60, height: 20, borderRadius: 6 }} />
+              </div>
+            ))
+          ) : recentComplaints.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 0', gap: 8 }}>
+              <WarningCircle width={40} height={40} style={{ color: '#E0DDD9' }} />
+              <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>No complaints yet</p>
             </div>
           ) : (
-            <div className="divide-y divide-outline-variant/10">
-              {activity.map((entry, idx) => (
-                <div key={entry.id} className="flex items-start gap-4 px-6 py-4 hover:bg-surface-variant/5 transition-colors">
-                  {/* Timeline dot */}
-                  <div className="flex flex-col items-center mt-1 flex-shrink-0">
-                    <div className={`w-2.5 h-2.5 rounded-full ${idx === 0 ? 'bg-primary' : 'bg-surface-container-highest'}`} />
-                    {idx < activity.length - 1 && (
-                      <div className="w-px flex-1 bg-outline-variant/20 mt-1" style={{ minHeight: '24px' }} />
-                    )}
+            recentComplaints.map((c, i) => {
+              const badge = STATUS_BADGE[c.status] ?? { bg: '#F5F3F0', text: '#6B6560' };
+              return (
+                <div key={c.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 0',
+                  borderBottom: i < recentComplaints.length - 1 ? '1px solid #F5F3F0' : 'none',
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: PRIORITY_DOT[c.priority], flexShrink: 0, display: 'block' }} />
+                  <span style={{
+                    fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13,
+                    color: '#1C1917', flex: 1,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {c.title}
+                  </span>
+                  <span style={{
+                    fontFamily: 'Inter', fontWeight: 500, fontSize: 11,
+                    background: '#F5F3F0', color: '#6B6560',
+                    borderRadius: 6, padding: '2px 8px', flexShrink: 0,
+                  }}>
+                    {c.category}
+                  </span>
+                  <span style={{
+                    fontFamily: 'Inter', fontWeight: 500, fontSize: 11,
+                    background: badge.bg, color: badge.text,
+                    borderRadius: 6, padding: '2px 8px', flexShrink: 0,
+                  }}>
+                    {fmt(c.status)}
+                  </span>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 11, color: '#9C9894', flexShrink: 0 }}>
+                    {timeAgo(c.created_at)}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Activity Feed */}
+        <div style={{ ...cardStyle, overflowY: 'auto', maxHeight: 480 }}>
+          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 16px' }}>
+            Activity Feed
+          </p>
+          {loading ? (
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                <div className="skeleton" style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 3 }} />
+                <div style={{ flex: 1 }}>
+                  <div className="skeleton" style={{ height: 14, marginBottom: 6 }} />
+                  <div className="skeleton" style={{ height: 12, width: '60%' }} />
+                </div>
+              </div>
+            ))
+          ) : activity.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', gap: 8 }}>
+              <WarningCircle width={32} height={32} style={{ color: '#E0DDD9' }} />
+              <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#9C9894', margin: 0 }}>No activity yet</p>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              {activity.map((entry) => (
+                <div key={entry.id} style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D97706', border: '2px solid #FFFFFF', flexShrink: 0 }} />
+                    <div style={{ flex: 1, width: 1, background: '#E0DDD9', minHeight: 24, marginTop: 2 }} />
                   </div>
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 pb-1">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-on-surface">{fmt(entry.action)}</span>
-                      <span className="text-xs text-on-surface-variant">on</span>
-                      <span className="text-xs font-medium text-primary truncate max-w-[200px]" title={entry.complaint_title}>
-                        {entry.complaint_title}
-                      </span>
-                    </div>
-                    {entry.note && (
-                      <p className="text-xs text-on-surface-variant/70 mt-0.5 italic">"{entry.note}"</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-medium text-on-surface-variant/60">{entry.actor_name}</span>
-                      <span className="text-on-surface-variant/30">·</span>
-                      <span className="text-[10px] text-on-surface-variant/50">{timeAgo(entry.created_at)}</span>
-                    </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: '0 0 2px' }}>
+                      {fmt(entry.action)} on <span style={{ color: '#D97706' }}>{entry.complaint_title}</span>
+                    </p>
+                    <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, color: '#9C9894', margin: 0 }}>
+                      by {entry.actor_name} · {timeAgo(entry.created_at)}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </section>
+        </div>
+      </div>
 
+      {/* ── Row 3: Leaderboard + SLA Breaches ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+        {/* Technician Leaderboard */}
+        <div style={cardStyle}>
+          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 16px' }}>
+            Technician Performance
+          </p>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #F5F3F0' }}>
+                <div className="skeleton" style={{ width: 20, height: 16, borderRadius: 4 }} />
+                <div className="skeleton" style={{ width: 32, height: 32, borderRadius: '50%' }} />
+                <div style={{ flex: 1 }}>
+                  <div className="skeleton" style={{ height: 14, marginBottom: 4 }} />
+                  <div className="skeleton" style={{ height: 12, width: '50%' }} />
+                </div>
+              </div>
+            ))
+          ) : leaderboard.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 0', gap: 8 }}>
+              <WarningCircle width={40} height={40} style={{ color: '#E0DDD9' }} />
+              <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>No technicians yet</p>
+            </div>
+          ) : (
+            leaderboard.map((t, i) => (
+              <div key={t.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 0',
+                borderBottom: i < leaderboard.length - 1 ? '1px solid #F5F3F0' : 'none',
+              }}>
+                <span style={{
+                  fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14,
+                  color: i === 0 ? '#D97706' : '#9C9894',
+                  width: 20, flexShrink: 0,
+                }}>
+                  {i + 1}
+                </span>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: '#1C1917',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 12, color: '#D7DADC',
+                  flexShrink: 0,
+                }}>
+                  {t.name.charAt(0).toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.name}
+                  </p>
+                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 11, color: '#9C9894', margin: 0 }}>
+                    {t.specializations[0] ?? 'General'}
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: '#1C1917', margin: '0 0 2px' }}>
+                    {t.performance_score}
+                  </p>
+                  <Stars score={t.performance_score} />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* SLA Breaches */}
+        <div style={cardStyle}>
+          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 16px' }}>
+            SLA Breaches
+          </p>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid #F5F3F0' }}>
+                <div className="skeleton" style={{ width: 8, height: 8, borderRadius: '50%' }} />
+                <div className="skeleton" style={{ flex: 1, height: 14 }} />
+                <div className="skeleton" style={{ width: 70, height: 20, borderRadius: 6 }} />
+              </div>
+            ))
+          ) : breachList.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0', gap: 8 }}>
+              <CheckCircle width={32} height={32} style={{ color: '#9C9894' }} />
+              <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#9C9894', margin: 0 }}>
+                No SLA breaches 🎉
+              </p>
+            </div>
+          ) : (
+            breachList.map((c, i) => (
+              <div key={c.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 0',
+                borderBottom: i < breachList.length - 1 ? '1px solid #F5F3F0' : 'none',
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#DC2626', flexShrink: 0, display: 'block' }} />
+                <span style={{
+                  fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917',
+                  flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {c.title}
+                </span>
+                <span style={{
+                  fontFamily: 'Inter', fontWeight: 500, fontSize: 11,
+                  background: '#FFF1F2', color: '#BE123C',
+                  borderRadius: 6, padding: '2px 8px', flexShrink: 0,
+                }}>
+                  {c.hoursOverdue >= 24 ? `${Math.floor(c.hoursOverdue / 24)}d overdue` : `${c.hoursOverdue}h overdue`}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </AdminLayout>
   );

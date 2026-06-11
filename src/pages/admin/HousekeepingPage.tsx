@@ -61,47 +61,45 @@ function AddStaffModal({ societyId, onClose, onAdded }: { societyId: string; onC
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl w-full max-w-md animate-slideInRight">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-outline-variant/20">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">Add Housekeeping Staff</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high transition">
-            <X className="w-4 h-4 text-on-surface-variant" />
-          </button>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, boxShadow: '0 24px 48px rgba(0,0,0,0.15)', width: '100%', maxWidth: 420 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E0DDD9' }}>
+          <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 17, color: '#1C1917', margin: 0 }}>Add Housekeeping Staff</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6560', padding: 4 }}><X className="w-4 h-4" /></button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Phone</label>
-            <input value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Phone</label>
+            <input value={phone} onChange={e => setPhone(e.target.value)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Assigned Area</label>
-            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Tower A Lobby" className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Assigned Area</label>
+            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Tower A Lobby" style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Shift</label>
-              <select value={shift} onChange={e => setShift(e.target.value as any)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30">
+              <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Shift</label>
+              <select value={shift} onChange={e => setShift(e.target.value as any)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box', background: '#FFFFFF' }}>
                 <option value="morning">Morning (6AM-2PM)</option>
                 <option value="evening">Evening (2PM-10PM)</option>
                 <option value="night">Night (10PM-6AM)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value as any)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30">
+              <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Status</label>
+              <select value={status} onChange={e => setStatus(e.target.value as any)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box', background: '#FFFFFF' }}>
                 <option value="on_duty">On Duty</option>
                 <option value="off_duty">Off Duty</option>
               </select>
             </div>
           </div>
         </div>
-        <div className="flex gap-3 px-6 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-primary hover:brightness-110 disabled:opacity-60 rounded-xl transition">
+        <div style={{ display: 'flex', gap: 12, padding: '0 24px 20px' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={saving} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#FFFFFF', background: saving ? '#2C2925' : '#1C1917', border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {saving ? 'Adding...' : 'Add Staff'}
           </button>
         </div>
@@ -144,47 +142,45 @@ function AddTaskModal({ societyId, staffList, onClose, onAdded }: { societyId: s
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl w-full max-w-md animate-slideInRight">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-outline-variant/20">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">Add Housekeeping Task</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high transition">
-            <X className="w-4 h-4 text-on-surface-variant" />
-          </button>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, boxShadow: '0 24px 48px rgba(0,0,0,0.15)', width: '100%', maxWidth: 420 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E0DDD9' }}>
+          <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 17, color: '#1C1917', margin: 0 }}>Add Housekeeping Task</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6560', padding: 4 }}><X className="w-4 h-4" /></button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Task Name</label>
-            <input value={taskName} onChange={e => setTaskName(e.target.value)} placeholder="e.g. Mop Lobby" className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Task Name</label>
+            <input value={taskName} onChange={e => setTaskName(e.target.value)} placeholder="e.g. Mop Lobby" style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Area</label>
-            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Tower A" className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Area</label>
+            <input value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Tower A" style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Assign To</label>
-            <select value={staffId} onChange={e => setStaffId(e.target.value)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30">
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Assign To</label>
+            <select value={staffId} onChange={e => setStaffId(e.target.value)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box', background: '#FFFFFF' }}>
               <option value="">-- Select Staff --</option>
               {staffList.map(s => <option key={s.id} value={s.id}>{s.name} ({s.shift})</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Frequency</label>
-              <select value={freq} onChange={e => setFreq(e.target.value as any)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30">
+              <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Frequency</label>
+              <select value={freq} onChange={e => setFreq(e.target.value as any)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box', background: '#FFFFFF' }}>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Next Due Date</label>
-              <input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+              <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Next Due Date</label>
+              <input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
             </div>
           </div>
         </div>
-        <div className="flex gap-3 px-6 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-primary hover:brightness-110 disabled:opacity-60 rounded-xl transition">
+        <div style={{ display: 'flex', gap: 12, padding: '0 24px 20px' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={saving} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#FFFFFF', background: saving ? '#2C2925' : '#1C1917', border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {saving ? 'Adding...' : 'Add Task'}
           </button>
         </div>
@@ -269,79 +265,89 @@ export default function HousekeepingPage() {
 
   return (
     <AdminLayout>
-      <div className="px-margin-desktop py-10 max-w-screen-xl mx-auto space-y-8">
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 0' }}>
         
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h2 className="font-headline-md text-headline-md text-on-surface mb-1">Housekeeping</h2>
-            <p className="font-body-lg text-body-lg text-on-surface-variant">Manage cleaning staff and schedules.</p>
+            <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 24, color: '#1C1917', margin: '0 0 4px' }}>Housekeeping</h2>
+            <p style={{ fontFamily: 'Inter', fontSize: 15, color: '#6B6560', margin: 0 }}>Manage cleaning staff and schedules.</p>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => activeTab === 'staff' ? setShowAddStaff(true) : setShowAddTask(true)}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-primary hover:brightness-110 transition shadow-lg shadow-primary/20"
-            >
-              <Plus className="w-4 h-4" />
-              Add {activeTab === 'staff' ? 'Staff' : 'Task'}
-            </button>
-          </div>
+          <button
+            onClick={() => activeTab === 'staff' ? setShowAddStaff(true) : setShowAddTask(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', background: '#D97706', color: '#FFFFFF', borderRadius: 10, border: 'none', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+          >
+            <Plus className="w-4 h-4" />
+            Add {activeTab === 'staff' ? 'Staff' : 'Task'}
+          </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-6 border-b border-outline-variant/30">
+        <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid #E0DDD9', marginBottom: 24 }}>
           <button
             onClick={() => setActiveTab('staff')}
-            className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'staff' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+            style={{
+              padding: '0 0 12px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === 'staff' ? '#D97706' : 'transparent'}`,
+              fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: activeTab === 'staff' ? '#D97706' : '#6B6560', cursor: 'pointer'
+            }}
           >
             Staff Directory
           </button>
           <button
             onClick={() => setActiveTab('tasks')}
-            className={`pb-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'tasks' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+            style={{
+              padding: '0 0 12px', background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === 'tasks' ? '#D97706' : 'transparent'}`,
+              fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: activeTab === 'tasks' ? '#D97706' : '#6B6560', cursor: 'pointer'
+            }}
           >
             Task Schedules
           </button>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-error-container/20 border border-error-container/40 rounded-2xl text-sm text-error">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 24, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
             <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
 
         {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#1C1917' }} />
+          </div>
         ) : activeTab === 'staff' ? (
-          <div className="glass-card rounded-2xl overflow-hidden">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
             {staff.length === 0 ? (
-              <p className="text-center py-16 text-sm text-on-surface-variant/50">No staff found.</p>
+              <p style={{ textAlign: 'center', padding: '64px 0', fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>No staff found.</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-surface-container-lowest/80 border-b border-outline-variant/20">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead style={{ background: '#F5F3F0', borderBottom: '1px solid #E0DDD9' }}>
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Phone</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Area</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Shift</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-on-surface-variant uppercase tracking-wider">Actions</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Name</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Area</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shift</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/10">
+                <tbody>
                   {staff.map(s => (
-                    <tr key={s.id} className="hover:bg-surface-variant/10 transition-colors">
-                      <td className="px-6 py-4 font-semibold text-on-surface">{s.name}</td>
-                      <td className="px-6 py-4 text-on-surface-variant">{s.phone || '-'}</td>
-                      <td className="px-6 py-4 text-on-surface-variant">{s.assigned_area}</td>
-                      <td className="px-6 py-4 capitalize text-on-surface">{s.shift}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${s.status === 'on_duty' ? 'bg-status-available/10 text-status-available' : 'bg-surface-variant/30 text-on-surface-variant'}`}>
+                    <tr key={s.id} style={{ borderBottom: '1px solid #F5F3F0' }}>
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#1C1917' }}>{s.name}</td>
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>{s.phone || '-'}</td>
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>{s.assigned_area}</td>
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontSize: 14, color: '#1C1917', textTransform: 'capitalize' }}>{s.shift}</td>
+                      <td style={{ padding: '16px 24px' }}>
+                        <span style={{
+                          padding: '4px 12px', borderRadius: 20, fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px',
+                          background: s.status === 'on_duty' ? '#F0FDF4' : '#F5F3F0',
+                          color: s.status === 'on_duty' ? '#15803D' : '#6B6560',
+                        }}>
                           {s.status === 'on_duty' ? 'On Duty' : 'Off Duty'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={() => deleteStaff(s.id)} className="p-1.5 rounded-lg text-error hover:bg-error/10 transition">
+                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                        <button onClick={() => deleteStaff(s.id)} style={{ padding: 8, background: 'transparent', border: 'none', color: '#DC2626', cursor: 'pointer', borderRadius: 8 }}>
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -352,34 +358,34 @@ export default function HousekeepingPage() {
             )}
           </div>
         ) : (
-          <div className="glass-card rounded-2xl overflow-hidden">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
             {tasks.length === 0 ? (
-              <p className="text-center py-16 text-sm text-on-surface-variant/50">No tasks found.</p>
+              <p style={{ textAlign: 'center', padding: '64px 0', fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>No tasks found.</p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-surface-container-lowest/80 border-b border-outline-variant/20">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead style={{ background: '#F5F3F0', borderBottom: '1px solid #E0DDD9' }}>
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Task</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Assigned To</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Frequency</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-on-surface-variant uppercase tracking-wider">Next Due</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-on-surface-variant uppercase tracking-wider">Actions</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Task</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Assigned To</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Frequency</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Next Due</th>
+                    <th style={{ padding: '16px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#6B6560', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/10">
+                <tbody>
                   {tasks.map(t => (
-                    <tr key={t.id} className="hover:bg-surface-variant/10 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-semibold text-on-surface">{t.task_name}</p>
-                        <p className="text-xs text-on-surface-variant">{t.area}</p>
+                    <tr key={t.id} style={{ borderBottom: '1px solid #F5F3F0' }}>
+                      <td style={{ padding: '16px 24px' }}>
+                        <p style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, color: '#1C1917', margin: '0 0 2px' }}>{t.task_name}</p>
+                        <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', margin: 0 }}>{t.area}</p>
                       </td>
-                      <td className="px-6 py-4 text-on-surface-variant">{t.staff?.name || 'Unassigned'}</td>
-                      <td className="px-6 py-4 capitalize text-on-surface">{t.frequency}</td>
-                      <td className="px-6 py-4 text-on-surface-variant">
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>{t.staff?.name || 'Unassigned'}</td>
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontSize: 14, color: '#1C1917', textTransform: 'capitalize' }}>{t.frequency}</td>
+                      <td style={{ padding: '16px 24px', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>
                         {t.next_due ? new Date(t.next_due).toLocaleDateString() : '-'}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button onClick={() => markTaskComplete(t)} className="flex items-center justify-end gap-1.5 ml-auto px-3 py-1.5 rounded-lg text-status-available hover:bg-status-available/10 transition font-medium text-xs">
+                      <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                        <button onClick={() => markTaskComplete(t)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: '#F0FDF4', color: '#15803D', border: '1px solid #DCFCE7', borderRadius: 8, fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
                           <Check className="w-3.5 h-3.5" /> Complete
                         </button>
                       </td>

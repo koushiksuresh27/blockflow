@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, AlertCircle, CheckCircle, XCircle, Users, Clock, Trash2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, Trash2, AlertTriangle } from 'lucide-react';
+import { WarningCircle } from 'iconoir-react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
 import { useToast } from '../../components/Toast';
@@ -20,10 +21,10 @@ interface Resident {
 
 type TabKey = 'pending' | 'active' | 'rejected';
 
-const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'pending',  label: 'Pending',  icon: 'pending' },
-  { key: 'active',   label: 'Approved', icon: 'check_circle' },
-  { key: 'rejected', label: 'Rejected', icon: 'cancel' },
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'pending',  label: 'Pending Approval' },
+  { key: 'active',   label: 'Active Residents' },
+  { key: 'rejected', label: 'Rejected' },
 ];
 
 function fmtDate(iso: string | undefined) {
@@ -299,23 +300,63 @@ export default function ResidentsPage() {
 
   return (
     <AdminLayout>
-      <div className="px-margin-desktop py-10 max-w-screen-xl mx-auto space-y-8">
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
 
-        {/* ── Header ── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-headline-md text-headline-md text-on-surface mb-1">Resident Management</h2>
-            <p className="font-body-lg text-body-lg text-on-surface-variant">
-              Review and approve resident applications for your society.
-            </p>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          {/* Tab bar */}
+          <div style={{ display: 'flex', gap: 4, background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 10, padding: 4, width: 'fit-content' }}>
+            {TABS.map(({ key, label }) => {
+              const count = tabCounts[key];
+              const isActive = tab === key;
+              return (
+                <button
+                  key={key}
+                  id={`tab-residents-${key}`}
+                  onClick={() => setTab(key)}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: 8,
+                    fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13,
+                    color: isActive ? '#FFFFFF' : '#6B6560',
+                    border: 'none',
+                    background: isActive ? '#1C1917' : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {label}
+                  {count > 0 && (
+                    <span style={{
+                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 11,
+                      background: isActive ? 'rgba(255,255,255,0.2)' : '#F5F3F0',
+                      color: isActive ? '#FFFFFF' : '#6B6560',
+                      borderRadius: 4, padding: '1px 6px',
+                    }}>{count}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
+          {/* Approve All */}
           {tab === 'pending' && pendingCount > 0 && (
             <button
               onClick={approveAll}
               disabled={approvingAll}
               id="approve-all-btn"
-              className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-status-available hover:brightness-110 disabled:opacity-60 transition shadow-lg shadow-status-available/20"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 20px',
+                background: approvingAll ? '#B45309' : '#D97706',
+                color: '#FFFFFF',
+                borderRadius: 10, border: 'none',
+                fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14,
+                cursor: approvingAll ? 'not-allowed' : 'pointer',
+                opacity: approvingAll ? 0.8 : 1,
+                transition: 'all 0.15s',
+              }}
             >
               {approvingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               {approvingAll ? 'Approving…' : `Approve All (${pendingCount})`}
@@ -323,191 +364,142 @@ export default function ResidentsPage() {
           )}
         </div>
 
-        {/* ── Error ── */}
+        {/* Error */}
         {error && (
-          <div className="flex items-center gap-3 p-4 bg-error-container/20 border border-error-container/40 rounded-2xl text-sm text-error">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            {error}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 16, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
+            <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
 
-        {/* ── Tabs ── */}
-        <div className="flex items-center gap-1 p-1 bg-surface-container-low rounded-xl w-fit">
-          {TABS.map(({ key, label, icon }) => {
-            const count = tabCounts[key];
-            return (
-              <button
-                key={key}
-                id={`tab-residents-${key}`}
-                onClick={() => setTab(key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  tab === key
-                    ? 'bg-surface-container-highest text-on-surface shadow-sm'
-                    : 'text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">{icon}</span>
-                {label}
-                {count > 0 && (
-                  <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    key === 'pending' ? 'bg-amber-500/20 text-amber-400' :
-                    key === 'active'  ? 'bg-status-available/20 text-status-available' :
-                    'bg-status-emergency/20 text-status-emergency'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ── Table ── */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-6 h-6 text-primary animate-spin" />
-            </div>
-          ) : displayed.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/40 gap-3">
-              <Users className="w-10 h-10 opacity-30" />
-              <p className="text-sm font-medium">
-                {tab === 'pending' ? 'No pending applications.' :
-                 tab === 'active'  ? 'No approved residents yet.' :
-                 'No rejected applications.'}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+        {/* Content */}
+        {loading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+                <div className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%', marginBottom: 12 }} />
+                <div className="skeleton" style={{ height: 16, width: '60%', marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 12, width: '80%' }} />
+              </div>
+            ))}
+          </div>
+        ) : displayed.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 0', gap: 8 }}>
+            <WarningCircle width={40} height={40} style={{ color: '#E0DDD9' }} />
+            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#9C9894', margin: 0 }}>
+              {tab === 'pending' ? 'No pending applications' : tab === 'active' ? 'No active residents' : 'No rejected applications'}
+            </p>
+          </div>
+        ) : tab === 'pending' ? (
+          /* Card grid for pending */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {displayed.map(r => (
+              <div key={r.id} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+                {/* Avatar */}
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F5F3F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 16, color: '#6B6560', marginBottom: 12 }}>
+                  {r.name.charAt(0).toUpperCase()}
+                </div>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 4px' }}>{r.name}</p>
+                {r.phone && <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#9C9894', margin: '0 0 2px' }}>{r.phone}</p>}
+                <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', margin: '0 0 16px' }}>Applied {timeAgo(r.created_at)}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    id={`approve-${r.id}`}
+                    onClick={() => updateStatus(r.id, 'active')}
+                    disabled={processingId === r.id}
+                    style={{
+                      flex: 1, padding: '8px 16px',
+                      background: processingId === r.id ? '#2C2925' : '#1C1917',
+                      color: '#FFFFFF', borderRadius: 8, border: 'none',
+                      fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    {processingId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                    Approve
+                  </button>
+                  <button
+                    id={`reject-${r.id}`}
+                    onClick={() => updateStatus(r.id, 'rejected')}
+                    disabled={processingId === r.id}
+                    style={{
+                      flex: 1, padding: '8px 16px',
+                      background: 'transparent', border: '1px solid #E0DDD9', color: '#6B6560',
+                      borderRadius: 8,
+                      fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#DC2626'; (e.currentTarget as HTMLButtonElement).style.color = '#DC2626'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
+                  >
+                    {processingId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Table for active/rejected */
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr className="border-b border-outline-variant/20 bg-surface-container-lowest/60">
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Name</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Phone</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Flat</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Tower</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                      {tab === 'pending' ? 'Applied On' : 'Updated On'}
-                    </th>
-                    {tab === 'pending' && (
-                      <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Actions</th>
-                    )}
-                    {tab === 'active' && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
-                    )}
-                    {tab === 'rejected' && (
-                      <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Status</th>
-                    )}
+                  <tr style={{ background: '#F5F3F0', borderBottom: '1px solid #E0DDD9' }}>
+                    {['Name', 'Phone', 'Flat', 'Tower', 'Date', 'Status', ...(tab === 'active' ? ['Actions'] : [])].map(h => (
+                      <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', whiteSpace: 'nowrap' }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant/10">
-                  {displayed.map(r => (
-                    <tr key={r.id} className="hover:bg-surface-variant/10 transition-colors">
-                    {/* Name + role badge */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-primary text-xs font-bold">{r.name.charAt(0).toUpperCase()}</span>
+                <tbody>
+                  {displayed.map((r, i) => (
+                    <tr key={r.id}
+                      style={{ borderBottom: i < displayed.length - 1 ? '1px solid #F5F3F0' : 'none', transition: 'background 0.1s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#FAFAF9'}
+                      onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}
+                    >
+                      <td style={{ padding: '14px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F5F3F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 13, color: '#6B6560', flexShrink: 0 }}>
+                            {r.name.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <p className="font-medium text-on-surface">{r.name}</p>
-                            {r.role !== 'resident' && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">
-                                {r.role}
-                              </span>
-                            )}
-                          </div>
+                          <span style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917' }}>{r.name}</span>
                         </div>
                       </td>
-                      {/* Phone / sign-in method */}
-                      <td className="px-6 py-4 text-on-surface-variant">
-                        {r.phone
-                          ? r.phone
-                          : <span className="inline-flex items-center gap-1 text-xs">
-                              <img src="/google-icon.svg" alt="Google" className="w-3.5 h-3.5" />
-                              <span className="text-on-surface-variant/60 italic">Google user</span>
-                            </span>
-                        }
+                      <td style={{ padding: '14px 20px', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>
+                        {r.phone || <span style={{ fontStyle: 'italic', color: '#9C9894' }}>—</span>}
                       </td>
-                      {/* Flat */}
-                      <td className="px-6 py-4 text-on-surface-variant">
-                        {r.flat_number
-                          ? <span className="font-medium text-on-surface">{r.flat_number}</span>
-                          : <span className="italic text-on-surface-variant/40">—</span>}
+                      <td style={{ padding: '14px 20px', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917' }}>
+                        {r.flat_number || <span style={{ fontStyle: 'italic', color: '#9C9894' }}>—</span>}
                       </td>
-                      {/* Tower */}
-                      <td className="px-6 py-4 text-on-surface-variant">
-                        {r.tower_name ?? <span className="italic text-on-surface-variant/40">—</span>}
+                      <td style={{ padding: '14px 20px', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>
+                        {r.tower_name || <span style={{ fontStyle: 'italic', color: '#9C9894' }}>—</span>}
                       </td>
-                      {/* Date — show relative time for pending, absolute for others */}
-                      <td className="px-6 py-4 text-on-surface-variant">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 opacity-50" />
-                          {tab === 'pending'
-                            ? <span title={fmtDate(r.created_at)}>{timeAgo(r.created_at)}</span>
-                            : fmtDate(r.created_at)
-                          }
-                        </div>
+                      <td style={{ padding: '14px 20px', fontFamily: 'Inter', fontSize: 14, color: '#9C9894' }}>
+                        {fmtDate(r.created_at)}
                       </td>
-                      {/* Actions (pending tab) */}
-                      {tab === 'pending' && (
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              id={`approve-${r.id}`}
-                              onClick={() => updateStatus(r.id, 'active')}
-                              disabled={processingId === r.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-status-available hover:brightness-110 disabled:opacity-50 transition"
-                            >
-                              {processingId === r.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-3.5 h-3.5" />
-                              )}
-                              Approve
-                            </button>
-                            <button
-                              id={`reject-${r.id}`}
-                              onClick={() => updateStatus(r.id, 'rejected')}
-                              disabled={processingId === r.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-status-emergency bg-status-emergency/10 border border-status-emergency/20 hover:bg-status-emergency/20 disabled:opacity-50 transition"
-                            >
-                              {processingId === r.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <XCircle className="w-3.5 h-3.5" />
-                              )}
-                              Reject
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                      {/* Actions / Status badge (non-pending tabs) */}
-                      {tab !== 'pending' && (
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-between">
-                            {r.status === 'active' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-status-available/10 text-status-available border border-status-available/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-status-available inline-block" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-status-emergency/10 text-status-emergency border border-status-emergency/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-status-emergency inline-block" />
-                                Rejected
-                              </span>
-                            )}
-                            
-                            {tab === 'active' && (
-                              <button
-                                onClick={() => setRemovingUser(r)}
-                                className="p-1.5 text-on-surface-variant hover:text-status-emergency hover:bg-status-emergency/10 rounded-lg transition"
-                                title="Remove Resident"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
+                      <td style={{ padding: '14px 20px' }}>
+                        <span style={{
+                          fontFamily: 'Inter', fontWeight: 500, fontSize: 12,
+                          background: r.status === 'active' ? '#F0FDF4' : '#FFF1F2',
+                          color: r.status === 'active' ? '#15803D' : '#BE123C',
+                          borderRadius: 6, padding: '3px 10px',
+                        }}>
+                          {r.status === 'active' ? 'Active' : 'Rejected'}
+                        </span>
+                      </td>
+                      {tab === 'active' && (
+                        <td style={{ padding: '14px 20px' }}>
+                          <button
+                            onClick={() => setRemovingUser(r)}
+                            style={{ background: 'transparent', border: 'none', color: '#9C9894', cursor: 'pointer', padding: 6, borderRadius: 6, transition: 'all 0.15s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#DC2626'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#9C9894'; }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                       )}
                     </tr>
@@ -515,38 +507,25 @@ export default function ResidentsPage() {
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal */}
       {removingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setRemovingUser(null)}>
-          <div className="bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl w-full max-w-sm animate-fadeIn" onClick={e => e.stopPropagation()}>
-            <div className="p-6 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-status-emergency/10 flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-6 h-6 text-status-emergency" />
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, boxShadow: '0 24px 48px rgba(0,0,0,0.15)', width: '100%', maxWidth: 360, padding: 24 }} onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: 48, height: 48, background: '#FFF1F2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <AlertTriangle className="w-6 h-6" style={{ color: '#DC2626' }} />
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-on-surface mb-2">Remove {removingUser.name}?</h3>
-                <p className="text-sm text-on-surface-variant leading-relaxed">
-                  Are you sure you want to remove <strong className="text-on-surface">{removingUser.name}</strong>? They will lose access to BlockFlow immediately.
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setRemovingUser(null)}
-                  className="flex-1 py-2.5 text-sm font-semibold text-on-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => removeResident(removingUser.id)}
-                  className="flex-1 py-2.5 text-sm font-bold text-white bg-status-emergency hover:brightness-110 rounded-xl transition shadow-lg shadow-status-emergency/20"
-                >
-                  Remove
-                </button>
+              <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 18, color: '#1C1917', margin: '0 0 8px' }}>Remove {removingUser.name}?</h3>
+              <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#6B6560', margin: '0 0 20px', lineHeight: 1.5 }}>
+                They will lose access to BlockFlow immediately.
+              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button onClick={() => setRemovingUser(null)} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={() => removeResident(removingUser.id)} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#FFFFFF', background: '#DC2626', border: 'none', borderRadius: 10, cursor: 'pointer' }}>Remove</button>
               </div>
             </div>
           </div>

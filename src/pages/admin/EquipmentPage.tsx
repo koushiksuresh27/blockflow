@@ -66,34 +66,32 @@ function AddEquipmentModal({ societyId, onClose, onAdded }: { societyId: string;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl w-full max-w-md animate-slideInRight">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-outline-variant/20">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">Add Equipment</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high transition">
-            <X className="w-4 h-4 text-on-surface-variant" />
-          </button>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, boxShadow: '0 24px 48px rgba(0,0,0,0.15)', width: '100%', maxWidth: 420 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E0DDD9' }}>
+          <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 17, color: '#1C1917', margin: 0 }}>Add Equipment</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6560', padding: 4 }}><X className="w-4 h-4" /></button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Equipment Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Lobby AC" className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Equipment Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Lobby AC" style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Location</label>
-            <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Tower A" className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30" />
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Location</label>
+            <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Tower A" style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-on-surface-variant mb-1.5">Initial Status</label>
-            <select value={status} onChange={e => setStatus(e.target.value as any)} className="w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 border-outline-variant/30">
+            <label style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>Initial Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value as any)} style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box', background: '#FFFFFF' }}>
               <option value="operational">Operational</option>
               <option value="needs_attention">Needs Attention</option>
               <option value="critical">Critical</option>
             </select>
           </div>
         </div>
-        <div className="flex gap-3 px-6 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition">Cancel</button>
-          <button onClick={handleSubmit} disabled={saving} className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-primary hover:brightness-110 disabled:opacity-60 rounded-xl transition">
+        <div style={{ display: 'flex', gap: 12, padding: '0 24px 20px' }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={saving} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#FFFFFF', background: saving ? '#2C2925' : '#1C1917', border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} {saving ? 'Adding...' : 'Add'}
           </button>
         </div>
@@ -161,111 +159,118 @@ export default function EquipmentPage() {
 
   return (
     <AdminLayout>
-      <div className="px-margin-desktop py-10 max-w-screen-xl mx-auto space-y-8">
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
         
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h2 className="font-headline-md text-headline-md text-on-surface mb-1">Equipment Monitoring</h2>
-            <p className="font-body-lg text-body-lg text-on-surface-variant">Monitor health and status of society infrastructure.</p>
+            <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 24, color: '#1C1917', margin: '0 0 4px' }}>Equipment Monitoring</h2>
+            <p style={{ fontFamily: 'Inter', fontSize: 15, color: '#6B6560', margin: 0 }}>Monitor health and status of society infrastructure.</p>
           </div>
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-primary hover:brightness-110 transition shadow-lg shadow-primary/20"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', background: '#D97706', color: '#FFFFFF', borderRadius: 10, border: 'none', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
           >
             <Plus className="w-4 h-4" /> Add Equipment
           </button>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-4 bg-error-container/20 border border-error-container/40 rounded-2xl text-sm text-error">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 16, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
             <AlertCircle className="w-4 h-4" />{error}
           </div>
         )}
 
         {/* Summary Bar */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="glass-card p-4 rounded-xl flex items-center justify-between">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Equipment</p>
-              <h3 className="text-2xl font-bold text-on-surface mt-1">{total}</h3>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 4px' }}>Total Equipment</p>
+              <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 28, color: '#1C1917', margin: 0 }}>{total}</h3>
             </div>
-            <Server className="w-8 h-8 text-on-surface-variant/30" />
+            <Server className="w-8 h-8" style={{ color: '#E0DDD9' }} />
           </div>
-          <div className="glass-card p-4 rounded-xl flex items-center justify-between">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p className="text-xs font-bold text-status-available uppercase tracking-wider">Operational</p>
-              <h3 className="text-2xl font-bold text-status-available mt-1">{operational}</h3>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 4px' }}>Operational</p>
+              <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 28, color: '#15803D', margin: 0 }}>{operational}</h3>
             </div>
-            <Activity className="w-8 h-8 text-status-available/30" />
+            <Activity className="w-8 h-8" style={{ color: '#DCFCE7' }} />
           </div>
-          <div className="glass-card p-4 rounded-xl flex items-center justify-between">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p className="text-xs font-bold text-amber-500 uppercase tracking-wider">Needs Attention</p>
-              <h3 className="text-2xl font-bold text-amber-500 mt-1">{attention}</h3>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 4px' }}>Needs Attention</p>
+              <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 28, color: '#D97706', margin: 0 }}>{attention}</h3>
             </div>
-            <AlertCircle className="w-8 h-8 text-amber-500/30" />
+            <AlertCircle className="w-8 h-8" style={{ color: '#FEF3C7' }} />
           </div>
-          <div className="glass-card p-4 rounded-xl flex items-center justify-between">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <p className="text-xs font-bold text-status-emergency uppercase tracking-wider">Critical</p>
-              <h3 className="text-2xl font-bold text-status-emergency mt-1">{critical}</h3>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 4px' }}>Critical</p>
+              <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 28, color: '#DC2626', margin: 0 }}>{critical}</h3>
             </div>
-            <Activity className="w-8 h-8 text-status-emergency/30" />
+            <Activity className="w-8 h-8" style={{ color: '#FEE2E2' }} />
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20 }}>
+                <div className="skeleton" style={{ width: 48, height: 48, borderRadius: 12, marginBottom: 16 }} />
+                <div className="skeleton" style={{ height: 20, width: '60%', marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 16, width: '40%', marginBottom: 20 }} />
+                <div className="skeleton" style={{ height: 32, borderRadius: 16, width: 100 }} />
+              </div>
+            ))}
+          </div>
         ) : total === 0 ? (
-          <div className="glass-card flex flex-col items-center justify-center py-20 rounded-2xl text-center space-y-4">
-            <Server className="w-12 h-12 text-on-surface-variant/40" />
+          <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: '64px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <Server className="w-12 h-12" style={{ color: '#E0DDD9' }} />
             <div>
-              <h3 className="font-semibold text-on-surface">No equipment tracked</h3>
-              <p className="text-sm text-on-surface-variant mt-1">Start by adding default society equipment.</p>
+              <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 18, color: '#1C1917', margin: '0 0 4px' }}>No equipment tracked</h3>
+              <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>Start by adding default society equipment.</p>
             </div>
-            <button onClick={initDefaults} className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 text-primary font-semibold rounded-xl hover:bg-primary/20 transition">
+            <button onClick={initDefaults} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: '#F5F3F0', color: '#1C1917', borderRadius: 8, border: 'none', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, cursor: 'pointer' }}>
               <Zap className="w-4 h-4" /> Pre-populate Defaults
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {equipment.map(e => {
               const Icon = ICONS[e.name] || Server;
               return (
-                <div key={e.id} className="glass-card rounded-2xl p-6 flex flex-col gap-4 hover:scale-[1.02] transition-transform duration-200">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-on-surface">{e.name}</h4>
-                        <p className="text-xs text-on-surface-variant">{e.location}</p>
-                      </div>
+                <div key={e.id} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, background: '#F5F3F0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon className="w-6 h-6" style={{ color: '#1C1917' }} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 2px' }}>{e.name}</h4>
+                      <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#9C9894', margin: 0 }}>{e.location}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize ${
-                      e.status === 'operational' ? 'bg-status-available/10 text-status-available border border-status-available/20' :
-                      e.status === 'needs_attention' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
-                      'bg-status-emergency/10 text-status-emergency border border-status-emergency/20'
-                    }`}>
+                  <div>
+                    <span style={{
+                      padding: '4px 12px', borderRadius: 20, fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px',
+                      background: e.status === 'operational' ? '#F0FDF4' : e.status === 'needs_attention' ? '#FFFBEB' : '#FFF1F2',
+                      color: e.status === 'operational' ? '#15803D' : e.status === 'needs_attention' ? '#D97706' : '#BE123C',
+                    }}>
                       {e.status.replace('_', ' ')}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-outline-variant/20 mt-auto">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, borderTop: '1px solid #F5F3F0', paddingTop: 16, marginTop: 'auto' }}>
                     <div>
-                      <p className="text-[10px] text-on-surface-variant uppercase tracking-wider mb-0.5">Last Inspected</p>
-                      <p className="text-xs font-medium text-on-surface">
+                      <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Last Inspected</p>
+                      <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: 0 }}>
                         {e.last_inspected ? new Date(e.last_inspected).toLocaleDateString() : 'Never'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-on-surface-variant uppercase tracking-wider mb-0.5">Next Due</p>
-                      <p className="text-xs font-medium text-on-surface">
+                      <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Next Due</p>
+                      <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: 0 }}>
                         {e.next_inspection ? new Date(e.next_inspection).toLocaleDateString() : 'Unscheduled'}
                       </p>
                     </div>
