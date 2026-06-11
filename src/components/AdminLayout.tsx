@@ -16,7 +16,11 @@ const NAV = [
   { to: '/admin/settings',     icon: 'settings',     label: 'Settings'     },
 ];
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function AdminLayout({ 
+  children
+}: { 
+  children: ReactNode;
+}) {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -86,22 +90,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         {/* ── TopAppBar ── */}
         <header className="h-20 fixed top-0 right-0 left-64 z-40 bg-background/80 backdrop-blur-md border-b border-outline-variant/20 flex justify-between items-center px-gutter">
           <div className="flex items-center gap-6 flex-grow max-w-2xl">
-            <div className="relative w-full group">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-              <input
-                className="w-full bg-surface-container-lowest/50 border border-outline-variant/30 rounded-full py-2.5 pl-12 pr-4 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all font-body-md text-on-surface"
-                placeholder="Search residents, complaints, technicians…"
-                type="text"
-              />
-            </div>
           </div>
           
           <div className="flex items-center gap-6">
             <NotificationDropdown />
-            
-            <div className="h-10 w-10 rounded-full border border-primary/20 overflow-hidden cursor-pointer hover:border-primary transition-all bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary">admin_panel_settings</span>
-            </div>
           </div>
         </header>
 

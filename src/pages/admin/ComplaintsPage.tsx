@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  ChevronDown, Search, X, Loader2, AlertCircle,
+  ChevronDown, X, Loader2, AlertCircle,
   Clock, MapPin, Paperclip, Flag, MessageSquare, AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -454,7 +454,6 @@ export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
-  const [search, setSearch]         = useState('');
   const [filterStatus, setFilterStatus]     = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -474,15 +473,14 @@ export default function ComplaintsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = complaints.filter(c => {
+  const filteredComplaints = complaints.filter(c => {
     if (filterStatus   && c.status   !== filterStatus)   return false;
     if (filterPriority && c.priority !== filterPriority) return false;
     if (filterCategory && c.category !== filterCategory) return false;
-    if (search && !c.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
-  const hasFilter = filterStatus || filterPriority || filterCategory || search;
+  const hasFilter = filterStatus || filterPriority || filterCategory;
 
   return (
     <AdminLayout>
@@ -492,28 +490,19 @@ export default function ComplaintsPage() {
         <div>
           <h2 className="font-headline-md text-headline-md text-on-surface mb-1">Complaints</h2>
           <p className="font-body-lg text-body-lg text-on-surface-variant">
-            {filtered.length} complaint{filtered.length !== 1 ? 's' : ''} {hasFilter ? '(filtered)' : ''}
+            {filteredComplaints.length} complaint{filteredComplaints.length !== 1 ? 's' : ''} {hasFilter ? '(filtered)' : ''}
             <span className="ml-2 text-sm text-on-surface-variant/50">— View only. Auto-assignment handles technician routing.</span>
           </p>
         </div>
 
         {/* ── Filter bar ── */}
         <div className="flex flex-wrap gap-2">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/50" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by title…"
-              className="w-full pl-9 pr-4 py-2 text-sm border border-outline-variant/30 rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
-          </div>
           <Select label="All statuses"   value={filterStatus}   options={ALL_STATUSES}   onChange={setFilterStatus} />
           <Select label="All priorities" value={filterPriority} options={ALL_PRIORITIES} onChange={setFilterPriority} />
           <Select label="All categories" value={filterCategory} options={CATEGORIES}     onChange={setFilterCategory} />
           {hasFilter && (
             <button
-              onClick={() => { setSearch(''); setFilterStatus(''); setFilterPriority(''); setFilterCategory(''); }}
+              onClick={() => { setFilterStatus(''); setFilterPriority(''); setFilterCategory(''); }}
               className="flex items-center gap-1 px-3 py-2 text-sm text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition"
             >
               <X className="w-3.5 h-3.5" />Clear
@@ -534,7 +523,7 @@ export default function ComplaintsPage() {
             <div className="flex justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filteredComplaints.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/40 gap-2">
               <span className="material-symbols-outlined text-[40px]">inbox</span>
               <p className="text-sm">No complaints match your filters.</p>
@@ -552,12 +541,8 @@ export default function ComplaintsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/10">
-                  {filtered.map(c => (
-                    <tr
-                      key={c.id}
-                      onClick={() => setSelected(c)}
-                      className="hover:bg-surface-variant/10 cursor-pointer transition-colors"
-                    >
+                  {filteredComplaints.map(c => (
+                    <tr key={c.id} className="hover:bg-surface-variant/10 transition-colors group cursor-pointer" onClick={() => setSelected(c)}>
                       <td className="px-4 py-3.5 font-mono text-xs text-on-surface-variant/40">{c.id.slice(0, 8)}…</td>
                       <td className="px-4 py-3.5 max-w-[160px]">
                         <p className="font-medium text-on-surface truncate" title={c.title}>{c.title}</p>

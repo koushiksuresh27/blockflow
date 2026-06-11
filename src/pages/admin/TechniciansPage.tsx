@@ -351,6 +351,9 @@ export default function TechniciansPage() {
     toast('success', 'Staff member removed');
   };
 
+  const filteredTechnicians = technicians;
+  const filteredSecurity = securityStaff;
+
   return (
     <AdminLayout>
       <div className="px-margin-desktop py-10 max-w-screen-xl mx-auto space-y-6">
@@ -403,10 +406,10 @@ export default function TechniciansPage() {
               <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {technicians.length === 0 && (
-                  <p className="col-span-3 text-center py-20 text-sm text-on-surface-variant/50">No technicians added yet.</p>
+                {filteredTechnicians.length === 0 && (
+                  <p className="col-span-3 text-center py-20 text-sm text-on-surface-variant/50">No technicians found.</p>
                 )}
-                {technicians.map(t => (
+                {filteredTechnicians.map(t => (
                   <div key={t.id} className="glass-card rounded-2xl p-5 flex flex-col gap-4 hover:scale-[1.01] transition-transform duration-200">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
@@ -498,10 +501,10 @@ export default function TechniciansPage() {
 
             {loadingSec ? (
               <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-            ) : securityStaff.length === 0 ? (
+            ) : filteredSecurity.length === 0 ? (
               <div className="text-center py-20 text-on-surface-variant/50 text-sm">
                 <ShieldCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                No security staff added yet.
+                No security staff found.
               </div>
             ) : (
               <div className="bg-surface border border-outline-variant/30 rounded-2xl overflow-hidden">
@@ -515,7 +518,7 @@ export default function TechniciansPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant/10">
-                    {securityStaff.map(staff => (
+                    {filteredSecurity.map(staff => (
                       <tr key={staff.id} className="hover:bg-surface-container/50 transition-colors">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">

@@ -304,6 +304,13 @@ export default function AdminDashboard() {
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await load();
+    setIsRefreshing(false);
+  };
 
   const load = useCallback(async () => {
     setError('');
@@ -356,11 +363,11 @@ export default function AdminDashboard() {
             <p className="font-body-lg text-body-lg text-on-surface-variant">Real-time overview of your society's maintenance operations.</p>
           </div>
           <button
-            onClick={load}
-            disabled={loading}
+            onClick={handleRefresh}
+            disabled={loading || isRefreshing}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface bg-surface-container-low border border-outline-variant/30 rounded-xl hover:bg-surface-variant/20 transition disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
