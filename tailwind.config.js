@@ -60,18 +60,23 @@ export default {
         "status-available": "#10B981",
         "status-maintenance": "#F59E0B"
       },
-      borderRadius: {
-        "DEFAULT": "0.25rem",
-        "lg": "0.5rem",
-        "xl": "0.75rem",
-        "full": "9999px"
-      },
       spacing: {
         "margin-mobile": "16px",
         "max-width": "1440px",
         "gutter": "24px",
         "margin-desktop": "64px",
         "base": "8px"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+        "full": "9999px",
+        "card": "16px",
+        "button": "10px",
+        "badge": "6px",
       },
       fontFamily: {
         "headline-sm": ["Libre Caslon Text", "serif"],
@@ -81,7 +86,9 @@ export default {
         "body-md": ["Inter", "sans-serif"],
         "headline-md": ["Libre Caslon Text", "serif"],
         "display-lg": ["Libre Caslon Text", "serif"],
-        "body-lg": ["Inter", "sans-serif"]
+        "body-lg": ["Inter", "sans-serif"],
+        "sans": ["Inter", "sans-serif"],
+        "display": ["Space Grotesk", "sans-serif"],
       },
       fontSize: {
         "headline-sm": ["24px", {"lineHeight": "1.3", "fontWeight": "400"}],

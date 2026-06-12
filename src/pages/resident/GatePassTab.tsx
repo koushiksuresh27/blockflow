@@ -23,11 +23,11 @@ const VALIDITY_OPTIONS = [
 
 function OtpDisplay({ otp }: { otp: string }) {
   return (
-    <div className="flex gap-2 justify-center">
+    <div className="flex gap-2 justify-center my-6">
       {otp.split('').map((digit, i) => (
         <div
           key={i}
-          className="w-11 h-14 bg-white border-2 border-blue-200 rounded-xl flex items-center justify-center text-2xl font-bold text-blue-700 shadow-sm"
+          className="w-12 h-16 bg-[#1C1917] border border-[#2C2925] rounded-[10px] flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
         >
           {digit}
         </div>
@@ -132,15 +132,15 @@ export default function GatePassTab() {
   };
 
   return (
-    <div className="px-5 py-6 pb-24 min-h-full bg-gray-50">
-      <div className="flex justify-between items-center mb-5">
+    <div className="px-5 py-6 pb-24 min-h-full bg-[#F5F3F0]">
+      <div className="flex justify-between items-center mb-6 mt-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Gate Passes</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Generate codes for your visitors</p>
+          <h2 className="text-2xl font-display font-bold text-[#1C1917]">Gate Passes</h2>
+          <p className="text-sm font-sans text-[#6B6560] mt-0.5">Generate codes for your visitors</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-md shadow-blue-100"
+          className="flex items-center gap-2 bg-[#1C1917] text-white px-4 py-2.5 rounded-button text-sm font-sans font-bold hover:bg-[#2C2925] transition shadow-md active:scale-95"
         >
           <Plus className="w-4 h-4" />
           New Pass
@@ -149,26 +149,27 @@ export default function GatePassTab() {
 
       {/* New pass result card */}
       {newPass && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-5 mb-5 shadow-sm">
-          <div className="text-center mb-4">
-            <p className="text-sm font-semibold text-blue-700 mb-3">Share this code with your visitor</p>
+        <div className="bg-white border-2 border-[#1C1917] rounded-card p-6 mb-6 shadow-xl relative overflow-hidden animate-[slideUp_0.3s_ease-out]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#D97706]/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+          <div className="text-center relative z-10">
+            <p className="text-sm font-sans font-semibold text-[#6B6560] uppercase tracking-wide">Share this code</p>
             <OtpDisplay otp={newPass.otp} />
           </div>
-          <div className="text-center text-sm text-gray-700 space-y-1 my-4">
-            <p className="font-semibold">Visitor: {newPass.visitor_name}</p>
-            <p className="text-gray-500">Valid until: {format(new Date(newPass.valid_until), 'dd MMM yyyy, h:mm a')}</p>
+          <div className="text-center text-sm font-sans text-[#1C1917] space-y-1 mb-6 relative z-10 bg-[#F5F3F0] p-4 rounded-xl border border-[#E0DDD9]">
+            <p className="font-bold text-base">{newPass.visitor_name}</p>
+            <p className="text-[#6B6560]">Valid until: {format(new Date(newPass.valid_until), 'dd MMM yyyy, h:mm a')}</p>
           </div>
-          <div className="flex gap-3 mt-4">
+          <div className="flex gap-3 relative z-10">
             <button
               onClick={() => handleCopyOtp(newPass.otp)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-blue-300 bg-white text-blue-700 font-semibold text-sm hover:bg-blue-50 transition"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-button border border-[#E0DDD9] bg-white text-[#1C1917] font-sans font-semibold text-sm hover:bg-[#F5F3F0] transition active:scale-95"
             >
               <Copy className="w-4 h-4" />
               Copy Code
             </button>
             <button
               onClick={() => handleShareWhatsApp(newPass)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-green-500 text-white font-semibold text-sm hover:bg-green-600 transition"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-button bg-green-600 text-white font-sans font-semibold text-sm hover:bg-green-700 transition active:scale-95"
             >
               <Share2 className="w-4 h-4" />
               WhatsApp
@@ -176,7 +177,7 @@ export default function GatePassTab() {
           </div>
           <button
             onClick={() => setNewPass(null)}
-            className="w-full mt-3 py-2 text-sm text-gray-400 hover:text-gray-600 transition"
+            className="w-full mt-4 py-2 text-sm font-sans text-[#9C9894] hover:text-[#6B6560] transition relative z-10"
           >
             Dismiss
           </button>
@@ -184,54 +185,55 @@ export default function GatePassTab() {
       )}
 
       {/* Active passes list */}
-      <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Active Passes</h3>
+      <h3 className="text-xs font-display font-bold text-[#9C9894] uppercase tracking-widest mb-3 pl-1">Active Passes</h3>
 
       {loading ? (
-        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
+        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-[#1C1917]" /></div>
       ) : passes.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
-          <p className="text-2xl mb-2">🎫</p>
-          <p className="text-sm text-gray-400">No active passes. Generate one for your visitor.</p>
+        <div className="bg-white rounded-card p-8 text-center border border-[#E0DDD9] shadow-sm">
+          <p className="text-3xl mb-3">🎫</p>
+          <p className="text-sm font-sans text-[#6B6560]">No active passes. Generate one for your visitor.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {passes.map(pass => (
-            <div key={pass.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-              <div className="flex justify-between items-start gap-3 mb-3">
+            <div key={pass.id} className="bg-white rounded-card p-4 shadow-sm border border-[#E0DDD9] relative group">
+              <div className="flex justify-between items-start gap-3 mb-4">
                 <div>
-                  <h4 className="font-bold text-gray-900">{pass.visitor_name}</h4>
-                  {pass.purpose && <p className="text-sm text-gray-500 mt-0.5">{pass.purpose}</p>}
-                  <p className="text-xs text-gray-400 mt-1">
-                    Valid until: {format(new Date(pass.valid_until), 'dd MMM, h:mm a')}
+                  <h4 className="font-display font-bold text-lg text-[#1C1917] leading-none">{pass.visitor_name}</h4>
+                  {pass.purpose && <p className="text-sm font-sans text-[#6B6560] mt-1">{pass.purpose}</p>}
+                  <p className="text-xs font-sans text-[#9C9894] mt-2">
+                    Valid: {format(new Date(pass.valid_until), 'dd MMM, h:mm a')}
                   </p>
                 </div>
                 <button
                   onClick={() => handleCancelPass(pass.id)}
-                  className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition"
+                  className="p-2 text-[#9C9894] hover:text-red-500 hover:bg-red-50 rounded-xl transition absolute top-3 right-3"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex items-center justify-between">
+              
+              <div className="flex items-center justify-between pt-3 border-t border-[#E0DDD9]">
                 <div className="flex gap-1.5">
                   {pass.otp.split('').map((d, i) => (
-                    <div key={i} className="w-8 h-9 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-800 text-sm">
+                    <div key={i} className="w-8 h-10 bg-[#F5F3F0] border border-[#E0DDD9] rounded-[6px] flex items-center justify-center font-display font-bold text-[#1C1917] text-base">
                       {d}
                     </div>
                   ))}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <button
                     onClick={() => handleCopyOtp(pass.otp)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition"
+                    className="p-2.5 text-[#6B6560] hover:text-[#1C1917] hover:bg-[#F5F3F0] rounded-xl transition"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleShareWhatsApp(pass)}
-                    className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-xl transition"
+                    className="p-2.5 text-[#6B6560] hover:text-green-600 hover:bg-green-50 rounded-xl transition"
                   >
-                    <Share2 className="w-4 h-4" />
+                    <Share2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -242,54 +244,56 @@ export default function GatePassTab() {
 
       {/* Create pass modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 animate-[slideUp_0.3s_ease-out]">
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-bold">Generate Gate Pass</h3>
-              <button onClick={() => setShowCreate(false)} className="p-2 hover:bg-gray-100 rounded-full">
-                <X className="w-5 h-5 text-gray-500" />
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1C1917]/50 backdrop-blur-sm">
+          <div className="w-full max-w-[480px] bg-white rounded-t-[24px] p-6 animate-[slideUp_0.3s_ease-out]">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-display font-bold text-[#1C1917]">Generate Gate Pass</h3>
+              <button onClick={() => setShowCreate(false)} className="p-2 hover:bg-[#F5F3F0] rounded-full transition">
+                <X className="w-5 h-5 text-[#6B6560]" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name *</label>
+                <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">Visitor Name <span className="text-[#D97706]">*</span></label>
                 <input
                   type="text"
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
                   placeholder="John Smith"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-[#E0DDD9] bg-[#F5F3F0] rounded-button px-4 py-3.5 text-[#1C1917] font-sans placeholder:text-[#9C9894] focus:outline-none focus:ring-2 focus:ring-[#1C1917] focus:bg-white transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+                <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">Phone (optional)</label>
                 <input
                   type="tel"
                   value={formPhone}
                   onChange={e => setFormPhone(e.target.value)}
                   placeholder="+91 9876543210"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-[#E0DDD9] bg-[#F5F3F0] rounded-button px-4 py-3.5 text-[#1C1917] font-sans placeholder:text-[#9C9894] focus:outline-none focus:ring-2 focus:ring-[#1C1917] focus:bg-white transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Purpose (optional)</label>
+                <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">Purpose (optional)</label>
                 <input
                   type="text"
                   value={formPurpose}
                   onChange={e => setFormPurpose(e.target.value)}
                   placeholder="Delivery, Guest, Service…"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-[#E0DDD9] bg-[#F5F3F0] rounded-button px-4 py-3.5 text-[#1C1917] font-sans placeholder:text-[#9C9894] focus:outline-none focus:ring-2 focus:ring-[#1C1917] focus:bg-white transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Valid For</label>
-                <div className="flex gap-2">
+                <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-2">Valid For</label>
+                <div className="flex gap-2 bg-[#F5F3F0] p-1 rounded-button">
                   {VALIDITY_OPTIONS.map((opt, i) => (
                     <button
                       key={i}
                       onClick={() => setFormValidity(i)}
-                      className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition ${
-                        formValidity === i ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      className={`flex-1 py-2.5 rounded-[8px] text-sm font-sans font-semibold transition ${
+                        formValidity === i 
+                        ? 'bg-white text-[#1C1917] shadow-sm' 
+                        : 'text-[#6B6560] hover:text-[#1C1917]'
                       }`}
                     >
                       {opt.label}
@@ -300,7 +304,7 @@ export default function GatePassTab() {
               <button
                 onClick={handleCreate}
                 disabled={creating || !formName.trim()}
-                className="w-full h-14 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
+                className="w-full h-14 bg-[#1C1917] text-white font-sans font-bold rounded-button hover:bg-[#2C2925] disabled:opacity-50 flex items-center justify-center gap-2 mt-4 active:scale-95 transition-transform"
               >
                 {creating && <Loader2 className="w-5 h-5 animate-spin" />}
                 Generate Pass

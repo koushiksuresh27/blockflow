@@ -280,7 +280,7 @@ export default function VerifyTab() {
           onClick={() => setShowEmergency(true)}
           className="w-full h-12 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 active:scale-[0.98] transition-all text-sm shadow-lg shadow-red-200 flex items-center justify-center gap-2"
         >
-          🚨 EMERGENCY ALERT
+          EMERGENCY ALERT
         </button>
       </div>
 

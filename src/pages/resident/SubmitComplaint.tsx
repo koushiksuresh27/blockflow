@@ -30,10 +30,10 @@ const CATEGORIES = [
 type Priority = 'low' | 'medium' | 'high' | 'critical';
 
 const PRIORITIES: { value: Priority; label: string; color: string; ring: string }[] = [
-  { value: 'low', label: 'Low', color: 'bg-gray-400', ring: 'ring-gray-400' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-400', ring: 'ring-yellow-400' },
-  { value: 'high', label: 'High', color: 'bg-orange-500', ring: 'ring-orange-500' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-600', ring: 'ring-red-500' },
+  { value: 'low', label: 'Low', color: 'bg-[#9C9894]', ring: 'ring-[#9C9894]' },
+  { value: 'medium', label: 'Med', color: 'bg-[#D97706]', ring: 'ring-[#D97706]' },
+  { value: 'high', label: 'High', color: 'bg-orange-600', ring: 'ring-orange-600' },
+  { value: 'critical', label: 'Critical', color: 'bg-red-600', ring: 'ring-red-600' },
 ];
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'video/mp4'];
@@ -289,21 +289,23 @@ export default function SubmitComplaint() {
 
   if (successComplaintId) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-sm p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <CheckCircle2 className="w-14 h-14 text-green-500" />
+      <div className="min-h-screen bg-[#F5F3F0] flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border border-[#E0DDD9] rounded-card shadow-xl p-8 text-center animate-[slideUp_0.3s_ease-out]">
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
+            </div>
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Complaint Submitted!</h1>
-          <p className="text-sm text-gray-500 mb-6">
+          <h1 className="text-2xl font-display font-bold text-[#1C1917] mb-2">Complaint Submitted!</h1>
+          <p className="text-sm font-sans text-[#6B6560] mb-8">
             Your complaint has been received and is now being processed.
           </p>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 mb-6 text-left">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">
+          <div className="bg-[#F5F3F0] border border-[#E0DDD9] rounded-xl px-5 py-4 mb-8 text-left">
+            <p className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#9C9894] mb-1">
               Complaint ID
             </p>
-            <p className="text-sm font-mono font-medium text-gray-800 break-all">
+            <p className="text-sm font-mono font-medium text-[#1C1917] break-all">
               {successComplaintId}
             </p>
           </div>
@@ -311,7 +313,7 @@ export default function SubmitComplaint() {
           <div className="flex flex-col gap-3">
             <Link
               to={`/resident/complaints/${successComplaintId}`}
-              className="w-full inline-flex items-center justify-center py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="w-full h-14 inline-flex items-center justify-center bg-[#1C1917] hover:bg-[#2C2925] text-white text-sm font-sans font-bold rounded-button transition active:scale-95"
             >
               Track Complaint
             </Link>
@@ -326,7 +328,7 @@ export default function SubmitComplaint() {
                 setFiles([]);
                 setErrors({});
               }}
-              className="w-full inline-flex items-center justify-center py-2.5 px-4 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+              className="w-full h-14 inline-flex items-center justify-center border border-[#E0DDD9] bg-[#F5F3F0] hover:bg-[#E0DDD9] text-[#1C1917] text-sm font-sans font-bold rounded-button transition active:scale-95"
             >
               Submit Another
             </button>
@@ -339,40 +341,21 @@ export default function SubmitComplaint() {
   // ── Form ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-full bg-gray-50 pb-20 pt-4 px-4">
-      <div className="w-full max-w-xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 mb-3">
-            <svg
-              className="w-5 h-5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Submit a Complaint</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Describe your issue and we'll get it resolved as quickly as possible.
-          </p>
-        </div>
+    <div className="min-h-full bg-[#F5F3F0] pb-24 relative">
+      <header className="bg-white px-4 py-4 border-b border-[#E0DDD9] sticky top-0 z-10">
+        <h1 className="text-xl font-display font-bold text-[#1C1917]">Submit Complaint</h1>
+        <p className="text-sm font-sans text-[#6B6560] mt-0.5">We'll get it resolved quickly</p>
+      </header>
 
+      <div className="px-4 mt-6">
         {/* Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 sm:p-8">
+        <div className="bg-white border border-[#E0DDD9] rounded-card shadow-sm p-5 sm:p-8">
           <form onSubmit={handleSubmit} noValidate className="space-y-6">
 
             {/* ── Title ── */}
             <div>
-              <label htmlFor="complaint-title" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Title <span className="text-red-500">*</span>
+              <label htmlFor="complaint-title" className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
+                Title <span className="text-[#D97706]">*</span>
               </label>
               <input
                 id="complaint-title"
@@ -381,7 +364,7 @@ export default function SubmitComplaint() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Water leak in kitchen sink"
-                className={`w-full px-3.5 py-2.5 text-sm border rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${errors.title ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                className={`w-full px-4 py-3.5 text-sm font-sans border rounded-button bg-[#F5F3F0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1C1917] transition ${errors.title ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-[#E0DDD9]'
                   }`}
               />
               <div className="flex justify-between mt-1">
@@ -390,7 +373,7 @@ export default function SubmitComplaint() {
                 ) : (
                   <span />
                 )}
-                <span className={`text-xs ml-auto ${title.length > 90 ? 'text-orange-500' : 'text-gray-400'}`}>
+                <span className={`text-[10px] font-sans font-semibold mt-1 ${title.length > 90 ? 'text-[#D97706]' : 'text-[#9C9894]'}`}>
                   {title.length}/100
                 </span>
               </div>
@@ -398,39 +381,39 @@ export default function SubmitComplaint() {
 
             {/* ── Category ── */}
             <div>
-              <label htmlFor="complaint-category" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Category <span className="text-red-500">*</span>
+              <label htmlFor="complaint-category" className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
+                Category <span className="text-[#D97706]">*</span>
               </label>
               <div className="relative">
                 <select
                   id="complaint-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full appearance-none px-3.5 py-2.5 text-sm border rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-10 ${errors.category ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                    } ${!category ? 'text-gray-400' : 'text-gray-900'}`}
+                  className={`w-full appearance-none px-4 py-3.5 text-sm font-sans border rounded-button bg-[#F5F3F0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1C1917] transition pr-10 ${errors.category ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-[#E0DDD9]'
+                    } ${!category ? 'text-[#9C9894]' : 'text-[#1C1917]'}`}
                 >
                   <option value="" disabled>Select a category…</option>
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9C9894]" />
               </div>
               {errors.category && <FieldError message={errors.category} />}
             </div>
 
             {/* ── Priority ── */}
             <div>
-              <p className="block text-sm font-medium text-gray-700 mb-2">Priority</p>
+              <p className="block text-sm font-sans font-semibold text-[#1C1917] mb-2">Priority</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" role="radiogroup" aria-label="Complaint priority">
                 {PRIORITIES.map((p) => {
                   const isSelected = priority === p.value;
                   return (
                     <label
                       key={p.value}
-                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition select-none ${isSelected
-                          ? `border-blue-500 bg-blue-50 ring-1 ring-blue-500`
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                      className={`flex items-center gap-2.5 px-3 py-3 rounded-[10px] border cursor-pointer transition select-none ${isSelected
+                          ? `border-[#1C1917] bg-white ring-1 ring-[#1C1917] shadow-sm`
+                          : 'border-[#E0DDD9] bg-[#F5F3F0] hover:bg-[#E0DDD9]'
                         }`}
                     >
                       <input
@@ -441,8 +424,8 @@ export default function SubmitComplaint() {
                         onChange={() => setPriority(p.value)}
                         className="sr-only"
                       />
-                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${p.color}`} aria-hidden="true" />
-                      <span className={`text-sm font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>
+                      <span className={`w-3 h-3 rounded-full flex-shrink-0 ${p.color}`} aria-hidden="true" />
+                      <span className={`text-sm font-sans font-bold ${isSelected ? 'text-[#1C1917]' : 'text-[#6B6560]'}`}>
                         {p.label}
                       </span>
                     </label>
@@ -453,8 +436,8 @@ export default function SubmitComplaint() {
 
             {/* ── Description ── */}
             <div>
-              <label htmlFor="complaint-description" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Description <span className="text-red-500">*</span>
+              <label htmlFor="complaint-description" className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
+                Description <span className="text-[#D97706]">*</span>
               </label>
               <textarea
                 id="complaint-description"
@@ -462,16 +445,16 @@ export default function SubmitComplaint() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the issue in detail — location, when it started, how severe it is…"
-                className={`w-full px-3.5 py-2.5 text-sm border rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none ${errors.description ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                className={`w-full px-4 py-3.5 text-sm font-sans border rounded-button bg-[#F5F3F0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1C1917] transition resize-none ${errors.description ? 'border-red-400 focus:ring-red-500 bg-red-50' : 'border-[#E0DDD9]'
                   }`}
               />
               <div className="flex justify-between mt-1">
                 {errors.description ? (
                   <FieldError message={errors.description} />
                 ) : (
-                  <span className="text-xs text-gray-400">Minimum 20 characters</span>
+                  <span className="text-[10px] font-sans font-semibold text-[#9C9894] mt-1">Minimum 20 characters</span>
                 )}
-                <span className={`text-xs ml-auto ${description.length < 20 && description.length > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                <span className={`text-[10px] font-sans font-semibold mt-1 ml-auto ${description.length < 20 && description.length > 0 ? 'text-red-500' : 'text-[#9C9894]'}`}>
                   {description.length} chars
                 </span>
               </div>
@@ -479,15 +462,15 @@ export default function SubmitComplaint() {
 
             {/* ── Preferred Slot ── */}
             <div>
-              <label htmlFor="preferred-slot" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Preferred Time Slot <span className="text-gray-400 font-normal">(optional)</span>
+              <label htmlFor="preferred-slot" className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
+                Preferred Time Slot <span className="text-[#9C9894] font-normal">(optional)</span>
               </label>
               <div className="relative">
                 <select
                   id="preferred-slot"
                   value={preferredSlot}
                   onChange={(e) => setPreferredSlot(e.target.value)}
-                  className={`w-full appearance-none px-3.5 py-2.5 text-sm border rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-10 border-gray-300 ${!preferredSlot ? 'text-gray-400' : 'text-gray-900'}`}
+                  className={`w-full appearance-none px-4 py-3.5 text-sm font-sans border rounded-button bg-[#F5F3F0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1C1917] transition pr-10 border-[#E0DDD9] ${!preferredSlot ? 'text-[#9C9894]' : 'text-[#1C1917]'}`}
                 >
                   <option value="" disabled>Select preferred time…</option>
                   <option value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</option>
@@ -495,15 +478,15 @@ export default function SubmitComplaint() {
                   <option value="Evening (4 PM - 7 PM)">Evening (4 PM - 7 PM)</option>
                   <option value="Anytime">Anytime</option>
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9C9894]" />
               </div>
             </div>
 
             {/* ── Photo / Video Upload ── */}
             <div>
-              <p className="block text-sm font-medium text-gray-700 mb-1.5">
+              <p className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
                 Attachments{' '}
-                <span className="font-normal text-gray-400">(optional, max {MAX_FILES} files)</span>
+                <span className="font-normal text-[#9C9894]">(optional, max {MAX_FILES})</span>
               </p>
 
               {/* Drop zone */}
@@ -516,16 +499,16 @@ export default function SubmitComplaint() {
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
-                className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-7 px-4 cursor-pointer transition ${isDragging
-                    ? 'border-blue-400 bg-blue-50'
-                    : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
+                className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-[14px] py-8 px-4 cursor-pointer transition ${isDragging
+                    ? 'border-[#1C1917] bg-[#E0DDD9]'
+                    : 'border-[#E0DDD9] bg-[#F5F3F0] hover:border-[#9C9894] hover:bg-[#E0DDD9]'
                   }`}
               >
-                <Upload className={`w-7 h-7 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
-                <p className="text-sm text-gray-600 font-medium">
+                <Upload className={`w-7 h-7 ${isDragging ? 'text-[#1C1917]' : 'text-[#9C9894]'}`} />
+                <p className="text-sm font-sans font-bold text-[#1C1917]">
                   {isDragging ? 'Drop files here' : 'Click or drag files here'}
                 </p>
-                <p className="text-xs text-gray-400">JPG, PNG, MP4 · Up to {MAX_FILES} files</p>
+                <p className="text-xs font-sans text-[#6B6560]">JPG, PNG, MP4</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -543,10 +526,10 @@ export default function SubmitComplaint() {
 
               {/* Preview thumbnails */}
               {files.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-3">
                   {files.map((attached) => (
                     <div key={attached.id} className="relative group">
-                      <div className="w-full aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+                      <div className="w-full aspect-square rounded-[10px] overflow-hidden border border-[#E0DDD9] bg-[#F5F3F0] flex items-center justify-center">
                         {attached.previewUrl ? (
                           <img
                             src={attached.previewUrl}
@@ -554,20 +537,20 @@ export default function SubmitComplaint() {
                             className="w-full h-full object-cover"
                           />
                         ) : attached.file.type === 'video/mp4' ? (
-                          <FileVideo className="w-6 h-6 text-gray-400" />
+                          <FileVideo className="w-6 h-6 text-[#9C9894]" />
                         ) : (
-                          <FileImage className="w-6 h-6 text-gray-400" />
+                          <FileImage className="w-6 h-6 text-[#9C9894]" />
                         )}
                       </div>
                       <button
                         type="button"
                         onClick={() => removeFile(attached.id)}
                         aria-label={`Remove ${attached.file.name}`}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm focus:opacity-100"
+                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm focus:opacity-100"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
-                      <p className="mt-1 text-[10px] text-gray-400 truncate text-center leading-tight">
+                      <p className="mt-1.5 text-[10px] font-sans text-[#6B6560] truncate text-center leading-tight">
                         {attached.file.name}
                       </p>
                     </div>
@@ -578,9 +561,9 @@ export default function SubmitComplaint() {
 
             {/* ── Submit error ── */}
             {errors.submit && (
-              <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-red-700">{errors.submit}</p>
+                <p className="text-sm font-sans font-medium text-red-700">{errors.submit}</p>
               </div>
             )}
 
@@ -589,11 +572,11 @@ export default function SubmitComplaint() {
               type="submit"
               id="submit-complaint-btn"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="w-full h-14 flex items-center justify-center gap-2 bg-[#1C1917] hover:bg-[#2C2925] disabled:bg-[#9C9894] text-white text-sm font-sans font-bold rounded-button transition active:scale-95 mt-4"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Submitting…
                 </>
               ) : (
@@ -602,10 +585,6 @@ export default function SubmitComplaint() {
             </button>
           </form>
         </div>
-
-        <p className="text-center mt-6 text-xs text-gray-400">
-          © {new Date().getFullYear()} BlockFlow. All rights reserved.
-        </p>
       </div>
     </div>
   );
@@ -615,7 +594,7 @@ export default function SubmitComplaint() {
 
 function FieldError({ message }: { message: string }) {
   return (
-    <p role="alert" className="mt-1 text-xs text-red-600 flex items-center gap-1">
+    <p role="alert" className="mt-1 text-[10px] font-sans font-semibold text-red-600 flex items-center gap-1">
       <AlertCircle className="w-3 h-3 flex-shrink-0" />
       {message}
     </p>

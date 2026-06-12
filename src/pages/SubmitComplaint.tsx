@@ -31,7 +31,7 @@ type Priority = 'low' | 'medium' | 'high' | 'critical';
 
 const PRIORITIES: { value: Priority; label: string; color: string; ring: string }[] = [
   { value: 'low', label: 'Low', color: 'bg-gray-400', ring: 'ring-gray-400' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-400', ring: 'ring-yellow-400' },
+  { value: 'medium', label: 'Med', color: 'bg-yellow-400', ring: 'ring-yellow-400' },
   { value: 'high', label: 'High', color: 'bg-orange-500', ring: 'ring-orange-500' },
   { value: 'critical', label: 'Critical', color: 'bg-red-600', ring: 'ring-red-500' },
 ];
@@ -247,13 +247,13 @@ export default function SubmitComplaint() {
                 if (techUser?.phone) {
                   await supabase.functions.invoke('send-whatsapp', {
                     body: {
-                      technicianPhone:      techUser.phone,
-                      technicianName:       techUser.name ?? 'Technician',
-                      complaintTitle:       updated.title as string,
+                      technicianPhone: techUser.phone,
+                      technicianName: techUser.name ?? 'Technician',
+                      complaintTitle: updated.title as string,
                       complaintDescription: updated.description as string,
-                      flatLocation:         'See app for details',
-                      priority:             updated.priority as string,
-                      slaDeadline:          new Date(updated.sla_deadline as string)
+                      flatLocation: 'See app for details',
+                      priority: updated.priority as string,
+                      slaDeadline: new Date(updated.sla_deadline as string)
                         .toLocaleString('en-IN', {
                           dateStyle: 'medium',
                           timeStyle: 'short',
@@ -426,8 +426,8 @@ export default function SubmitComplaint() {
                     <label
                       key={p.value}
                       className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition select-none ${isSelected
-                          ? `border-blue-500 bg-blue-50 ring-1 ring-blue-500`
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        ? `border-blue-500 bg-blue-50 ring-1 ring-blue-500`
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                         }`}
                     >
                       <input
@@ -492,8 +492,8 @@ export default function SubmitComplaint() {
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
                 className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-7 px-4 cursor-pointer transition ${isDragging
-                    ? 'border-blue-400 bg-blue-50'
-                    : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
+                  ? 'border-blue-400 bg-blue-50'
+                  : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
                   }`}
               >
                 <Upload className={`w-7 h-7 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
