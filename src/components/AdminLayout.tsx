@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import {
   GridMinus, StatsReport, ClipboardCheck, Community, Wrench,
   Map, Database, Calendar, Bell, Settings,
-  LogOut, Search, Refresh,
+  LogOut, Search, Refresh, Building
 } from 'iconoir-react';
 
 // ── Page title map ────────────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/housekeeping': 'Housekeeping',
   '/admin/equipment':    'Equipment',
   '/admin/maintenance':  'Maintenance',
+  '/admin/vendors':      'Vendors',
   '/admin/alerts':       'Alerts',
   '/admin/settings':     'Settings',
 };
@@ -45,6 +46,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/admin/equipment',   icon: Database,       label: 'Equipment'    },
       { to: '/admin/maintenance',  icon: Calendar,       label: 'Maintenance'  },
+      { to: '/admin/vendors',      icon: Building,       label: 'Vendors'      },
     ],
   },
   {

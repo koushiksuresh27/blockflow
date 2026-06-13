@@ -12,6 +12,7 @@ import ComplaintsPage from './pages/admin/ComplaintsPage';
 import TechniciansPage from './pages/admin/TechniciansPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import VendorsPage from './pages/admin/VendorsPage';
 import ResidentsPage from './pages/admin/ResidentsPage';
 import HousekeepingPage from './pages/admin/HousekeepingPage';
 import EquipmentPage from './pages/admin/EquipmentPage';
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/admin/housekeeping" element={<HousekeepingPage />} />
         <Route path="/admin/equipment" element={<EquipmentPage />} />
         <Route path="/admin/maintenance" element={<MaintenancePage />} />
+        <Route path="/admin/vendors" element={<VendorsPage />} />
         <Route path="/admin/analytics" element={<AnalyticsPage />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ClipboardCheck, Timer, Clock, Community, CheckCircle, WarningCircle } from 'iconoir-react';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
+import AIDailyBriefing from '../components/admin/AIDailyBriefing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -280,6 +281,8 @@ export default function AdminDashboard() {
           Here's what's happening in your society today.
         </p>
       </div>
+
+      <AIDailyBriefing />
 
       {/* ── Row 1: Metric Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
