@@ -134,90 +134,11 @@ function DetailPanel({
   const [atts, setAtts]         = useState<Attachment[]>([]);
   const [loading, setLoading]   = useState(true);
 
-  // Priority change
-  const [newPriority, setNewPriority] = useState<Priority>(c.priority);
-  const [savingPriority, setSavingPriority] = useState(false);
-
-  // Note
-  const [noteText, setNoteText]   = useState('');
-  const [savingNote, setSavingNote] = useState(false);
-
-  // Escalate
-  const [escalating, setEscalating] = useState(false);
-
   useEffect(() => {
     fetchDetail(c.id)
       .then(d => { setLogs(d.logs); setAtts(d.attachments); })
       .finally(() => setLoading(false));
   }, [c.id]);
-
-  const savePriority = async () => {
-    if (newPriority === c.priority) return;
-    setSavingPriority(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('complaints').update({ priority: newPriority }).eq('id', c.id);
-      await supabase.from('complaint_logs').insert({
-        complaint_id: c.id,
-        actor_id: user!.id,
-        action: 'priority_change',
-        note: `Priority changed from ${c.priority} to ${newPriority}.`,
-      });
-      toast('success', 'Priority updated', `Changed to ${newPriority}.`);
-      onRefresh();
-    } catch (e: unknown) {
-      toast('error', 'Failed', e instanceof Error ? e.message : 'Error');
-    } finally {
-      setSavingPriority(false);
-    }
-  };
-
-  const addNote = async () => {
-    if (!noteText.trim()) return;
-    setSavingNote(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('complaint_logs').insert({
-        complaint_id: c.id,
-        actor_id: user!.id,
-        action: 'admin_note',
-        note: noteText.trim(),
-      });
-      toast('success', 'Note added', 'Admin note recorded in the activity log.');
-      setNoteText('');
-      // Refresh logs
-      fetchDetail(c.id).then(d => { setLogs(d.logs); setAtts(d.attachments); });
-    } catch (e: unknown) {
-      toast('error', 'Failed', e instanceof Error ? e.message : 'Error');
-    } finally {
-      setSavingNote(false);
-    }
-  };
-
-  const escalate = async () => {
-    if (c.status === 'escalated') return;
-    setEscalating(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('complaints')
-        .update({ status: 'escalated' })
-        .eq('id', c.id);
-      await supabase.from('complaint_logs').insert({
-        complaint_id: c.id,
-        actor_id: user!.id,
-        action: 'escalated',
-        old_status: c.status,
-        new_status: 'escalated',
-        note: 'Escalated by admin.',
-      });
-      toast('success', 'Escalated', 'Complaint has been escalated.');
-      onRefresh();
-    } catch (e: unknown) {
-      toast('error', 'Failed', e instanceof Error ? e.message : 'Error');
-    } finally {
-      setEscalating(false);
-    }
-  };
 
   return (
     <div
@@ -303,91 +224,6 @@ function DetailPanel({
               </div>
             </div>
           )}
-
-          {/* ── Admin Actions (read-only + specific actions) ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid #E0DDD9', paddingTop: 16 }}>
-            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Admin Actions</p>
-
-            {/* Priority change */}
-            <div>
-              <p className="text-xs font-semibold text-on-surface-variant mb-2 flex items-center gap-1.5">
-                <Flag className="w-3.5 h-3.5" /> Change Priority
-              </p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <select
-                    value={newPriority}
-                    onChange={e => setNewPriority(e.target.value as Priority)}
-                    className="w-full appearance-none px-3 py-2 text-sm border border-outline-variant/30 rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 pr-8"
-                  >
-                    {ALL_PRIORITIES.map(p => (
-                      <option key={p} value={p}>{fmt(p)}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/50" />
-                </div>
-                <button
-                  id={`save-priority-${c.id}`}
-                  onClick={savePriority}
-                  disabled={savingPriority || newPriority === c.priority}
-                  className="px-4 py-2 text-sm font-bold text-white bg-primary hover:brightness-110 disabled:opacity-40 rounded-xl transition flex items-center gap-1.5"
-                >
-                  {savingPriority ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  Save
-                </button>
-              </div>
-            </div>
-
-            {/* Add note */}
-            <div>
-              <p className="text-xs font-semibold text-on-surface-variant mb-2 flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5" /> Add Note
-              </p>
-              <div className="space-y-2">
-                <textarea
-                  value={noteText}
-                  onChange={e => setNoteText(e.target.value)}
-                  placeholder="Add an admin note to the activity log…"
-                  rows={2}
-                  className="w-full px-3 py-2 text-sm border border-outline-variant/30 rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-                />
-                <button
-                  id={`add-note-${c.id}`}
-                  onClick={addNote}
-                  disabled={savingNote || !noteText.trim()}
-                  className="w-full py-2 text-sm font-bold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/20 disabled:opacity-40 rounded-xl transition flex items-center justify-center gap-1.5"
-                >
-                  {savingNote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
-                  {savingNote ? 'Adding…' : 'Add Note'}
-                </button>
-              </div>
-            </div>
-
-            {/* Escalate */}
-            {c.status !== 'escalated' && c.status !== 'closed' && c.status !== 'verified' && (
-              <div>
-                <p className="text-xs font-semibold text-on-surface-variant mb-2 flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" /> Escalate
-                </p>
-                <button
-                  id={`escalate-${c.id}`}
-                  onClick={escalate}
-                  disabled={escalating}
-                  className="w-full py-2.5 text-sm font-bold text-status-emergency bg-status-emergency/10 border border-status-emergency/20 hover:bg-status-emergency/20 disabled:opacity-40 rounded-xl transition flex items-center justify-center gap-2"
-                >
-                  {escalating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                  {escalating ? 'Escalating…' : 'Escalate Complaint'}
-                </button>
-              </div>
-            )}
-
-            {c.status === 'escalated' && (
-              <div className="flex items-center gap-2 p-3 bg-status-emergency/10 border border-status-emergency/20 rounded-xl">
-                <AlertTriangle className="w-4 h-4 text-status-emergency flex-shrink-0" />
-                <p className="text-xs text-status-emergency font-semibold">This complaint is already escalated.</p>
-              </div>
-            )}
-          </div>
 
           {/* Activity Timeline */}
           <div>

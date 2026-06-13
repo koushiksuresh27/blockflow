@@ -16,6 +16,27 @@ interface Complaint {
   sla_deadline: string;
 }
 
+interface TechLeader {
+  id: string;
+  name: string;
+  performance_score: number;
+  avg_rating: number;
+  completed_jobs: number;
+  sla_compliance: number;
+  specializations: string[];
+}
+
+function Stars({ score }: { score: number }) {
+  const filled = Math.round((score / 100) * 5);
+  return (
+    <span style={{ display: 'flex', gap: 2 }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ fontSize: 12, color: i < filled ? '#D97706' : '#E0DDD9' }}>★</span>
+      ))}
+    </span>
+  );
+}
+
 const STATUS_COLORS: Record<string, string> = {
   open: '#3B82F6',        
   triaged: '#8B5CF6',     
@@ -32,6 +53,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AnalyticsPage() {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [leaderboard, setLeaderboard] = useState<TechLeader[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -48,14 +70,42 @@ export default function AnalyticsPage() {
         .from('complaints')
         .select('id, category, status, created_at, updated_at, sla_deadline');
 
+      let techQuery = supabase.from('technicians').select(`
+        id, performance_score, specializations,
+        tech_user:users!user_id(name),
+        completed:complaints!assigned_tech_id(status, sla_deadline, updated_at),
+        ratings_data:ratings!technician_id(score)
+      `).order('performance_score', { ascending: false }).limit(5);
+
       if (profile?.society_id) {
         query = query.eq('society_id', profile.society_id);
+        techQuery = techQuery.eq('society_id', profile.society_id);
       }
 
-      const { data, error: e } = await query;
+      const [{ data, error: e }, { data: techRaw }] = await Promise.all([query, techQuery]);
 
       if (e) throw new Error(e.message);
       setComplaints(data || []);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const leaderboardData: TechLeader[] = (techRaw ?? []).map((r: any) => {
+        const completed = (r.completed ?? []).filter((c: { status: string }) =>
+          ['closed', 'verified', 'resolved'].includes(c.status));
+        const slaCompliant = completed.filter((c: { sla_deadline: string; updated_at: string }) =>
+          new Date(c.updated_at).getTime() <= new Date(c.sla_deadline).getTime()).length;
+        const rScores: number[] = (r.ratings_data ?? []).map((x: { score: number }) => x.score);
+        const avgRating = rScores.length > 0 ? rScores.reduce((a: number, b: number) => a + b, 0) / rScores.length : 0;
+        return {
+          id: r.id,
+          name: r.tech_user?.name ?? 'Unknown',
+          performance_score: r.performance_score ?? 0,
+          avg_rating: avgRating,
+          completed_jobs: completed.length,
+          sla_compliance: completed.length > 0 ? Math.round((slaCompliant / completed.length) * 100) : 0,
+          specializations: r.specializations ?? [],
+        };
+      });
+      setLeaderboard(leaderboardData);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error loading analytics');
     } finally {
@@ -251,6 +301,57 @@ export default function AnalyticsPage() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Technician Leaderboard Section */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 24, marginTop: 16 }}>
+              <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: '0 0 16px' }}>
+                Technician performance
+              </h2>
+              {leaderboard.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 0', gap: 8 }}>
+                  <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>No technicians yet</p>
+                </div>
+              ) : (
+                leaderboard.map((t, i) => (
+                  <div key={t.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '10px 0',
+                    borderBottom: i < leaderboard.length - 1 ? '1px solid #F5F3F0' : 'none',
+                  }}>
+                    <span style={{
+                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14,
+                      color: i === 0 ? '#D97706' : '#9C9894',
+                      width: 20, flexShrink: 0,
+                    }}>
+                      {i + 1}
+                    </span>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: '50%',
+                      background: '#1C1917',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 12, color: '#D7DADC',
+                      flexShrink: 0,
+                    }}>
+                      {t.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t.name}
+                      </p>
+                      <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 11, color: '#9C9894', margin: 0 }}>
+                        {t.specializations[0] ?? 'General'}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: '#1C1917', margin: '0 0 2px' }}>
+                        {t.performance_score}
+                      </p>
+                      <Stars score={t.performance_score} />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
