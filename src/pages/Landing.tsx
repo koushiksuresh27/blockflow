@@ -171,7 +171,7 @@ export default function Landing() {
         </div>
         <div className="nav-actions">
           <button className="btn btn-ghost" onClick={() => navigate('/login')}>Login</button>
-          <button className="btn btn-primary" onClick={() => navigate('/login')}>Get Started</button>
+          <button className="btn btn-primary" onClick={() => navigate('/onboarding')}>Get Started</button>
           <button className="mobile-menu-btn">☰</button>
         </div>
       </nav>
@@ -190,8 +190,8 @@ export default function Landing() {
             BlockFlow automates maintenance workflows, holds technicians accountable, and gives residents real-time visibility — all in one beautifully designed platform.
           </p>
           <div className="hero-cta-group">
-            <button className="btn btn-primary" onClick={() => navigate('/login')}>Get Started Free</button>
-            <button className="btn btn-ghost" onClick={() => scrollTo('#how-it-works')}>See How It Works</button>
+            <button className="btn btn-primary" style={{ background: '#1C1917', color: '#FFFFFF', border: 'none' }} onClick={() => navigate('/onboarding')}>Get Started Free</button>
+            <button className="btn btn-ghost" style={{ background: 'transparent', border: '1px solid #1C1917', color: '#1C1917' }} onClick={() => navigate('/login')}>Already a member?</button>
           </div>
           <div className="trust-line">
             No credit card &nbsp;·&nbsp; Free forever &nbsp;·&nbsp; Setup in 5 minutes
@@ -372,8 +372,11 @@ export default function Landing() {
                 <li><div className="plan-check check-free"><CheckIcon /></div> Basic analytics</li>
               </ul>
 
-              <button className="btn plan-btn btn-free" onClick={() => navigate('/login')}>Get Started Free</button>
+              <button className="btn plan-btn btn-free" onClick={() => navigate('/onboarding')}>Get Started Free</button>
               <div className="plan-note note-free">No credit card required</div>
+              <div style={{ textAlign: 'center', marginTop: 12 }}>
+                <a onClick={() => navigate('/login')} style={{ fontSize: 13, color: '#D97706', textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>Already a member? Login &rarr;</a>
+              </div>
             </div>
 
             <div className="pricing-card pricing-card-growth">
@@ -437,13 +440,11 @@ export default function Landing() {
           <p className="cta-subtitle">
             Join housing societies already using BlockFlow to manage maintenance — faster, smarter, with full accountability.
           </p>
-          <div className="hero-cta-group" style={{ marginBottom: 0 }}>
-            <button className="btn btn-primary" style={{ background: 'var(--iron)', color: 'var(--martinique)' }} onClick={() => navigate('/login')}>
+          <div className="hero-cta-group" style={{ marginBottom: 0, flexDirection: 'column', gap: 16 }}>
+            <button className="btn btn-primary" style={{ background: 'var(--iron)', color: 'var(--martinique)' }} onClick={() => navigate('/onboarding')}>
               Get Started Free
             </button>
-            <button className="btn btn-ghost" style={{ borderColor: 'rgba(215,218,220,0.4)', color: 'var(--iron)' }}>
-              See How It Works
-            </button>
+            <a onClick={() => navigate('/login')} style={{ fontSize: 14, color: '#D97706', textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'} onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}>Already a member? Login &rarr;</a>
           </div>
         </div>
       </section>

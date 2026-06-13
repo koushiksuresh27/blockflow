@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Landing from './pages/Landing';
+import Onboarding from './pages/Onboarding';
 import DashboardPage from './pages/DashboardPage';
 import AuthCallback from './pages/AuthCallback';
 import PendingPage from './pages/PendingPage';
@@ -31,6 +32,7 @@ import TechnicianLayout from './pages/technician/TechnicianLayout';
 import HomeTab from './pages/technician/HomeTab';
 import JobsTab from './pages/technician/JobsTab';
 import ProfileTab from './pages/technician/ProfileTab';
+import CommunityIssuesTab from './pages/technician/CommunityIssuesTab';
 import SecurityProtectedRoute from './pages/security/SecurityProtectedRoute';
 import SecurityLayout from './pages/security/SecurityLayout';
 import VerifyTab from './pages/security/VerifyTab';
@@ -44,6 +46,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
@@ -68,6 +71,7 @@ export default function App() {
           <Route element={<TechnicianLayout />}>
             <Route index element={<HomeTab />} />
             <Route path="jobs" element={<JobsTab />} />
+            <Route path="community" element={<CommunityIssuesTab />} />
             <Route path="profile" element={<ProfileTab />} />
           </Route>
         </Route>

@@ -3,6 +3,9 @@ import { supabase } from '../../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { ThumbsUp, Loader2, Plus, X, AlertTriangle, Trash2, UserCircle2 } from 'lucide-react';
 import { useToast } from '../../components/Toast';
+import type { CommunityComplaint } from '../../types/communityComplaint';
+import CommunityComplaintCard from '../../components/resident/CommunityComplaintCard';
+import ReportCommunityIssue from '../../components/resident/ReportCommunityIssue';
 
 interface CommunityPost {
   id: string;
@@ -45,6 +48,11 @@ export default function CommunityBoard() {
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // New state for Community Issues
+  const [communityComplaints, setCommunityComplaints] = useState<CommunityComplaint[]>([]);
+  const [loadingComplaints, setLoadingComplaints] = useState(true);
+  const [showReportIssue, setShowReportIssue] = useState(false);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
@@ -72,6 +80,51 @@ export default function CommunityBoard() {
     };
   }, [userId]);
 
+  useEffect(() => {
+    if (!societyId) return;
+
+    const complaintsChannel = supabase
+      .channel('community-complaints-resident')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'community_complaints',
+        filter: `society_id=eq.${societyId}`
+      }, () => { fetchCommunityComplaints(societyId) })
+      .subscribe();
+
+    const updatesChannel = supabase
+      .channel('community-updates-resident')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'community_complaint_updates',
+      }, () => { fetchCommunityComplaints(societyId) })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(complaintsChannel);
+      supabase.removeChannel(updatesChannel);
+    };
+  }, [societyId]);
+
+  const fetchCommunityComplaints = async (sid: string) => {
+    try {
+      const { data } = await supabase
+        .from('community_complaints')
+        .select('*')
+        .eq('society_id', sid)
+        .neq('status', 'resolved')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (data) setCommunityComplaints(data as CommunityComplaint[]);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingComplaints(false);
+    }
+  };
+
   const fetchUserDataAndPosts = async (uid: string) => {
     try {
       const { data: userData } = await supabase
@@ -82,12 +135,14 @@ export default function CommunityBoard() {
         
       if (userData) {
         setSocietyId(userData.society_id);
+        fetchCommunityComplaints(userData.society_id);
       }
       
       await fetchPosts(uid);
     } catch (err) {
       console.error(err);
       setLoading(false);
+      setLoadingComplaints(false);
     }
   };
 
@@ -271,7 +326,49 @@ export default function CommunityBoard() {
         </button>
       </header>
 
-      <div className="px-4 mt-4 space-y-4">
+      {/* Community Issues Section */}
+      <div className="px-4 mt-4 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-display font-bold text-[#1C1917]">Community Issues</h2>
+          <button 
+            onClick={() => setShowReportIssue(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D97706] hover:bg-[#B45309] text-white rounded-[10px] text-sm font-sans font-semibold transition active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            Report a community issue
+          </button>
+        </div>
+
+        {loadingComplaints ? (
+          <div className="flex justify-center py-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" style={{animation:'spin 1s linear infinite'}}>
+              <style>{`@keyframes spin{from{transform:rotate(0deg)} to{transform:rotate(360deg)}}`}</style>
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+        ) : communityComplaints.length === 0 ? (
+          <div className="text-center py-8 bg-white border border-[#E0DDD9] rounded-card shadow-sm">
+            <p className="text-[#6B6560] font-sans text-sm">✅ No active community issues. Your society is running smoothly!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {communityComplaints.map(complaint => (
+              <CommunityComplaintCard
+                key={complaint.id}
+                complaint={complaint}
+                currentUserId={userId!}
+                onAffectedJoined={() => fetchCommunityComplaints(societyId!)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 mb-4">
+        <h2 className="text-lg font-display font-bold text-[#1C1917]">Community Board</h2>
+      </div>
+
+      <div className="px-4 space-y-4">
         {loading ? (
           <div className="flex justify-center p-10">
             <Loader2 className="w-8 h-8 animate-spin text-[#1C1917]" />
@@ -470,6 +567,16 @@ export default function CommunityBoard() {
             </div>
           </div>
         </div>
+      )}
+
+      {userId && societyId && (
+        <ReportCommunityIssue
+          isOpen={showReportIssue}
+          onClose={() => setShowReportIssue(false)}
+          onSubmitted={() => fetchCommunityComplaints(societyId)}
+          currentUserId={userId}
+          societyId={societyId}
+        />
       )}
     </div>
   );

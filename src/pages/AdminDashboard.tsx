@@ -26,6 +26,7 @@ interface DashMetrics {
   overdueSlа: number;
   avgResolutionHours: number;
   pendingResidents: number;
+  communityIssues: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -73,6 +74,7 @@ async function fetchDashboard(societyId: string | null) {
     { data: resolvedRaw },
     { count: pendingResidents },
     { data: breachRaw },
+    { count: communityIssuesCount },
   ] = await Promise.all([
     supabase.from('complaints')
       .select('id', { count: 'exact', head: true })
@@ -109,6 +111,11 @@ async function fetchDashboard(societyId: string | null) {
       .not('status', 'in', '("closed","verified")')
       .lt('sla_deadline', nowIso)
       .order('sla_deadline', { ascending: true }).limit(10),
+
+    supabase.from('community_complaints')
+      .select('id', { count: 'exact', head: true })
+      .eq('society_id', societyId ?? '')
+      .neq('status', 'resolved'),
   ]);
 
   // Avg resolution hours
@@ -128,6 +135,7 @@ async function fetchDashboard(societyId: string | null) {
     overdueSlа: overdueCount ?? 0,
     avgResolutionHours,
     pendingResidents: pendingResidents ?? 0,
+    communityIssues: communityIssuesCount ?? 0,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,7 +207,7 @@ function MetricCard({
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<DashMetrics>({
-    totalComplaints: 0, openComplaints: 0, solvedComplaints: 0, overdueSlа: 0, avgResolutionHours: 0, pendingResidents: 0,
+    totalComplaints: 0, openComplaints: 0, solvedComplaints: 0, overdueSlа: 0, avgResolutionHours: 0, pendingResidents: 0, communityIssues: 0,
   });
   const [breachList, setBreachList] = useState<BreachComplaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -334,7 +342,7 @@ export default function AdminDashboard() {
               <div className="skeleton" style={{ flex: 1, borderRadius: 12 }} />
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, flex: 1 }}>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px' }}>Total</p>
                 <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 36, color: '#1C1917', margin: 0, lineHeight: 1 }}>{metrics.totalComplaints}</p>
@@ -346,6 +354,10 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px' }}>Solved</p>
                 <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 36, color: '#15803D', margin: 0, lineHeight: 1 }}>{metrics.solvedComplaints}</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', borderLeft: '1px solid #E0DDD9', paddingLeft: 16 }}>
+                <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 8px', whiteSpace: 'nowrap' }}>Community Issues</p>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 36, color: metrics.communityIssues > 0 ? '#D97706' : '#1C1917', margin: 0, lineHeight: 1 }}>{metrics.communityIssues}</p>
               </div>
             </div>
           )}

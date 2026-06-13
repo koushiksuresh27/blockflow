@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
-import { Home, ClipboardList, User, Loader2 } from 'lucide-react';
+import { Home, ClipboardList, User, Loader2, Building } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 // ─── Tech Context ─────────────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ export function useTechProfile() {
 const NAV_ITEMS = [
   { to: '/technician',         label: 'Home',    Icon: Home          },
   { to: '/technician/jobs',    label: 'My Jobs', Icon: ClipboardList },
+  { to: '/technician/community',label: 'Community', Icon: Building },
   { to: '/technician/profile', label: 'Profile', Icon: User          },
 ];
 

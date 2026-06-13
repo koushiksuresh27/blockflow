@@ -1,40 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  ChevronDown, X, Loader2, AlertCircle,
-  Clock, MapPin, Paperclip, Flag, MessageSquare, AlertTriangle,
-} from 'lucide-react';
-import { Eye, WarningCircle } from 'iconoir-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Eye, WarningTriangle, RefreshDouble } from 'iconoir-react';
+import type { CommunityComplaint, CommunityComplaintUpdate } from '../../types/communityComplaint';
+import { STATUS_CONFIG, COMMUNITY_ASSETS } from '../../constants/communityAssets';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
-import { useToast } from '../../components/Toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Priority = 'low' | 'medium' | 'high' | 'critical';
-type Status =
+
+type ResidentStatus =
   | 'open' | 'triaged' | 'assigned' | 'accepted' | 'in_progress'
   | 'on_hold' | 'resolved' | 'verified' | 'closed' | 'escalated' | 'reopened';
 
-interface Complaint {
-  id: string; title: string; category: string; priority: Priority; status: Status;
-  description: string; sla_deadline: string; created_at: string; updated_at: string;
-  submitted_by_name: string; assigned_tech_name: string | null; assigned_tech_id: string | null;
-  location_apt: string | null; society_id: string;
+type ResidentPriority = 'low' | 'medium' | 'high' | 'critical';
+
+interface ResidentComplaint {
+  id: string;
+  title: string;
+  category: string;
+  priority: ResidentPriority;
+  status: ResidentStatus;
+  created_at: string;
+  submitted_by_name: string;
 }
-interface LogEntry {
-  id: string; action: string; note: string | null;
-  old_status: string | null; new_status: string | null;
-  created_at: string; actor_name: string;
-}
-interface Attachment { id: string; url: string; attachment_type: string; }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const PRIORITY_BADGE_STYLE: Record<Priority, React.CSSProperties> = {
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function fmt(s: string): string {
+  return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+const PRIORITY_BADGE: Record<ResidentPriority, React.CSSProperties> = {
   critical: { background: '#FFF1F2', color: '#BE123C' },
   high:     { background: '#FEF3C7', color: '#92400E' },
   medium:   { background: '#EFF6FF', color: '#1D4ED8' },
   low:      { background: '#F0FDF4', color: '#15803D' },
 };
-const STATUS_BADGE_STYLE: Partial<Record<Status, React.CSSProperties>> = {
+
+const STATUS_BADGE: Partial<Record<ResidentStatus, React.CSSProperties>> = {
   open:        { background: '#F5F3F0', color: '#6B6560' },
   triaged:     { background: '#F5F3FF', color: '#6D28D9' },
   assigned:    { background: '#F5F3FF', color: '#6D28D9' },
@@ -47,412 +65,522 @@ const STATUS_BADGE_STYLE: Partial<Record<Status, React.CSSProperties>> = {
   escalated:   { background: '#FFF1F2', color: '#BE123C' },
   reopened:    { background: '#FEF3C7', color: '#92400E' },
 };
-import type React from 'react';
-const ALL_STATUSES: Status[] = [
-  'open', 'triaged', 'assigned', 'accepted', 'in_progress',
-  'on_hold', 'resolved', 'verified', 'closed', 'escalated', 'reopened',
-];
-const ALL_PRIORITIES: Priority[] = ['low', 'medium', 'high', 'critical'];
-const CATEGORIES = [
-  'Plumbing', 'Electrical', 'Carpentry', 'HVAC',
-  'Civil/Structural', 'Housekeeping', 'Lift/Elevator', 'Common Area', 'Other',
-];
 
-const fmt = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+// ─── Inline Spinner ───────────────────────────────────────────────────────────
 
-function slaStyle(dl: string, status: Status): React.CSSProperties {
-  if (['closed', 'verified'].includes(status)) return { color: '#9C9894' };
-  const diff = new Date(dl).getTime() - Date.now();
-  if (diff < 0) return { color: '#DC2626', fontWeight: 700 };
-  if (diff < 7200000) return { color: '#D97706', fontWeight: 700 };
-  return { color: '#9C9894' };
-}
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-async function fetchAll(): Promise<{ complaints: Complaint[]; societyId: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data: profile } = await supabase.from('users').select('society_id').eq('id', user.id).single();
-  const societyId = profile?.society_id ?? '';
-
-  let query = supabase.from('complaints').select(`
-    id, title, category, priority, status, description,
-    sla_deadline, created_at, updated_at, assigned_tech_id, society_id,
-    submitted_user:users!submitted_by(name),
-    assigned_tech:technicians!assigned_tech_id(tech_user:users!user_id(name)),
-    location_apt:apartments!location_apt_id(
-      flat_number, floor_number, tower:towers!tower_id(name)
-    )
-  `).order('created_at', { ascending: false }).limit(500);
-
-  if (societyId) query = query.eq('society_id', societyId);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { societyId, complaints: (data ?? []).map((r: any) => ({
-    id: r.id, title: r.title, category: r.category, priority: r.priority, status: r.status,
-    description: r.description, sla_deadline: r.sla_deadline, created_at: r.created_at,
-    updated_at: r.updated_at, assigned_tech_id: r.assigned_tech_id, society_id: r.society_id,
-    submitted_by_name: r.submitted_user?.name ?? '—',
-    assigned_tech_name: r.assigned_tech?.tech_user?.name ?? null,
-    location_apt: r.location_apt
-      ? `${r.location_apt.tower?.name ?? ''} · F${r.location_apt.floor_number} · ${r.location_apt.flat_number}`
-      : null,
-  })) };
-}
-
-async function fetchDetail(id: string): Promise<{ logs: LogEntry[]; attachments: Attachment[] }> {
-  const [{ data: logs }, { data: atts }] = await Promise.all([
-    supabase.from('complaint_logs')
-      .select('id, action, note, old_status, new_status, created_at, actor:users!actor_id(name)')
-      .eq('complaint_id', id)
-      .order('created_at', { ascending: true }),
-    supabase.from('complaint_attachments')
-      .select('id, url, attachment_type')
-      .eq('complaint_id', id),
-  ]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    logs: (logs ?? []).map((l: any) => ({ ...l, actor_name: l.actor?.name ?? 'System' })),
-    attachments: atts ?? [],
-  };
-}
-
-// ─── Detail Panel ────────────────────────────────────────────────────────────
-function DetailPanel({
-  c, onClose, onRefresh,
-}: {
-  c: Complaint; onClose: () => void; onRefresh: () => void;
-}) {
-  const toast = useToast();
-  const [logs, setLogs]         = useState<LogEntry[]>([]);
-  const [atts, setAtts]         = useState<Attachment[]>([]);
-  const [loading, setLoading]   = useState(true);
-
-  useEffect(() => {
-    fetchDetail(c.id)
-      .then(d => { setLogs(d.logs); setAtts(d.attachments); })
-      .finally(() => setLoading(false));
-  }, [c.id]);
-
+function Spinner() {
   return (
-    <div
-      className="fixed inset-0 z-40 flex justify-end"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <svg
+      width="24" height="24" viewBox="0 0 24 24"
+      fill="none" stroke="#D97706" strokeWidth="2"
+      style={{ animation: 'spin 1s linear infinite' }}
     >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg h-full overflow-y-auto shadow-2xl flex flex-col z-10" style={{ background: '#FFFFFF', borderLeft: '1px solid #E0DDD9' }}>
-
-        {/* Header */}
-        <div style={{ position: 'sticky', top: 0, background: '#FFFFFF', borderBottom: '1px solid #E0DDD9', padding: '16px 24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</h2>
-            <p style={{ fontSize: 11, color: '#9C9894', margin: '4px 0 0', fontFamily: 'monospace' }}>{c.id.slice(0, 18)}…</p>
-          </div>
-          <button onClick={onClose} style={{ padding: '6px', borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: '#6B6560', display: 'flex', alignItems: 'center' }}>
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-          {/* Badges */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ ...PRIORITY_BADGE_STYLE[c.priority], borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
-              {fmt(c.priority)}
-            </span>
-            <span style={{ ...(STATUS_BADGE_STYLE[c.status] ?? { background: '#F5F3F0', color: '#6B6560' }), borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
-              {fmt(c.status)}
-            </span>
-            <span style={{ background: '#F5F3F0', color: '#6B6560', borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
-              {c.category}
-            </span>
-          </div>
-
-          {/* Meta */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {[
-              ['Submitted by', c.submitted_by_name],
-              ['Assigned to', c.assigned_tech_name ?? 'Unassigned'],
-              ['SLA Deadline', fmtDate(c.sla_deadline)],
-              ['Created', fmtDate(c.created_at)],
-            ].map(([l, v]) => (
-              <div key={l}>
-                <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: '0 0 2px' }}>{l}</p>
-                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, margin: 0, ...(l === 'SLA Deadline' ? slaStyle(c.sla_deadline, c.status) : { color: '#1C1917' }) }}>
-                  {v}
-                </p>
-              </div>
-            ))}
-            {c.location_apt && (
-              <div style={{ gridColumn: 'span 2' }}>
-                <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: '0 0 2px' }}>Location</p>
-                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <MapPin className="w-3 h-3" />{c.location_apt}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>Description</p>
-            <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#1C1917', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{c.description}</p>
-          </div>
-
-          {/* Attachments */}
-          {atts.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-on-surface-variant/60 uppercase tracking-widest mb-2 flex items-center gap-1">
-                <Paperclip className="w-3 h-3" />Attachments ({atts.length})
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {atts.map(a => (
-                  <a key={a.id} href={a.url} target="_blank" rel="noreferrer" className="relative group">
-                    <img src={a.url} alt={a.attachment_type}
-                      className="w-20 h-20 object-cover rounded-lg border border-outline-variant/20" />
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] text-center py-0.5 rounded-b-lg">
-                      {a.attachment_type}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Activity Timeline */}
-          <div>
-            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Clock className="w-3 h-3" />Activity ({logs.length})
-            </p>
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#D97706' }} />
-            ) : (
-              <ol style={{ position: 'relative', borderLeft: '1px solid #E0DDD9', marginLeft: 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {logs.map(log => (
-                  <li key={log.id} style={{ marginLeft: 16 }}>
-                    <div style={{ position: 'absolute', left: -5, width: 10, height: 10, borderRadius: '50%', background: '#D97706', border: '2px solid #FFFFFF' }} />
-                    <p style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: '0 0 2px' }}>
-                      {fmt(log.action)}
-                      {log.new_status && (
-                        <span style={{ fontWeight: 400, color: '#6B6560', marginLeft: 4 }}>→ {fmt(log.new_status)}</span>
-                      )}
-                    </p>
-                    {log.note && (
-                      <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#6B6560', fontStyle: 'italic', margin: '0 0 2px' }}>"{log.note}"</p>
-                    )}
-                    <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: 0 }}>
-                      {log.actor_name} · {fmtDate(log.created_at)}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
   );
 }
 
-// ─── Filter Select ────────────────────────────────────────────────────────────
-function Select({
-  label, value, options, onChange,
-}: {
-  label: string; value: string; options: string[]; onChange: (v: string) => void;
-}) {
+// ─── Community Issue Card ─────────────────────────────────────────────────────
+
+interface CommunityCardProps {
+  complaint: CommunityComplaint;
+  techName: string | null;
+  isExpanded: boolean;
+  updates: CommunityComplaintUpdate[] | null;
+  onToggle: () => void;
+}
+
+function CommunityCard({ complaint, techName, isExpanded, updates, onToggle }: CommunityCardProps) {
+  const assetConfig = COMMUNITY_ASSETS.find((a) => a.type === complaint.asset_type);
+  const statusConfig = STATUS_CONFIG[complaint.status as keyof typeof STATUS_CONFIG];
+
+  const isBreached =
+    complaint.status === 'reported' &&
+    complaint.affected_count >= 3 &&
+    Date.now() - new Date(complaint.created_at).getTime() > 24 * 60 * 60 * 1000;
+
   return (
-    <div style={{ position: 'relative' }}>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{
-          appearance: 'none',
-          paddingLeft: 12, paddingRight: 32, paddingTop: 6, paddingBottom: 6,
-          fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13,
-          background: value ? '#1C1917' : '#FFFFFF',
-          color: value ? '#FFFFFF' : '#6B6560',
-          border: '1px solid #E0DDD9',
-          borderRadius: 8, cursor: 'pointer',
-          outline: 'none',
-        }}
-      >
-        <option value="" style={{ background: '#FFFFFF', color: '#6B6560' }}>{label}</option>
-        {options.map(o => <option key={o} value={o} style={{ background: '#FFFFFF', color: '#1C1917' }}>{fmt(o)}</option>)}
-      </select>
-      <ChevronDown className="pointer-events-none" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: value ? '#FFFFFF' : '#9C9894' }} />
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E0DDD9',
+      borderRadius: 16,
+      overflow: 'hidden',
+    }}>
+      {/* Card body */}
+      <div style={{ padding: '20px 24px' }}>
+        {/* Top row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 24 }}>{assetConfig?.emoji ?? '🏢'}</span>
+            <div>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: 0 }}>
+                {complaint.asset_label}
+              </p>
+              <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', margin: '2px 0 0' }}>
+                {timeAgo(complaint.created_at)}
+              </p>
+            </div>
+          </div>
+
+          {/* Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {isBreached && (
+              <span style={{
+                background: '#FFF1F2', color: '#BE123C',
+                borderRadius: 6, padding: '3px 10px',
+                fontFamily: 'Inter', fontWeight: 600, fontSize: 11,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+              }}>
+                {'⚠️ SLA Breach'}
+              </span>
+            )}
+            {statusConfig && (
+              <span style={{
+                background: statusConfig.bg,
+                color: statusConfig.color,
+                borderRadius: 6, padding: '3px 10px',
+                fontFamily: 'Inter', fontWeight: 500, fontSize: 12,
+              }}>
+                {statusConfig.label}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16 }}>
+          <span style={{ fontFamily: 'Inter', fontSize: 13, color: '#D97706', fontWeight: 600 }}>
+            {'👥 '}{complaint.affected_count}{' residents affected'}
+          </span>
+          <span style={{ fontFamily: 'Inter', fontSize: 13, color: techName ? '#1C1917' : '#DC2626', fontWeight: techName ? 400 : 500 }}>
+            {techName ? `🔧 ${techName}` : 'Unassigned'}
+          </span>
+        </div>
+
+        {/* Toggle button */}
+        <button
+          onClick={onToggle}
+          style={{
+            padding: '7px 14px',
+            background: isExpanded ? '#1C1917' : '#F5F3F0',
+            color: isExpanded ? '#FFFFFF' : '#1C1917',
+            border: '1px solid #E0DDD9',
+            borderRadius: 8,
+            fontFamily: 'Inter', fontWeight: 500, fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+        >
+          {isExpanded ? 'Hide updates' : 'View updates'}
+        </button>
+      </div>
+
+      {/* Expanded updates */}
+      {isExpanded && (
+        <div style={{ borderTop: '1px solid #E0DDD9', background: '#FAFAF9', padding: '16px 24px' }}>
+          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px', margin: '0 0 14px' }}>
+            Milestone Updates
+          </p>
+          {updates === null ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+              <Spinner />
+            </div>
+          ) : updates.length === 0 ? (
+            <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#9C9894', margin: 0 }}>
+              No updates yet.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {updates.map((u) => {
+                const uConfig = STATUS_CONFIG[u.status as keyof typeof STATUS_CONFIG];
+                return (
+                  <div key={u.id} style={{ display: 'flex', gap: 12 }}>
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%', flexShrink: 0, marginTop: 4,
+                      background: uConfig?.bg ?? '#E0DDD9',
+                      border: `2px solid ${uConfig?.color ?? '#9C9894'}`,
+                    }} />
+                    <div>
+                      <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#1C1917', margin: '0 0 2px' }}>
+                        {u.message}
+                      </p>
+                      <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#9C9894', margin: 0 }}>
+                        {fmtDate(u.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
-export default function ComplaintsPage() {
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState('');
-  const [filterStatus, setFilterStatus]     = useState('');
-  const [filterPriority, setFilterPriority] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const [selected, setSelected]     = useState<Complaint | null>(null);
 
-  const load = useCallback(async () => {
-    setError('');
+const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
+
+export default function ComplaintsPage() {
+  const [activeTab, setActiveTab] = useState<'community' | 'resident'>('community');
+
+  // ── Community state ──
+  const [communityComplaints, setCommunityComplaints] = useState<CommunityComplaint[]>([]);
+  const [techNames, setTechNames] = useState<Record<string, string>>({});
+  const [loadingCommunity, setLoadingCommunity] = useState(true);
+  const [errorCommunity, setErrorCommunity] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updatesMap, setUpdatesMap] = useState<Record<string, CommunityComplaintUpdate[] | null>>({});
+
+  // ── Resident state ──
+  const [residentComplaints, setResidentComplaints] = useState<ResidentComplaint[]>([]);
+  const [loadingResident, setLoadingResident] = useState(true);
+  const [errorResident, setErrorResident] = useState('');
+
+  // ─── Fetch community complaints ───────────────────────────────────────────
+
+  const fetchCommunity = useCallback(async () => {
+    setLoadingCommunity(true);
+    setErrorCommunity('');
     try {
-      const r = await fetchAll();
-      setComplaints(r.complaints);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error');
+      const [{ data: complaints, error: cErr }, { data: techs, error: tErr }] = await Promise.all([
+        supabase
+          .from('community_complaints')
+          .select('*')
+          .eq('society_id', SOCIETY_ID)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('technicians')
+          .select('id, users(name)')
+          .eq('society_id', SOCIETY_ID),
+      ]);
+
+      if (cErr) throw new Error(cErr.message);
+      if (tErr) throw new Error(tErr.message);
+
+      setCommunityComplaints((complaints ?? []) as CommunityComplaint[]);
+
+      // Build tech name map
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const nameMap: Record<string, string> = {};
+      for (const t of (techs ?? []) as any[]) {
+        if (t.id && t.users?.name) {
+          nameMap[t.id] = t.users.name;
+        }
+      }
+      setTechNames(nameMap);
+    } catch {
+      setErrorCommunity('Failed to load. Please refresh.');
     } finally {
-      setLoading(false);
+      setLoadingCommunity(false);
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // ─── Fetch updates for a complaint ───────────────────────────────────────
 
-  const filteredComplaints = complaints.filter(c => {
-    if (filterStatus   && c.status   !== filterStatus)   return false;
-    if (filterPriority && c.priority !== filterPriority) return false;
-    if (filterCategory && c.category !== filterCategory) return false;
-    return true;
-  });
+  const fetchUpdates = useCallback(async (complaintId: string) => {
+    setUpdatesMap((prev) => ({ ...prev, [complaintId]: null }));
+    try {
+      const { data, error } = await supabase
+        .from('community_complaint_updates')
+        .select('*')
+        .eq('complaint_id', complaintId)
+        .order('created_at', { ascending: true });
+      if (error) throw new Error(error.message);
+      setUpdatesMap((prev) => ({
+        ...prev,
+        [complaintId]: (data ?? []) as CommunityComplaintUpdate[],
+      }));
+    } catch {
+      setUpdatesMap((prev) => ({ ...prev, [complaintId]: [] }));
+    }
+  }, []);
 
-  const hasFilter = filterStatus || filterPriority || filterCategory;
+  const handleToggle = useCallback((id: string) => {
+    if (expandedId === id) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+      if (!(id in updatesMap)) {
+        fetchUpdates(id);
+      }
+    }
+  }, [expandedId, updatesMap, fetchUpdates]);
+
+  // ─── Fetch resident complaints ────────────────────────────────────────────
+
+  const fetchResident = useCallback(async () => {
+    setLoadingResident(true);
+    setErrorResident('');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('society_id')
+        .eq('id', user.id)
+        .single();
+
+      const { data, error } = await supabase
+        .from('complaints')
+        .select(`
+          id, title, category, priority, status, created_at,
+          submitted_user:users!submitted_by(name)
+        `)
+        .eq('society_id', profile?.society_id ?? SOCIETY_ID)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw new Error(error.message);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setResidentComplaints((data ?? []).map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        category: r.category,
+        priority: r.priority,
+        status: r.status,
+        created_at: r.created_at,
+        submitted_by_name: r.submitted_user?.name ?? 'Unknown',
+      })));
+    } catch {
+      setErrorResident('Failed to load. Please refresh.');
+    } finally {
+      setLoadingResident(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCommunity();
+    fetchResident();
+  }, [fetchCommunity, fetchResident]);
+
+  // ─── Styles ───────────────────────────────────────────────────────────────
+
+  const cardBase: React.CSSProperties = {
+    background: '#FFFFFF',
+    border: '1px solid #E0DDD9',
+    borderRadius: 16,
+  };
+
+  function tabStyle(active: boolean): React.CSSProperties {
+    return {
+      padding: '10px 0',
+      borderBottom: active ? '2px solid #1C1917' : '2px solid transparent',
+      fontFamily: 'Space Grotesk',
+      fontWeight: 600,
+      fontSize: 15,
+      color: active ? '#1C1917' : '#9C9894',
+      cursor: 'pointer',
+      background: 'transparent',
+      border: 'none',
+      borderBottom: active ? '2px solid #1C1917' : '2px solid transparent',
+      transition: 'all 0.2s',
+    };
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <AdminLayout>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
 
-        {/* ── Filter bar ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          <Select label="All statuses"   value={filterStatus}   options={ALL_STATUSES}   onChange={setFilterStatus} />
-          <Select label="All priorities" value={filterPriority} options={ALL_PRIORITIES} onChange={setFilterPriority} />
-          <Select label="All categories" value={filterCategory} options={CATEGORIES}     onChange={setFilterCategory} />
-          {hasFilter && (
-            <button
-              onClick={() => { setFilterStatus(''); setFilterPriority(''); setFilterCategory(''); }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 4,
-                padding: '6px 14px',
-                fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13,
-                color: '#6B6560',
-                background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 8, cursor: 'pointer',
-              }}
-            >
-              <X className="w-3.5 h-3.5" />Clear
-            </button>
-          )}
+        {/* ── Tabs ── */}
+        <div style={{ display: 'flex', gap: 28, marginBottom: 24, borderBottom: '1px solid #E0DDD9' }}>
+          <button
+            onClick={() => setActiveTab('community')}
+            style={tabStyle(activeTab === 'community')}
+          >
+            Community Issues
+          </button>
+          <button
+            onClick={() => setActiveTab('resident')}
+            style={tabStyle(activeTab === 'resident')}
+          >
+            Resident Complaints
+          </button>
         </div>
 
-        {/* ── Error ── */}
-        {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 16, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
-            <AlertCircle className="w-4 h-4" />{error}
-          </div>
+        {/* ══════════════ COMMUNITY ISSUES TAB ══════════════ */}
+        {activeTab === 'community' && (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 20, color: '#1C1917', margin: 0 }}>
+                  Community Issues
+                </h2>
+                <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#9C9894', margin: '4px 0 0' }}>
+                  {communityComplaints.length} total issues
+                </p>
+              </div>
+              <button
+                onClick={fetchCommunity}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px',
+                  background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 8,
+                  fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560',
+                  cursor: 'pointer',
+                }}
+              >
+                <RefreshDouble width={15} height={15} />
+                Refresh
+              </button>
+            </div>
+
+            {loadingCommunity ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
+                <Spinner />
+              </div>
+            ) : errorCommunity ? (
+              <p style={{ color: 'red', fontFamily: 'Inter', fontSize: 14 }}>{errorCommunity}</p>
+            ) : communityComplaints.length === 0 ? (
+              <div style={{ ...cardBase, padding: '64px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <WarningTriangle width={36} height={36} style={{ color: '#E0DDD9' }} />
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#9C9894', margin: 0 }}>
+                  No community issues found
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {communityComplaints.map((complaint) => (
+                  <CommunityCard
+                    key={complaint.id}
+                    complaint={complaint}
+                    techName={complaint.assigned_tech_id ? (techNames[complaint.assigned_tech_id] ?? null) : null}
+                    isExpanded={expandedId === complaint.id}
+                    updates={updatesMap[complaint.id] ?? (expandedId === complaint.id ? null : undefined as unknown as null)}
+                    onToggle={() => handleToggle(complaint.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
 
-        {/* ── Table card ── */}
-        <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
-          {loading ? (
-            <div style={{ padding: 48 }}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} style={{ display: 'flex', gap: 16, marginBottom: 16, alignItems: 'center' }}>
-                  <div className="skeleton" style={{ height: 14, flex: 2 }} />
-                  <div className="skeleton" style={{ height: 20, width: 80, borderRadius: 6 }} />
-                  <div className="skeleton" style={{ height: 20, width: 80, borderRadius: 6 }} />
-                  <div className="skeleton" style={{ height: 14, flex: 1 }} />
-                </div>
-              ))}
+        {/* ══════════════ RESIDENT COMPLAINTS TAB ══════════════ */}
+        {activeTab === 'resident' && (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 20, color: '#1C1917', margin: 0 }}>
+                  Resident Complaints
+                </h2>
+                <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#9C9894', margin: '4px 0 0' }}>
+                  {residentComplaints.length} total complaints
+                </p>
+              </div>
+              <button
+                onClick={fetchResident}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 14px',
+                  background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 8,
+                  fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560',
+                  cursor: 'pointer',
+                }}
+              >
+                <RefreshDouble width={15} height={15} />
+                Refresh
+              </button>
             </div>
-          ) : filteredComplaints.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 8 }}>
-              <WarningCircle width={40} height={40} style={{ color: '#E0DDD9' }} />
-              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#9C9894', margin: 0 }}>No complaints found</p>
-              <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#9C9894', margin: 0 }}>Try adjusting your filters.</p>
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#F5F3F0', borderBottom: '1px solid #E0DDD9' }}>
-                    {['Title', 'Category', 'Priority', 'Status', 'Submitted By', 'Assigned To', 'SLA', 'Created', 'Action'].map(h => (
-                      <th key={h} style={{
-                        padding: '12px 20px',
-                        textAlign: 'left',
-                        fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12,
-                        color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredComplaints.map((c, i) => (
-                    <tr
-                      key={c.id}
-                      style={{ borderBottom: i < filteredComplaints.length - 1 ? '1px solid #F5F3F0' : 'none', cursor: 'pointer', transition: 'background 0.1s' }}
-                      onClick={() => setSelected(c)}
-                      onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = '#FAFAF9'}
-                      onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = ''}
-                    >
-                      <td style={{ padding: '14px 20px', maxWidth: 200 }}>
-                        <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#1C1917', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.title}>{c.title}</p>
-                      </td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>{c.category}</span>
-                      </td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
-                        <span style={{ ...PRIORITY_BADGE_STYLE[c.priority], borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
-                          {fmt(c.priority)}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
-                        <span style={{ ...(STATUS_BADGE_STYLE[c.status] ?? { background: '#F5F3F0', color: '#6B6560' }), borderRadius: 6, padding: '3px 10px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12 }}>
-                          {fmt(c.status)}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#1C1917' }}>{c.submitted_by_name}</td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#1C1917' }}>
-                        {c.assigned_tech_name ?? <span style={{ color: '#9C9894', fontStyle: 'italic' }}>Auto-assigned</span>}
-                      </td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontFamily: 'Inter', fontSize: 14, ...slaStyle(c.sla_deadline, c.status) }}>{fmtDate(c.sla_deadline)}</span>
-                      </td>
-                      <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#9C9894' }}>
-                        {fmtDate(c.created_at)}
-                      </td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <button
-                          onClick={e => { e.stopPropagation(); setSelected(c); }}
-                          style={{ width: 30, height: 30, border: '1px solid #E0DDD9', borderRadius: 8, background: 'transparent', color: '#6B6560', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1C1917'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
-                        >
-                          <Eye width={14} height={14} strokeWidth={1.5} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {selected && (
-        <DetailPanel
-          c={selected}
-          onClose={() => setSelected(null)}
-          onRefresh={() => { load(); setSelected(null); }}
-        />
-      )}
+            {loadingResident ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
+                <Spinner />
+              </div>
+            ) : errorResident ? (
+              <p style={{ color: 'red', fontFamily: 'Inter', fontSize: 14 }}>{errorResident}</p>
+            ) : (
+              <div style={{ ...cardBase, overflow: 'hidden' }}>
+                {residentComplaints.length === 0 ? (
+                  <div style={{ padding: '64px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                    <WarningTriangle width={36} height={36} style={{ color: '#E0DDD9' }} />
+                    <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#9C9894', margin: 0 }}>
+                      No complaints found
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ background: '#F5F3F0', borderBottom: '1px solid #E0DDD9' }}>
+                          {['Title', 'Category', 'Priority', 'Status', 'Submitted By', 'Created'].map((h) => (
+                            <th
+                              key={h}
+                              style={{
+                                padding: '12px 20px', textAlign: 'left',
+                                fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 12,
+                                color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.8px',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {residentComplaints.map((c, i) => (
+                          <tr
+                            key={c.id}
+                            style={{
+                              borderBottom: i < residentComplaints.length - 1 ? '1px solid #F5F3F0' : 'none',
+                            }}
+                          >
+                            <td style={{ padding: '14px 20px', maxWidth: 220 }}>
+                              <p style={{
+                                fontFamily: 'Inter', fontWeight: 400, fontSize: 14, color: '#1C1917',
+                                margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }} title={c.title}>
+                                {c.title}
+                              </p>
+                            </td>
+                            <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#6B6560' }}>
+                              {c.category}
+                            </td>
+                            <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                              <span style={{
+                                ...PRIORITY_BADGE[c.priority],
+                                borderRadius: 6, padding: '3px 10px',
+                                fontFamily: 'Inter', fontWeight: 500, fontSize: 12,
+                              }}>
+                                {fmt(c.priority)}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 20px', whiteSpace: 'nowrap' }}>
+                              <span style={{
+                                ...(STATUS_BADGE[c.status] ?? { background: '#F5F3F0', color: '#6B6560' }),
+                                borderRadius: 6, padding: '3px 10px',
+                                fontFamily: 'Inter', fontWeight: 500, fontSize: 12,
+                              }}>
+                                {fmt(c.status)}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#1C1917' }}>
+                              {c.submitted_by_name}
+                            </td>
+                            <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: 'Inter', fontSize: 14, color: '#9C9894' }}>
+                              {fmtDate(c.created_at)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+      </div>
     </AdminLayout>
   );
 }
