@@ -568,6 +568,637 @@ async function runDNAPipeline(complaint) {
   }
 }
 
+// ─── Estate Manager Agent ─────────────────────────────────────────────────────
+
+const agentTools = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_complaints',
+      description: 'Get complaints for the society with optional filters. Use this when admin asks about complaints, pending issues, or maintenance requests.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Filter by status: open, assigned, in_progress, resolved, closed, escalated',
+            enum: ['open', 'assigned', 'in_progress', 'resolved', 'closed', 'escalated', 'all']
+          },
+          priority: {
+            type: 'string',
+            description: 'Filter by priority level',
+            enum: ['low', 'medium', 'high', 'critical', 'all']
+          },
+          limit: {
+            type: 'number',
+            description: 'Number of complaints to return, default 10'
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_chronic_issues',
+      description: 'Get chronic/recurring issues detected by the DNA pipeline. Use when admin asks about recurring problems, chronic issues, or pattern-detected failures.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Filter by status',
+            enum: ['active', 'investigating', 'resolved', 'all']
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_technicians',
+      description: 'Get technician list with performance metrics and current workload. Use when admin asks about technician availability, performance, or assignment recommendations.',
+      parameters: {
+        type: 'object',
+        properties: {
+          available_only: {
+            type: 'boolean',
+            description: 'If true, return only available technicians'
+          },
+          specialization: {
+            type: 'string',
+            description: 'Filter by specialization e.g. Plumbing, Electrical'
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_equipment_health',
+      description: 'Get equipment health status for the society. Use when admin asks about equipment, machinery, lifts, generators, pumps etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            description: 'Filter by health status',
+            enum: ['operational', 'needs_attention', 'critical', 'all']
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_vendors',
+      description: 'Get vendor/contractor information including contract expiry dates and costs. Use when admin asks about vendors, AMC contracts, or service providers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          expiring_soon: {
+            type: 'boolean',
+            description: 'If true, return only vendors with contracts expiring within 30 days'
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_sla_status',
+      description: 'Get SLA compliance status and overdue complaints. Use when admin asks about SLA breaches, overdue issues, or deadline compliance.',
+      parameters: {
+        type: 'object',
+        properties: {
+          overdue_only: {
+            type: 'boolean',
+            description: 'If true, return only overdue complaints'
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_society_stats',
+      description: 'Get overall society statistics for the current month. Use when admin asks for a summary, overview, or monthly report.',
+      parameters: {
+        type: 'object',
+        properties: {
+          period: {
+            type: 'string',
+            description: 'Time period for stats',
+            enum: ['today', 'week', 'month']
+          }
+        },
+        required: []
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_root_cause_tickets',
+      description: 'Get open root cause investigation tickets. Use when admin asks about root cause analysis or investigation tickets.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['open', 'investigating', 'awaiting_vendor', 'resolved', 'all']
+          }
+        },
+        required: []
+      }
+    }
+  }
+]
+
+
+async function executeTool(toolName, args, societyId) {
+  console.log(`[AGENT] Executing tool: ${toolName}`, args)
+
+  switch(toolName) {
+
+    case 'get_complaints': {
+      const safeArgs = args || {}
+      let query = supabase
+        .from('complaints')
+        .select(`
+          id, title, category, priority,
+          status, created_at, sla_deadline,
+          submitted_by_user:users!complaints_submitted_by_fkey(name),
+          assigned_tech:technicians(
+            users(name)
+          )
+        `)
+        .eq('society_id', societyId)
+        .order('created_at', { ascending: false })
+        .limit(safeArgs.limit || 10)
+
+      if (safeArgs.status && safeArgs.status !== 'all') {
+        query = query.eq('status', safeArgs.status)
+      }
+      if (safeArgs.priority && safeArgs.priority !== 'all') {
+        query = query.eq('priority', safeArgs.priority)
+      }
+
+      const { data } = await query
+      return {
+        count: data?.length || 0,
+        complaints: data?.map(c => ({
+          id: c.id,
+          title: c.title,
+          category: c.category,
+          priority: c.priority,
+          status: c.status,
+          submitted_by: c.submitted_by_user?.name,
+          assigned_to: c.assigned_tech?.users?.name || 'Unassigned',
+          sla_deadline: c.sla_deadline,
+          is_overdue: new Date(c.sla_deadline) < new Date(),
+          created_at: c.created_at
+        })) || []
+      }
+    }
+
+    case 'get_chronic_issues': {
+      const safeArgs = args || {}
+      let query = supabase
+        .from('chronic_issues')
+        .select(`
+          *,
+          root_cause_tickets(
+            id, title, status,
+            root_cause_documented,
+            amc_notified
+          )
+        `)
+        .eq('society_id', societyId)
+        .order('severity', { ascending: true })
+
+      if (safeArgs.status && safeArgs.status !== 'all') {
+        query = query.eq('status', safeArgs.status)
+      }
+
+      const { data } = await query
+      return {
+        count: data?.length || 0,
+        chronic_issues: data?.map(i => ({
+          id: i.id,
+          asset: i.asset_type,
+          fault: i.fault_type,
+          location: i.location,
+          occurrences: i.occurrence_count,
+          severity: i.severity,
+          status: i.status,
+          first_reported: i.first_reported,
+          last_reported: i.last_reported,
+          estimated_cost_saved: i.estimated_cost_saved,
+          root_cause_ticket: i.root_cause_tickets?.[0] || null
+        })) || []
+      }
+    }
+
+    case 'get_technicians': {
+      const safeArgs = args || {}
+      let query = supabase
+        .from('technicians')
+        .select(`
+          id, specializations,
+          performance_score, is_available,
+          users(name, phone)
+        `)
+        .eq('society_id', societyId)
+
+      if (safeArgs.available_only) {
+        query = query.eq('is_available', true)
+      }
+
+      const { data: techs } = await query
+
+      // Get workload for each technician
+      const techsWithWorkload = await Promise.all(
+        (techs || []).map(async (tech) => {
+          const { count } = await supabase
+            .from('complaints')
+            .select('*', { count: 'exact' })
+            .eq('assigned_tech_id', tech.id)
+            .not('status', 'in', '("closed","verified","resolved")')
+
+          const { data: ratings } = await supabase
+            .from('ratings')
+            .select('score')
+            .eq('technician_id', tech.id)
+
+          const avgRating = ratings?.length > 0
+            ? (ratings.reduce(
+                (sum, r) => sum + r.score, 0
+              ) / ratings.length).toFixed(1)
+            : 'No ratings yet'
+
+          return {
+            name: tech.users?.name,
+            phone: tech.users?.phone,
+            specializations: tech.specializations,
+            performance_score: tech.performance_score,
+            is_available: tech.is_available,
+            current_workload: count || 0,
+            average_rating: avgRating,
+            ...(safeArgs.specialization && {
+              matches_specialization: tech.specializations?.some(s =>
+                s.toLowerCase().includes(safeArgs.specialization.toLowerCase())
+              )
+            })
+          }
+        })
+      )
+
+      return {
+        count: techsWithWorkload.length,
+        technicians: techsWithWorkload.sort(
+          (a, b) => a.current_workload - b.current_workload
+        )
+      }
+    }
+
+    case 'get_equipment_health': {
+      const safeArgs = args || {}
+      let query = supabase
+        .from('equipment')
+        .select('*')
+        .eq('society_id', societyId)
+
+      if (safeArgs.status && safeArgs.status !== 'all') {
+        query = query.eq('status', safeArgs.status)
+      }
+
+      const { data } = await query
+      return {
+        count: data?.length || 0,
+        equipment: data?.map(e => ({
+          name: e.name,
+          location: e.location,
+          status: e.status,
+          last_inspected: e.last_inspected,
+          next_inspection: e.next_inspection,
+          is_overdue_inspection: e.next_inspection
+            ? new Date(e.next_inspection) < new Date()
+            : false,
+          notes: e.notes
+        })) || [],
+        summary: {
+          operational: data?.filter(e => e.status === 'operational').length || 0,
+          needs_attention: data?.filter(e => e.status === 'needs_attention').length || 0,
+          critical: data?.filter(e => e.status === 'critical').length || 0
+        }
+      }
+    }
+
+    case 'get_vendors': {
+      const safeArgs = args || {}
+      let query = supabase
+        .from('vendors')
+        .select('*')
+        .eq('society_id', societyId)
+
+      const { data } = await query
+
+      const now = new Date()
+      const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+      let vendors = data || []
+      if (safeArgs.expiring_soon) {
+        vendors = vendors.filter(v => {
+          if (!v.contract_end_date) return false
+          const expiry = new Date(v.contract_end_date)
+          return expiry <= in30Days && expiry >= now
+        })
+      }
+
+      return {
+        count: vendors.length,
+        vendors: vendors.map(v => ({
+          name: v.company_name,
+          service_type: v.service_type,
+          contact: v.contact_name,
+          phone: v.contact_phone,
+          contract_expiry: v.contract_end_date,
+          monthly_cost: v.contract_cost,
+          rating: v.rating,
+          status: v.status,
+          days_until_expiry: v.contract_end_date
+            ? Math.ceil(
+                (new Date(v.contract_end_date) - now) / (1000 * 60 * 60 * 24)
+              )
+            : null
+        }))
+      }
+    }
+
+    case 'get_sla_status': {
+      const safeArgs = args || {}
+      const now = new Date().toISOString()
+
+      let query = supabase
+        .from('complaints')
+        .select(`
+          id, title, category, priority,
+          status, sla_deadline, created_at,
+          assigned_tech:technicians(
+            users(name)
+          )
+        `)
+        .eq('society_id', societyId)
+        .not('status', 'in', '("closed","verified")')
+
+      if (safeArgs.overdue_only) {
+        query = query.lt('sla_deadline', now)
+      }
+
+      const { data } = await query
+      const overdue = data?.filter(c =>
+        new Date(c.sla_deadline) < new Date()
+      ) || []
+
+      return {
+        total_open: data?.length || 0,
+        overdue_count: overdue.length,
+        sla_compliance_rate: data?.length > 0
+          ? (((data.length - overdue.length) / data.length) * 100).toFixed(1) + '%'
+          : '100%',
+        overdue_complaints: overdue.map(c => ({
+          title: c.title,
+          category: c.category,
+          priority: c.priority,
+          assigned_to: c.assigned_tech?.users?.name || 'Unassigned',
+          hours_overdue: Math.ceil(
+            (new Date() - new Date(c.sla_deadline)) / (1000 * 60 * 60)
+          ),
+          sla_deadline: c.sla_deadline
+        }))
+      }
+    }
+
+    case 'get_society_stats': {
+      const safeArgs = args || {}
+      const now = new Date()
+      let startDate = new Date()
+
+      if (safeArgs.period === 'today') {
+        startDate.setHours(0, 0, 0, 0)
+      } else if (safeArgs.period === 'week') {
+        startDate.setDate(now.getDate() - 7)
+      } else {
+        startDate.setDate(1) // start of month
+      }
+
+      const [
+        { count: totalComplaints },
+        { count: resolvedComplaints },
+        { count: openComplaints },
+        { count: chronicCount },
+        { data: techData }
+      ] = await Promise.all([
+        supabase.from('complaints')
+          .select('*', { count: 'exact' })
+          .eq('society_id', societyId)
+          .gte('created_at', startDate.toISOString()),
+        supabase.from('complaints')
+          .select('*', { count: 'exact' })
+          .eq('society_id', societyId)
+          .in('status', ['closed', 'verified'])
+          .gte('created_at', startDate.toISOString()),
+        supabase.from('complaints')
+          .select('*', { count: 'exact' })
+          .eq('society_id', societyId)
+          .in('status', ['open', 'assigned', 'in_progress', 'accepted']),
+        supabase.from('chronic_issues')
+          .select('*', { count: 'exact' })
+          .eq('society_id', societyId)
+          .eq('status', 'active'),
+        supabase.from('technicians')
+          .select('performance_score')
+          .eq('society_id', societyId)
+      ])
+
+      const avgScore = techData?.length > 0
+        ? (techData.reduce(
+            (sum, t) => sum + t.performance_score, 0
+          ) / techData.length).toFixed(1)
+        : 0
+
+      const resolutionRate = totalComplaints > 0
+        ? ((resolvedComplaints / totalComplaints) * 100).toFixed(1)
+        : 0
+
+      return {
+        period: safeArgs.period || 'month',
+        total_complaints: totalComplaints,
+        resolved_complaints: resolvedComplaints,
+        open_complaints: openComplaints,
+        resolution_rate: resolutionRate + '%',
+        chronic_issues_active: chronicCount,
+        avg_technician_score: avgScore,
+        estimated_cost_saved: chronicCount * 15000
+      }
+    }
+
+    case 'get_root_cause_tickets': {
+      const safeArgs = args || {}
+      let query = supabase
+        .from('root_cause_tickets')
+        .select(`
+          *,
+          chronic_issues(
+            asset_type, fault_type,
+            severity, occurrence_count
+          )
+        `)
+        .eq('society_id', societyId)
+
+      if (safeArgs.status && safeArgs.status !== 'all') {
+        query = query.eq('status', safeArgs.status)
+      }
+
+      const { data } = await query
+      return {
+        count: data?.length || 0,
+        tickets: data?.map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          asset: t.chronic_issues?.asset_type,
+          severity: t.chronic_issues?.severity,
+          occurrences: t.chronic_issues?.occurrence_count,
+          root_cause_documented: !!t.root_cause_documented,
+          amc_notified: t.amc_notified,
+          created_at: t.created_at
+        })) || []
+      }
+    }
+
+    default:
+      return { error: `Unknown tool: ${toolName}` }
+  }
+}
+
+
+async function runEstateManagerAgent(message, societyId, conversationHistory = []) {
+  console.log(`[AGENT] Processing message: "${message}" for society: ${societyId}`)
+
+  const systemPrompt = `You are the Estate Manager Agent for BlockFlow — an AI operations co-pilot for residential society management in India.
+
+You have access to real-time data from the society's database through your tools. Always use tools to get current data before answering questions about complaints, technicians, equipment, vendors, or statistics.
+
+Your personality:
+- Professional but warm
+- Concise and actionable
+- Always suggest next steps
+- Use ₹ for Indian rupees
+- Reference specific names and numbers from the data
+
+Your capabilities:
+- Answer questions about complaints, technicians, equipment, vendors
+- Detect patterns and chronic issues
+- Recommend technician assignments
+- Flag expiring vendor contracts
+- Generate operational summaries
+- Provide cost-saving insights
+
+Always:
+- Use tools to get real data first
+- Give specific numbers and names
+- Suggest concrete actions
+- Keep responses under 200 words
+- Format with bullet points for clarity`
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: message }
+  ]
+
+  let response = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages,
+    tools: agentTools,
+    tool_choice: 'auto',
+    max_tokens: 1000,
+    temperature: 0.3
+  })
+
+  // Tool calling loop
+  let iterations = 0
+  const maxIterations = 5
+
+  while (
+    response.choices[0].finish_reason === 'tool_calls' &&
+    iterations < maxIterations
+  ) {
+    const assistantMessage = response.choices[0].message
+    const toolCalls = assistantMessage.tool_calls
+
+    console.log(`[AGENT] Tool calls requested:`, toolCalls.map(t => t.function.name))
+
+    // Add assistant message to history
+    messages.push(assistantMessage)
+
+    // Execute all tool calls in parallel
+    const toolResults = await Promise.all(
+      toolCalls.map(async (toolCall) => {
+        const args = JSON.parse(toolCall.function.arguments)
+        const result = await executeTool(toolCall.function.name, args, societyId)
+        return {
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          content: JSON.stringify(result)
+        }
+      })
+    )
+
+    // Add tool results to messages
+    messages.push(...toolResults)
+
+    // Get next response
+    response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      tools: agentTools,
+      tool_choice: 'auto',
+      max_tokens: 1000,
+      temperature: 0.3
+    })
+
+    iterations++
+  }
+
+  const finalResponse = response.choices[0].message.content
+
+  console.log(`[AGENT] Response generated after ${iterations} tool calls`)
+
+  return {
+    response: finalResponse,
+    tool_calls_made: iterations,
+    updated_history: [
+      ...conversationHistory,
+      { role: 'user', content: message },
+      { role: 'assistant', content: finalResponse }
+    ]
+  }
+}
+
 // ─── Complaint Workflow Stages ────────────────────────────────────────────────
 
 async function stageTriage(complaint) {
@@ -909,6 +1540,74 @@ app.get('/health', (req, res) => {
       'performance-update-pipeline'
     ]
   })
+})
+
+// ─── Estate Manager Agent Endpoints ──────────────────────────────────────────
+
+// POST /agent/chat — Estate Manager Agent chat endpoint
+app.post('/agent/chat', async (req, res) => {
+  const { message, society_id, conversation_history } = req.body
+
+  if (!message || !society_id) {
+    return res.status(400).json({
+      error: 'message and society_id required'
+    })
+  }
+
+  try {
+    console.log(`[API] Agent chat request: "${message}"`)
+
+    const result = await runEstateManagerAgent(
+      message,
+      society_id,
+      conversation_history || []
+    )
+
+    res.json({
+      success: true,
+      response: result.response,
+      tool_calls_made: result.tool_calls_made,
+      conversation_history: result.updated_history
+    })
+
+  } catch (err) {
+    console.error(`[API] Agent error:`, err)
+    res.status(500).json({
+      error: 'Agent failed',
+      details: err.message
+    })
+  }
+})
+
+// POST /agent/briefing — Get proactive morning briefing
+app.post('/agent/briefing', async (req, res) => {
+  const { society_id } = req.body
+
+  if (!society_id) {
+    return res.status(400).json({
+      error: 'society_id required'
+    })
+  }
+
+  try {
+    const result = await runEstateManagerAgent(
+      'Give me a morning briefing. Check all chronic issues, overdue SLAs, expiring vendor contracts, and open complaints. Give me a prioritized action list for today.',
+      society_id,
+      []
+    )
+
+    res.json({
+      success: true,
+      briefing: result.response,
+      generated_at: new Date().toISOString()
+    })
+
+  } catch (err) {
+    console.error('[API] Briefing error:', err)
+    res.status(500).json({
+      error: 'Briefing failed'
+    })
+  }
 })
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
