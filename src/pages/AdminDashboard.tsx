@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ClipboardCheck, Timer, Clock, Community, CheckCircle, WarningCircle } from 'iconoir-react';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
@@ -27,6 +27,7 @@ interface DashMetrics {
   avgResolutionHours: number;
   pendingResidents: number;
   communityIssues: number;
+  chronicIssuesCount: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ async function fetchDashboard(societyId: string | null) {
     { count: pendingResidents },
     { data: breachRaw },
     { count: communityIssuesCount },
+    { count: chronicIssuesCount },
   ] = await Promise.all([
     supabase.from('complaints')
       .select('id', { count: 'exact', head: true })
@@ -116,6 +118,11 @@ async function fetchDashboard(societyId: string | null) {
       .select('id', { count: 'exact', head: true })
       .eq('society_id', societyId ?? '')
       .neq('status', 'resolved'),
+
+    supabase.from('chronic_issues')
+      .select('*', { count: 'exact', head: true })
+      .eq('society_id', societyId ?? '')
+      .eq('status', 'active'),
   ]);
 
   // Avg resolution hours
@@ -136,6 +143,7 @@ async function fetchDashboard(societyId: string | null) {
     avgResolutionHours,
     pendingResidents: pendingResidents ?? 0,
     communityIssues: communityIssuesCount ?? 0,
+    chronicIssuesCount: chronicIssuesCount ?? 0,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -206,8 +214,9 @@ function MetricCard({
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashMetrics>({
-    totalComplaints: 0, openComplaints: 0, solvedComplaints: 0, overdueSlа: 0, avgResolutionHours: 0, pendingResidents: 0, communityIssues: 0,
+    totalComplaints: 0, openComplaints: 0, solvedComplaints: 0, overdueSlа: 0, avgResolutionHours: 0, pendingResidents: 0, communityIssues: 0, chronicIssuesCount: 0,
   });
   const [breachList, setBreachList] = useState<BreachComplaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -291,6 +300,32 @@ export default function AdminDashboard() {
       </div>
 
       <AIDailyBriefing />
+
+      {metrics.chronicIssuesCount > 0 && (
+        <div 
+          onClick={() => navigate('/admin/dna')}
+          style={{
+            background: '#FEF2F2',
+            border: '1px solid #FCA5A5',
+            borderLeft: '4px solid #dc2626',
+            borderRadius: 12,
+            padding: '14px 16px',
+            color: '#dc2626',
+            cursor: 'pointer',
+            width: '100%',
+            boxSizing: 'border-box',
+            marginBottom: 16,
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: 500,
+            lineHeight: 1.5,
+          }}
+        >
+          🧬 {metrics.chronicIssuesCount} chronic issue(s)<br />
+          detected by Complaint DNA Pipeline<br />
+          Tap to review root causes &rarr;
+        </div>
+      )}
 
       {/* ── Row 1: Metric Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>

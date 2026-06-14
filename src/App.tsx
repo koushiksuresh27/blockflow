@@ -19,6 +19,7 @@ import HousekeepingPage from './pages/admin/HousekeepingPage';
 import EquipmentPage from './pages/admin/EquipmentPage';
 import MaintenancePage from './pages/admin/MaintenancePage';
 import AlertsPage from './pages/admin/AlertsPage';
+import ChronicIssuesPage from './pages/admin/ChronicIssuesPage';
 import ResidentProtectedRoute from './components/ResidentProtectedRoute';
 import ResidentLayout from './components/ResidentLayout';
 import ResidentHome from './pages/resident/ResidentHome';
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/admin/residents" element={<ResidentsPage />} />
         <Route path="/admin/alerts" element={<AlertsPage />} />
         <Route path="/admin/complaints" element={<ComplaintsPage />} />
+        <Route path="/admin/dna" element={<ChronicIssuesPage />} />
         <Route path="/admin/technicians" element={<TechniciansPage />} />
         <Route path="/admin/housekeeping" element={<HousekeepingPage />} />
         <Route path="/admin/equipment" element={<EquipmentPage />} />

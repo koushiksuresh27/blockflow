@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import {
   GridMinus, StatsReport, ClipboardCheck, Community, Wrench,
   Map, Database, Calendar, Bell, Settings,
-  LogOut, Search, Refresh, Building
+  LogOut, Search, Refresh, Building, Dna
 } from 'iconoir-react';
 
 //  Page title map 
@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin': 'Dashboard',
   '/admin/analytics': 'Analytics',
   '/admin/complaints': 'Complaints',
+  '/admin/dna': 'Complaint DNA',
   '/admin/residents': 'Residents',
   '/admin/technicians': 'Technicians & Security',
   '/admin/housekeeping': 'Housekeeping',
@@ -36,6 +37,7 @@ const NAV_GROUPS = [
     label: 'OPERATIONS',
     items: [
       { to: '/admin/complaints', icon: ClipboardCheck, label: 'Complaints' },
+      { to: '/admin/dna', icon: Dna, label: 'Complaint DNA' },
       { to: '/admin/residents', icon: Community, label: 'Residents' },
       { to: '/admin/technicians', icon: Wrench, label: 'Technicians & Security' },
       { to: '/admin/housekeeping', icon: Map, label: 'Housekeeping' },

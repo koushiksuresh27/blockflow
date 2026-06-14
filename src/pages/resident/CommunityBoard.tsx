@@ -316,14 +316,8 @@ export default function CommunityBoard() {
 
   return (
     <div className="min-h-full bg-[#F5F3F0] pb-24 relative">
-      <header className="bg-white px-4 py-4 border-b border-[#E0DDD9] sticky top-0 z-10 flex justify-between items-center">
+      <header className="bg-white px-4 py-4 border-b border-[#E0DDD9] sticky top-0 z-10">
         <h1 className="text-xl font-display font-bold text-[#1C1917]">Community</h1>
-        <button 
-          onClick={() => setShowNewPost(true)}
-          className="w-10 h-10 bg-[#1C1917] hover:bg-[#2C2925] text-white rounded-full flex justify-center items-center transition shadow-sm active:scale-95"
-        >
-          <Plus className="w-5 h-5" />
-        </button>
       </header>
 
       {/* Community Issues Section */}
@@ -364,8 +358,15 @@ export default function CommunityBoard() {
         )}
       </div>
 
-      <div className="px-4 mb-4">
-        <h2 className="text-lg font-display font-bold text-[#1C1917]">Community Board</h2>
+      <div className="px-4 mb-4 flex justify-between items-center">
+        <h2 className="text-lg font-display font-bold text-[#1C1917]">Community Posts</h2>
+        <button 
+          onClick={() => setShowNewPost(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D97706] hover:bg-[#B45309] text-white rounded-[10px] text-sm font-sans font-semibold transition active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          New Post
+        </button>
       </div>
 
       <div className="px-4 space-y-4">
