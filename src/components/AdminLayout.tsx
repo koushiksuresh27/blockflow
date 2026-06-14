@@ -8,45 +8,45 @@ import {
   LogOut, Search, Refresh, Building
 } from 'iconoir-react';
 
-// ── Page title map ────────────────────────────────────────────────────────────
+//  Page title map 
 const PAGE_TITLES: Record<string, string> = {
-  '/admin':              'Dashboard',
-  '/admin/analytics':    'Analytics',
-  '/admin/complaints':   'Complaints',
-  '/admin/residents':    'Residents',
-  '/admin/technicians':  'Technicians & Security',
+  '/admin': 'Dashboard',
+  '/admin/analytics': 'Analytics',
+  '/admin/complaints': 'Complaints',
+  '/admin/residents': 'Residents',
+  '/admin/technicians': 'Technicians & Security',
   '/admin/housekeeping': 'Housekeeping',
-  '/admin/equipment':    'Equipment',
-  '/admin/maintenance':  'Maintenance',
-  '/admin/vendors':      'Vendors',
-  '/admin/alerts':       'Alerts',
-  '/admin/settings':     'Settings',
+  '/admin/equipment': 'Equipment',
+  '/admin/maintenance': 'Maintenance',
+  '/admin/vendors': 'Vendors',
+  '/admin/alerts': 'Alerts',
+  '/admin/settings': 'Settings',
 };
 
-// ── Nav groups ────────────────────────────────────────────────────────────────
+//  Nav groups
 const NAV_GROUPS = [
   {
     label: 'OVERVIEW',
     items: [
-      { to: '/admin',           icon: GridMinus,      label: 'Dashboard'    },
-      { to: '/admin/analytics', icon: StatsReport,    label: 'Analytics'    },
+      { to: '/admin', icon: GridMinus, label: 'Dashboard' },
+      { to: '/admin/analytics', icon: StatsReport, label: 'Analytics' },
     ],
   },
   {
     label: 'OPERATIONS',
     items: [
-      { to: '/admin/complaints',   icon: ClipboardCheck, label: 'Complaints'   },
-      { to: '/admin/residents',    icon: Community,      label: 'Residents'    },
-      { to: '/admin/technicians',  icon: Wrench,         label: 'Technicians & Security' },
-      { to: '/admin/housekeeping', icon: Map,            label: 'Housekeeping' },
+      { to: '/admin/complaints', icon: ClipboardCheck, label: 'Complaints' },
+      { to: '/admin/residents', icon: Community, label: 'Residents' },
+      { to: '/admin/technicians', icon: Wrench, label: 'Technicians & Security' },
+      { to: '/admin/housekeeping', icon: Map, label: 'Housekeeping' },
     ],
   },
   {
     label: 'FACILITIES',
     items: [
-      { to: '/admin/equipment',   icon: Database,       label: 'Equipment'    },
-      { to: '/admin/maintenance',  icon: Calendar,       label: 'Maintenance'  },
-      { to: '/admin/vendors',      icon: Building,       label: 'Vendors'      },
+      { to: '/admin/equipment', icon: Database, label: 'Equipment' },
+      { to: '/admin/maintenance', icon: Calendar, label: 'Maintenance' },
+      { to: '/admin/vendors', icon: Building, label: 'Vendors' },
     ],
   },
   {
@@ -215,91 +215,91 @@ export default function AdminLayout({
         {/* Nav Container */}
         <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <nav className="sidebar-nav" style={{ padding: '0 12px', flex: 1, overflowY: 'auto' }}>
-          {NAV_GROUPS.map(group => (
-            <div key={group.label}>
-              <span style={{
-                fontFamily: 'Inter',
-                fontWeight: 500,
-                fontSize: 10,
-                color: '#9C9894',
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-                padding: '16px 8px 4px',
-                display: 'block',
-              }}>
-                {group.label}
-              </span>
-              {group.items.map(({ to, icon: Icon, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === '/admin'}
-                  style={({ isActive }) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '9px 12px',
-                    borderRadius: 10,
-                    fontFamily: 'Space Grotesk',
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: 13,
-                    color: isActive ? '#1C1917' : '#6B6560',
-                    textDecoration: 'none',
-                    background: isActive ? '#FEF3C7' : 'transparent',
-                    marginBottom: 1,
-                    userSelect: 'none',
-                    position: 'relative',
-                    transition: 'all 0.15s ease',
-                  })}
-                  onMouseEnter={e => {
-                    const el = e.currentTarget as HTMLAnchorElement;
-                    if (!el.classList.contains('active') && el.style.background !== 'rgb(254, 243, 199)') {
-                      el.style.background = '#F5F3F0';
-                      el.style.color = '#1C1917';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    const el = e.currentTarget as HTMLAnchorElement;
-                    if (el.style.background === 'rgb(245, 243, 240)') {
-                      el.style.background = 'transparent';
-                      el.style.color = '#6B6560';
-                    }
-                  }}
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <span style={{
-                          position: 'absolute',
-                          left: -12,
-                          top: 6,
-                          bottom: 6,
-                          width: 3,
-                          background: '#D97706',
-                          borderRadius: '0 3px 3px 0',
-                        }} />
-                      )}
-                      <Icon width={18} height={18} strokeWidth={1.5} style={{ color: 'inherit', flexShrink: 0 }} />
-                      <span>{label}</span>
-                    </>
-                  )}
-                </NavLink>
-              ))}
-            </div>
-          ))}
-        </nav>
-        
-        {/* Gradient fade */}
-        <div style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '40px',
-          background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))',
-          pointerEvents: 'none',
-          borderRadius: '0 0 0 0'
-        }} />
+            {NAV_GROUPS.map(group => (
+              <div key={group.label}>
+                <span style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 500,
+                  fontSize: 10,
+                  color: '#9C9894',
+                  letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  padding: '16px 8px 4px',
+                  display: 'block',
+                }}>
+                  {group.label}
+                </span>
+                {group.items.map(({ to, icon: Icon, label }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/admin'}
+                    style={({ isActive }) => ({
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '9px 12px',
+                      borderRadius: 10,
+                      fontFamily: 'Space Grotesk',
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: 13,
+                      color: isActive ? '#1C1917' : '#6B6560',
+                      textDecoration: 'none',
+                      background: isActive ? '#FEF3C7' : 'transparent',
+                      marginBottom: 1,
+                      userSelect: 'none',
+                      position: 'relative',
+                      transition: 'all 0.15s ease',
+                    })}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLAnchorElement;
+                      if (!el.classList.contains('active') && el.style.background !== 'rgb(254, 243, 199)') {
+                        el.style.background = '#F5F3F0';
+                        el.style.color = '#1C1917';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLAnchorElement;
+                      if (el.style.background === 'rgb(245, 243, 240)') {
+                        el.style.background = 'transparent';
+                        el.style.color = '#6B6560';
+                      }
+                    }}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <span style={{
+                            position: 'absolute',
+                            left: -12,
+                            top: 6,
+                            bottom: 6,
+                            width: 3,
+                            background: '#D97706',
+                            borderRadius: '0 3px 3px 0',
+                          }} />
+                        )}
+                        <Icon width={18} height={18} strokeWidth={1.5} style={{ color: 'inherit', flexShrink: 0 }} />
+                        <span>{label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            ))}
+          </nav>
+
+          {/* Gradient fade */}
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '40px',
+            background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95))',
+            pointerEvents: 'none',
+            borderRadius: '0 0 0 0'
+          }} />
         </div>
 
         {/* Bottom: admin profile */}
@@ -374,101 +374,101 @@ export default function AdminLayout({
         zIndex: 10,
         flexShrink: 0,
       }}>
-          {/* Page title */}
-          <span style={{
+        {/* Page title */}
+        <span style={{
+          fontFamily: 'Space Grotesk',
+          fontWeight: 700,
+          fontSize: 20,
+          color: '#1C1917',
+          whiteSpace: 'nowrap',
+        }}>
+          {pageTitle}
+        </span>
+
+        {/* Center search */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            background: '#FFFFFF',
+            border: `1px solid ${searchFocused ? '#D97706' : '#E0DDD9'}`,
+            borderRadius: 10,
+            height: 38,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '0 14px',
+            maxWidth: 380,
+            width: '100%',
+            transition: 'border-color 0.15s',
+          }}>
+            <Search width={15} height={15} style={{ color: '#9C9894', flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="Search..."
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              style={{
+                fontFamily: 'Inter',
+                fontWeight: 400,
+                fontSize: 14,
+                color: '#1C1917',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                flex: 1,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Refresh */}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              title="Refresh"
+              style={{
+                width: 36, height: 36,
+                background: '#FFFFFF',
+                border: '1px solid #E0DDD9',
+                borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#6B6560',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1C1917'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
+            >
+              <Refresh width={15} height={15} strokeWidth={1.5} style={{ transition: 'transform 0.3s' }} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+          )}
+
+          {/* Bell */}
+          <NotificationBell />
+
+          {/* Admin avatar */}
+          <div style={{
+            width: 32, height: 32,
+            background: '#1C1917',
+            borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'Space Grotesk',
             fontWeight: 700,
-            fontSize: 20,
-            color: '#1C1917',
-            whiteSpace: 'nowrap',
+            fontSize: 12,
+            color: '#D7DADC',
+            cursor: 'pointer',
+            flexShrink: 0,
           }}>
-            {pageTitle}
-          </span>
-
-          {/* Center search */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <div style={{
-              background: '#FFFFFF',
-              border: `1px solid ${searchFocused ? '#D97706' : '#E0DDD9'}`,
-              borderRadius: 10,
-              height: 38,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '0 14px',
-              maxWidth: 380,
-              width: '100%',
-              transition: 'border-color 0.15s',
-            }}>
-              <Search width={15} height={15} style={{ color: '#9C9894', flexShrink: 0 }} />
-              <input
-                type="text"
-                placeholder="Search..."
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                style={{
-                  fontFamily: 'Inter',
-                  fontWeight: 400,
-                  fontSize: 14,
-                  color: '#1C1917',
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  flex: 1,
-                }}
-              />
-            </div>
+            {initials}
           </div>
+        </div>
+      </header>
 
-          {/* Right actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Refresh */}
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                title="Refresh"
-                style={{
-                  width: 36, height: 36,
-                  background: '#FFFFFF',
-                  border: '1px solid #E0DDD9',
-                  borderRadius: 10,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#6B6560',
-                  transition: 'all 0.15s',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#1C1917'; (e.currentTarget as HTMLButtonElement).style.color = '#1C1917'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#E0DDD9'; (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
-              >
-                <Refresh width={15} height={15} strokeWidth={1.5} style={{ transition: 'transform 0.3s' }} className={isRefreshing ? 'animate-spin' : ''} />
-              </button>
-            )}
-
-            {/* Bell */}
-            <NotificationBell />
-
-            {/* Admin avatar */}
-            <div style={{
-              width: 32, height: 32,
-              background: '#1C1917',
-              borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'Space Grotesk',
-              fontWeight: 700,
-              fontSize: 12,
-              color: '#D7DADC',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}>
-              {initials}
-            </div>
-          </div>
-        </header>
-
-        {/* ── Page content ── */}
-        <main style={{ marginLeft: 240, padding: 28, minHeight: 'calc(100vh - 64px)' }}>
-          {children}
-        </main>
+      {/* ── Page content ── */}
+      <main style={{ marginLeft: 240, padding: 28, minHeight: 'calc(100vh - 64px)' }}>
+        {children}
+      </main>
     </div>
   );
 }
