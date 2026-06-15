@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import EstateManagerAgent from './admin/EstateManagerAgent';
 import {
   GridMinus, StatsReport, ClipboardCheck, Community, Wrench,
   Map, Database, Calendar, Bell, Settings,
@@ -471,6 +472,8 @@ export default function AdminLayout({
       <main style={{ marginLeft: 240, padding: 28, minHeight: 'calc(100vh - 64px)' }}>
         {children}
       </main>
+
+      <EstateManagerAgent />
     </div>
   );
 }

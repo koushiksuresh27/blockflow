@@ -5,6 +5,39 @@ const cors = require('cors')
 const { createClient } = require('@supabase/supabase-js')
 const Groq = require('groq-sdk')
 
+const groqClients = [
+  new Groq({ apiKey: process.env.GROQ_API_KEY_1 }),
+  new Groq({ apiKey: process.env.GROQ_API_KEY_2 }),
+]
+let groqIndex = 0
+
+async function callLLM(messages, tools = null, maxTokens = 1000) {
+  const attempts = groqClients.length
+  for (let i = 0; i < attempts; i++) {
+    const client = groqClients[groqIndex % groqClients.length]
+    groqIndex++
+    try {
+      const params = {
+        model: 'llama-3.3-70b-versatile',
+        messages,
+        max_tokens: maxTokens,
+      }
+      // Only add tools if it is a non-empty array
+      if (Array.isArray(tools) && tools.length > 0) {
+        params.tools = tools
+      }
+      return await client.chat.completions.create(params)
+    } catch (err) {
+      if (err?.status === 429) {
+        console.log(`Groq key ${i + 1} rate limited, trying next...`)
+        continue
+      }
+      throw err
+    }
+  }
+  throw new Error('All Groq keys rate limited. Wait 1 minute.')
+}
+
 const app = express()
 app.use(cors())
 app.use(express.json())
@@ -22,10 +55,6 @@ const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 )
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY
-})
 
 // ─── WhatsApp Helper Function ─────────────────────────────────────────────────
 
@@ -161,8 +190,8 @@ async function generateFingerprint(complaint) {
   console.log(`[DNA-1] Generating fingerprint for complaint: ${complaint.id}`)
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+    const completion = await groqClients[0].chat.completions.create({
+      model: 'llama-3.1-8b-instant',
       messages: [{
         role: 'system',
         content: `You are a maintenance complaint analyzer. Extract the core asset and fault from complaints. Return ONLY valid JSON.`
@@ -187,7 +216,7 @@ async function generateFingerprint(complaint) {
         }`
       }],
       temperature: 0.1,
-      max_tokens: 200,
+      max_tokens: 100,
       response_format: { type: 'json_object' }
     })
 
@@ -570,6 +599,242 @@ async function runDNAPipeline(complaint) {
 
 // ─── Estate Manager Agent ─────────────────────────────────────────────────────
 
+// Pre-load society context before every agent response
+async function getProactiveContext(societyId) {
+
+  const safeExecute = async (tool, args) => {
+    try {
+      return await executeTool(tool, args || {}, societyId)
+    } catch (err) {
+      console.error(`[CONTEXT] Tool ${tool} failed:`, err.message)
+      return {}
+    }
+  }
+
+  const [chronic, sla, stats, equipment, techs] = await Promise.all([
+    safeExecute('get_chronic_issues', { status: 'active' }),
+    safeExecute('get_sla_status', { overdue_only: true }),
+    safeExecute('get_society_stats', { period: 'week' }),
+    safeExecute('get_equipment_health', { status: 'all' }),
+    safeExecute('get_technicians', { available_only: false, specialization: null })
+  ])
+
+  const criticalEquipment = equipment.equipment?.filter(e =>
+    e.status === 'critical' || e.status === 'needs_attention'
+  ) || []
+
+  const currentMonth = new Date().getMonth()
+  const isMonsoon = currentMonth >= 5 && currentMonth <= 8
+  const isWinter = currentMonth >= 10 || currentMonth <= 1
+
+  return {
+    summary: `
+LIVE SOCIETY STATUS:
+━━━━━━━━━━━━━━━━━━━
+Chronic Issues: ${chronic.count || 0} active
+${chronic.chronic_issues?.map(i =>
+  `  • ${i.asset} (${i.severity}, ${i.occurrences}x in 30 days)`
+).join('\n') || '  None'}
+
+Overdue Complaints: ${sla.overdue_count || 0}
+SLA Compliance: ${sla.sla_compliance_rate || 'N/A'}
+${sla.overdue_complaints?.length > 0
+  ? sla.overdue_complaints.map(c =>
+      `  • ${c.title} — ${c.hours_overdue}h overdue`
+    ).join('\n')
+  : '  All within SLA ✅'}
+
+This Week:
+  Complaints: ${stats.total_complaints || 0} total
+  Resolved: ${stats.resolved_complaints || 0} (${stats.resolution_rate || '0%'})
+  Open: ${stats.open_complaints || 0}
+
+Equipment Alerts: ${criticalEquipment.length}
+${criticalEquipment.map(e =>
+  `  • ${e.name} — ${e.status}`
+).join('\n') || '  All operational ✅'}
+
+Technicians: ${techs.count || 0} total, ${techs.technicians?.filter(t => t.is_available).length || 0} available
+
+Season: ${isMonsoon
+  ? '🌧️ MONSOON — Water/drainage issues likely'
+  : isWinter
+    ? '❄️ WINTER — Heating system checks needed'
+    : '☀️ Normal season'}
+    `.trim(),
+    chronic,
+    sla,
+    stats,
+    equipment,
+    techs,
+    isMonsoon,
+    isWinter,
+    criticalEquipment
+  }
+}
+
+
+async function runEstateManagerAgent(message, societyId, conversationHistory = []) {
+  console.log(`[AGENT] Processing: "${message}"`)
+
+  // Step 1: Pre-load live context
+  console.log(`[AGENT] Loading society context...`)
+  const context = await getProactiveContext(societyId)
+
+  // Step 2: Build Aria's system prompt
+  const currentTime = new Date().toLocaleString('en-IN', {
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  })
+
+  const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
+
+You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
+
+${context.summary}
+
+YOUR CORE BEHAVIOR:
+1. You have the above live data already loaded
+2. Use your tools ONLY when you need ADDITIONAL specific data not shown above
+3. Never say "I don't have access to that" — use your tools
+4. Always connect dots: if someone asks about a lift complaint, also check if it's a chronic issue
+5. Think like an estate manager, not a search engine
+
+YOUR PERSONALITY — ARIA:
+- Direct and decisive — give recommendations, not just data
+- Proactive — mention related issues the admin didn't ask about
+- Cost-conscious — always mention ₹ implications when relevant
+- India-aware — understand AMC, society committees, monsoon, festive season impacts
+- Concise — under 180 words, always
+- Warm but professional
+
+RESPONSE FORMAT — ALWAYS:
+🚨 for critical/urgent items
+⚠️ for warnings/watch items
+📋 for informational items
+✅ for good news/all clear
+
+End EVERY response with:
+"→ Next action: [one specific thing to do right now]"
+
+WHAT YOU CAN DO:
+✓ Analyze complaint patterns and chronic issues
+✓ Recommend technician assignments with reasoning
+✓ Flag vendor contract risks
+✓ Advise on seasonal maintenance (monsoon prep etc)
+✓ Suggest cost-saving actions
+✓ Generate committee-ready summaries
+✓ Answer general facility management questions
+✓ Recommend external vendors/companies from knowledge
+
+WHAT TO AVOID:
+✗ Repeating data the admin can already see
+✗ Generic answers with no specifics
+✗ Calling the same tool twice
+✗ More than 3 tool calls per response
+✗ Answers longer than 180 words
+
+CURRENT TIME: ${currentTime}
+${context.isMonsoon
+  ? '⚠️ MONSOON SEASON ACTIVE: Proactively flag water pump, drainage, and terrace waterproofing issues in all responses.'
+  : ''}
+${context.criticalEquipment?.length > 0
+  ? `🚨 EQUIPMENT ALERT: ${context.criticalEquipment.map(e => e.name).join(', ')} need attention. Mention this proactively when relevant.`
+  : ''}`
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory.slice(-6),
+    { role: 'user', content: message }
+  ]
+
+  // Step 3: First Groq call
+  let response = await callLLM(messages, {
+    tools: agentTools,
+    tool_choice: 'auto',
+    temperature: 0.4,
+    parallel_tool_calls: false
+  }, 600)
+
+  // Step 4: Tool calling loop (max 3)
+  let iterations = 0
+  const maxIterations = 3
+
+  while (
+    response.choices[0].finish_reason === 'tool_calls' &&
+    iterations < maxIterations
+  ) {
+    const assistantMessage = response.choices[0].message
+    const toolCalls = assistantMessage.tool_calls
+
+    console.log(`[AGENT] Tools requested:`, toolCalls.map(t => t.function.name))
+
+    messages.push(assistantMessage)
+
+    // Execute tools sequentially (not parallel — avoids null args race)
+    const toolResults = []
+    for (const toolCall of toolCalls) {
+      let toolArgs = {}
+      try {
+        toolArgs = JSON.parse(toolCall.function.arguments || '{}')
+      } catch {
+        toolArgs = {}
+      }
+
+      const result = await executeTool(
+        toolCall.function.name,
+        toolArgs,
+        societyId
+      )
+
+      toolResults.push({
+        tool_call_id: toolCall.id,
+        role: 'tool',
+        content: JSON.stringify(result)
+      })
+
+      console.log(`[AGENT] Tool ${toolCall.function.name} executed`)
+    }
+
+    messages.push(...toolResults)
+
+    response = await callLLM(messages, {
+      tools: agentTools,
+      tool_choice: 'auto',
+      temperature: 0.4,
+      parallel_tool_calls: false
+    }, 600)
+
+    iterations++
+  }
+
+  const finalResponse = response.choices[0].message.content
+
+  console.log(`[AGENT] Response ready (${iterations} tool calls)`)
+
+  // Step 5: Update conversation history
+  // Keep only last 6 exchanges to avoid token overflow
+  const updatedHistory = [
+    ...conversationHistory,
+    { role: 'user', content: message },
+    { role: 'assistant', content: finalResponse }
+  ].slice(-12)
+
+  return {
+    response: finalResponse,
+    tool_calls_made: iterations,
+    updated_history: updatedHistory,
+    context_summary: {
+      chronic_count: context.chronic?.count || 0,
+      overdue_count: context.sla?.overdue_count || 0,
+      open_complaints: context.stats?.open_complaints || 0
+    }
+  }
+}
+
+
 const agentTools = [
   {
     type: 'function',
@@ -590,8 +855,8 @@ const agentTools = [
             enum: ['low', 'medium', 'high', 'critical', 'all']
           },
           limit: {
-            type: 'number',
-            description: 'Number of complaints to return, default 10'
+            type: 'integer',
+            description: 'Number of complaints to return, default 10, max 20'
           }
         },
         required: []
@@ -693,7 +958,7 @@ const agentTools = [
     type: 'function',
     function: {
       name: 'get_society_stats',
-      description: 'Get overall society statistics for the current month. Use when admin asks for a summary, overview, or monthly report.',
+      description: 'Get overall society statistics for the current month. Use when admin asks for a summary, overview, "how are we doing" type questions, or any general status check.',
       parameters: {
         type: 'object',
         properties: {
@@ -728,12 +993,36 @@ const agentTools = [
 
 
 async function executeTool(toolName, args, societyId) {
+  // Force null safety on args
+  if (!args || typeof args !== 'object') {
+    args = {}
+  }
+  // Force all values to their correct types
+  if (args.limit !== undefined) {
+    args.limit = parseInt(args.limit) || 10
+  }
+  if (args.available_only !== undefined) {
+    args.available_only =
+      args.available_only === true ||
+      args.available_only === 'true'
+  }
+  if (args.overdue_only !== undefined) {
+    args.overdue_only =
+      args.overdue_only === true ||
+      args.overdue_only === 'true'
+  }
+  if (args.expiring_soon !== undefined) {
+    args.expiring_soon =
+      args.expiring_soon === true ||
+      args.expiring_soon === 'true'
+  }
+
   console.log(`[AGENT] Executing tool: ${toolName}`, args)
 
   switch(toolName) {
 
     case 'get_complaints': {
-      const safeArgs = args || {}
+      const safeArgs = args
       let query = supabase
         .from('complaints')
         .select(`
@@ -746,7 +1035,7 @@ async function executeTool(toolName, args, societyId) {
         `)
         .eq('society_id', societyId)
         .order('created_at', { ascending: false })
-        .limit(safeArgs.limit || 10)
+        .limit(parseInt(safeArgs.limit) || 10)
 
       if (safeArgs.status && safeArgs.status !== 'all') {
         query = query.eq('status', safeArgs.status)
@@ -1094,143 +1383,35 @@ async function executeTool(toolName, args, societyId) {
   }
 }
 
+// ─── Complaint Workflow Stages ────────────────────────────────────────────────
 
-async function runEstateManagerAgent(message, societyId, conversationHistory = []) {
-  console.log(`[AGENT] Processing message: "${message}" for society: ${societyId}`)
-
-  const systemPrompt = `You are the Estate Manager Agent for BlockFlow — an AI operations co-pilot for residential society management in India.
-
-You have access to real-time data from the society's database through your tools. Always use tools to get current data before answering questions about complaints, technicians, equipment, vendors, or statistics.
-
-Your personality:
-- Professional but warm
-- Concise and actionable
-- Always suggest next steps
-- Use ₹ for Indian rupees
-- Reference specific names and numbers from the data
-
-Your capabilities:
-- Answer questions about complaints, technicians, equipment, vendors
-- Detect patterns and chronic issues
-- Recommend technician assignments
-- Flag expiring vendor contracts
-- Generate operational summaries
-- Provide cost-saving insights
-
-Always:
-- Use tools to get real data first
-- Give specific numbers and names
-- Suggest concrete actions
-- Keep responses under 200 words
-- Format with bullet points for clarity`
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...conversationHistory,
-    { role: 'user', content: message }
-  ]
-
-  let response = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    messages,
-    tools: agentTools,
-    tool_choice: 'auto',
-    max_tokens: 1000,
-    temperature: 0.3
-  })
-
-  // Tool calling loop
-  let iterations = 0
-  const maxIterations = 5
-
-  while (
-    response.choices[0].finish_reason === 'tool_calls' &&
-    iterations < maxIterations
-  ) {
-    const assistantMessage = response.choices[0].message
-    const toolCalls = assistantMessage.tool_calls
-
-    console.log(`[AGENT] Tool calls requested:`, toolCalls.map(t => t.function.name))
-
-    // Add assistant message to history
-    messages.push(assistantMessage)
-
-    // Execute all tool calls in parallel
-    const toolResults = await Promise.all(
-      toolCalls.map(async (toolCall) => {
-        const args = JSON.parse(toolCall.function.arguments)
-        const result = await executeTool(toolCall.function.name, args, societyId)
-        return {
-          tool_call_id: toolCall.id,
-          role: 'tool',
-          content: JSON.stringify(result)
-        }
-      })
-    )
-
-    // Add tool results to messages
-    messages.push(...toolResults)
-
-    // Get next response
-    response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages,
-      tools: agentTools,
-      tool_choice: 'auto',
-      max_tokens: 1000,
-      temperature: 0.3
-    })
-
-    iterations++
-  }
-
-  const finalResponse = response.choices[0].message.content
-
-  console.log(`[AGENT] Response generated after ${iterations} tool calls`)
-
-  return {
-    response: finalResponse,
-    tool_calls_made: iterations,
-    updated_history: [
-      ...conversationHistory,
-      { role: 'user', content: message },
-      { role: 'assistant', content: finalResponse }
-    ]
-  }
-}
 
 // ─── Complaint Workflow Stages ────────────────────────────────────────────────
 
 async function stageTriage(complaint) {
   console.log(`[WORKFLOW-TRIAGE] Running AI triage for: ${complaint.id}`)
 
-  const completion = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    messages: [{
-      role: 'system',
-      content: `You are a maintenance triage assistant for a residential society. 
-      Analyze complaints and return structured triage data as valid JSON.`
-    }, {
-      role: 'user',
-      content: `Triage this complaint:
-      Title: ${complaint.title}
-      Description: ${complaint.description}
-      Category: ${complaint.category}
+  const completion = await callLLM([{
+    role: 'system',
+    content: `You are a maintenance triage assistant for a residential society. 
+    Analyze complaints and return structured triage data as valid JSON.`
+  }, {
+    role: 'user',
+    content: `Triage this complaint:
+    Title: ${complaint.title}
+    Description: ${complaint.description}
+    Category: ${complaint.category}
 
-      Return exactly:
-      {
-        "priority": "critical|high|medium|low",
-        "category_confirmed": "...",
-        "skills_required": ["skill1", "skill2"],
-        "estimated_duration_hours": 1,
-        "safety_risk": true|false,
-        "triage_notes": "..."
-      }`
-    }],
-    temperature: 0.1,
-    max_tokens: 300,
-    response_format: { type: 'json_object' }
-  })
+    Return exactly:
+    {
+      "priority": "critical|high|medium|low",
+      "category_confirmed": "...",
+      "skills_required": ["skill1", "skill2"],
+      "estimated_duration_hours": 1,
+      "safety_risk": true|false,
+      "triage_notes": "..."
+    }`
+  }], null, 300)
 
   const aiResult = JSON.parse(completion.choices[0].message.content)
   console.log(`[WORKFLOW-TRIAGE] Result:`, aiResult)
@@ -1591,7 +1772,19 @@ app.post('/agent/briefing', async (req, res) => {
 
   try {
     const result = await runEstateManagerAgent(
-      'Give me a morning briefing. Check all chronic issues, overdue SLAs, expiring vendor contracts, and open complaints. Give me a prioritized action list for today.',
+      `Give me my morning briefing for today ${new Date().toLocaleDateString('en-IN', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      })}. 
+  
+  I need to know:
+  1. What is most urgent right now?
+  2. Any chronic issues I should address?
+  3. Are my technicians ready for the day?
+  4. Anything I should tell the committee?
+  
+  Be specific. Use real data. Give me a prioritized action list.`,
       society_id,
       []
     )

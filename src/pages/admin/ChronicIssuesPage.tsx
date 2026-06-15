@@ -5,8 +5,6 @@ import AdminLayout from '../../components/AdminLayout';
 
 const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface ChronicIssue {
   id: string;
   society_id: string;
@@ -43,8 +41,6 @@ interface IncidentCluster {
   created_at: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function fmtDate(iso: string | null): string {
   if (!iso) return 'N/A';
   return new Date(iso).toLocaleString('en-IN', {
@@ -59,21 +55,20 @@ function shortUuid(uuid: string | null): string {
 
 const SEVERITY_BADGE: Record<string, React.CSSProperties> = {
   critical: { background: '#FEF2F2', color: '#dc2626' },
-  high:     { background: '#FFF7ED', color: '#ea580c' },
-  medium:   { background: '#FEF3C7', color: '#D97706' },
-  low:      { background: '#F5F3F0', color: '#6B6560' },
+  high: { background: '#FFF7ED', color: '#ea580c' },
+  medium: { background: '#FEF3C7', color: '#D97706' },
+  low: { background: '#F5F3F0', color: '#6B6560' },
 };
 
 const STATUS_BADGE: Record<string, React.CSSProperties> = {
-  active:      { background: '#FEF2F2', color: '#dc2626' },
-  monitoring:  { background: '#FEF3C7', color: '#D97706' },
-  resolved:    { background: '#F0FDF4', color: '#15803D' },
-  open:        { background: '#FEF2F2', color: '#dc2626' },
+  active: { background: '#FEF2F2', color: '#dc2626' },
+  monitoring: { background: '#FEF3C7', color: '#D97706' },
+  resolved: { background: '#F0FDF4', color: '#15803D' },
+  open: { background: '#FEF2F2', color: '#dc2626' },
   in_progress: { background: '#FEF3C7', color: '#D97706' },
-  closed:      { background: '#F5F3F0', color: '#6B6560' },
+  closed: { background: '#F5F3F0', color: '#6B6560' },
 };
 
-// ─── Inline Components ────────────────────────────────────────────────────────
 
 function Spinner() {
   return (
@@ -94,10 +89,9 @@ const SkeletonCard = () => (
     borderRadius: '16px',
     height: '120px',
     animation: 'pulse 1.5s ease infinite',
-  }}/>
+  }} />
 );
 
-// ─── Page Component ──────────────────────────────────────────────────────────
 
 export default function ChronicIssuesPage() {
   const [activeTab, setActiveTab] = useState<'chronic' | 'rootcause' | 'patterns'>('chronic');
@@ -164,7 +158,6 @@ export default function ChronicIssuesPage() {
       setRootCauseTickets((rcTicketsData as unknown as RootCauseTicket[]) ?? []);
       setIncidentClusters((iClustersData as unknown as IncidentCluster[]) ?? []);
 
-      // Init notes state
       const initialNotes: Record<string, string> = {};
       ((rcTicketsData ?? []) as unknown as RootCauseTicket[]).forEach(t => {
         initialNotes[t.id] = t.resolution_notes ?? '';
@@ -181,8 +174,6 @@ export default function ChronicIssuesPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // ─── Actions ───────────────────────────────────────────────────────────────
 
   const handleResolveIssue = async (id: string) => {
     try {
@@ -233,7 +224,6 @@ export default function ChronicIssuesPage() {
     return groups;
   }, [incidentClusters]);
 
-  // ─── Styles ────────────────────────────────────────────────────────────────
 
   const pageContainer: React.CSSProperties = {
     maxWidth: 1280, margin: '0 auto', paddingBottom: 64,
@@ -344,7 +334,7 @@ export default function ChronicIssuesPage() {
             ) : chronicIssues.length === 0 ? (
               <div style={{ ...cardBase, padding: '48px 24px', textAlign: 'center' }}>
                 <p style={{ fontFamily: 'Inter', fontSize: 15, color: '#6B6560', margin: 0 }}>
-                  🧬 No chronic issues detected yet.<br/>The DNA pipeline will flag patterns as complaints come in.
+                  🧬 No chronic issues detected yet.<br />The DNA pipeline will flag patterns as complaints come in.
                 </p>
               </div>
             ) : (
@@ -431,7 +421,7 @@ export default function ChronicIssuesPage() {
         {/* Tab 2: Root Cause Tickets */}
         {activeTab === 'rootcause' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-             {loading ? (
+            {loading ? (
               <>
                 <SkeletonCard />
                 <SkeletonCard />
@@ -543,7 +533,7 @@ export default function ChronicIssuesPage() {
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {Object.entries(groupedPatterns).map(([fingerprint, clusters]) => (
                   <div key={fingerprint} style={{ borderBottom: '1px solid #E0DDD9', padding: '16px 0' }}>
-                    <div 
+                    <div
                       onClick={() => togglePattern(fingerprint)}
                       style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
                     >
@@ -568,7 +558,7 @@ export default function ChronicIssuesPage() {
                                 {cluster.complaint_count} complaints clustered &middot; {fmtDate(cluster.created_at)}
                               </p>
                               <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#6B6560', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                Chronic: 
+                                Chronic:
                                 <span style={{
                                   background: cluster.is_chronic ? '#FEF2F2' : '#F5F3F0',
                                   color: cluster.is_chronic ? '#dc2626' : '#6B6560',

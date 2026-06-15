@@ -5,7 +5,6 @@ import { STATUS_CONFIG, COMMUNITY_ASSETS } from '../../constants/communityAssets
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ResidentStatus =
   | 'open' | 'triaged' | 'assigned' | 'accepted' | 'in_progress'
@@ -22,8 +21,6 @@ interface ResidentComplaint {
   created_at: string;
   submitted_by_name: string;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -47,26 +44,24 @@ function fmt(s: string): string {
 
 const PRIORITY_BADGE: Record<ResidentPriority, React.CSSProperties> = {
   critical: { background: '#FFF1F2', color: '#BE123C' },
-  high:     { background: '#FEF3C7', color: '#92400E' },
-  medium:   { background: '#EFF6FF', color: '#1D4ED8' },
-  low:      { background: '#F0FDF4', color: '#15803D' },
+  high: { background: '#FEF3C7', color: '#92400E' },
+  medium: { background: '#EFF6FF', color: '#1D4ED8' },
+  low: { background: '#F0FDF4', color: '#15803D' },
 };
 
 const STATUS_BADGE: Partial<Record<ResidentStatus, React.CSSProperties>> = {
-  open:        { background: '#F5F3F0', color: '#6B6560' },
-  triaged:     { background: '#F5F3FF', color: '#6D28D9' },
-  assigned:    { background: '#F5F3FF', color: '#6D28D9' },
-  accepted:    { background: '#EFF6FF', color: '#1D4ED8' },
+  open: { background: '#F5F3F0', color: '#6B6560' },
+  triaged: { background: '#F5F3FF', color: '#6D28D9' },
+  assigned: { background: '#F5F3FF', color: '#6D28D9' },
+  accepted: { background: '#EFF6FF', color: '#1D4ED8' },
   in_progress: { background: '#EFF6FF', color: '#1D4ED8' },
-  on_hold:     { background: '#F5F3F0', color: '#6B6560' },
-  resolved:    { background: '#F0FDF4', color: '#15803D' },
-  verified:    { background: '#F0FDF4', color: '#15803D' },
-  closed:      { background: '#F5F3F0', color: '#9C9894' },
-  escalated:   { background: '#FFF1F2', color: '#BE123C' },
-  reopened:    { background: '#FEF3C7', color: '#92400E' },
+  on_hold: { background: '#F5F3F0', color: '#6B6560' },
+  resolved: { background: '#F0FDF4', color: '#15803D' },
+  verified: { background: '#F0FDF4', color: '#15803D' },
+  closed: { background: '#F5F3F0', color: '#9C9894' },
+  escalated: { background: '#FFF1F2', color: '#BE123C' },
+  reopened: { background: '#FEF3C7', color: '#92400E' },
 };
-
-// ─── Inline Spinner ───────────────────────────────────────────────────────────
 
 function Spinner() {
   return (
@@ -81,7 +76,6 @@ function Spinner() {
   );
 }
 
-// ─── Community Issue Card ─────────────────────────────────────────────────────
 
 interface CommunityCardProps {
   complaint: CommunityComplaint;
@@ -220,14 +214,12 @@ function CommunityCard({ complaint, techName, isExpanded, updates, onToggle }: C
   );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
 
 export default function ComplaintsPage() {
   const [activeTab, setActiveTab] = useState<'community' | 'resident'>('community');
 
-  // ── Community state ──
   const [communityComplaints, setCommunityComplaints] = useState<CommunityComplaint[]>([]);
   const [techNames, setTechNames] = useState<Record<string, string>>({});
   const [loadingCommunity, setLoadingCommunity] = useState(true);
@@ -279,8 +271,6 @@ export default function ComplaintsPage() {
     }
   }, []);
 
-  // ─── Fetch updates for a complaint ───────────────────────────────────────
-
   const fetchUpdates = useCallback(async (complaintId: string) => {
     setUpdatesMap((prev) => ({ ...prev, [complaintId]: null }));
     try {
@@ -309,8 +299,6 @@ export default function ComplaintsPage() {
       }
     }
   }, [expandedId, updatesMap, fetchUpdates]);
-
-  // ─── Fetch resident complaints ────────────────────────────────────────────
 
   const fetchResident = useCallback(async () => {
     setLoadingResident(true);
@@ -359,8 +347,6 @@ export default function ComplaintsPage() {
     fetchResident();
   }, [fetchCommunity, fetchResident]);
 
-  // ─── Styles ───────────────────────────────────────────────────────────────
-
   const cardBase: React.CSSProperties = {
     background: '#FFFFFF',
     border: '1px solid #E0DDD9',
@@ -370,7 +356,6 @@ export default function ComplaintsPage() {
   function tabStyle(active: boolean): React.CSSProperties {
     return {
       padding: '10px 0',
-      borderBottom: active ? '2px solid #1C1917' : '2px solid transparent',
       fontFamily: 'Space Grotesk',
       fontWeight: 600,
       fontSize: 15,
@@ -382,9 +367,6 @@ export default function ComplaintsPage() {
       transition: 'all 0.2s',
     };
   }
-
-  // ─── Render ───────────────────────────────────────────────────────────────
-
   return (
     <AdminLayout>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
@@ -454,7 +436,7 @@ export default function ComplaintsPage() {
                     complaint={complaint}
                     techName={complaint.assigned_tech_id ? (techNames[complaint.assigned_tech_id] ?? null) : null}
                     isExpanded={expandedId === complaint.id}
-                    updates={updatesMap[complaint.id] ?? (expandedId === complaint.id ? null : undefined as unknown as null)}
+                    updates={updatesMap[complaint.id] ?? (expandedId === complaint.id ? null : [])}
                     onToggle={() => handleToggle(complaint.id)}
                   />
                 ))}
