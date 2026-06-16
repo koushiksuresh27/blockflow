@@ -11,20 +11,28 @@ const groqClients = [
 ]
 let groqIndex = 0
 
-async function callLLM(messages, tools = null, maxTokens = 1000) {
+async function callLLM(messages, options = {}, maxTokens = 1000, model = 'llama-3.3-70b-versatile') {
   const attempts = groqClients.length
   for (let i = 0; i < attempts; i++) {
     const client = groqClients[groqIndex % groqClients.length]
     groqIndex++
     try {
       const params = {
-        model: 'llama-3.3-70b-versatile',
+        model,
         messages,
         max_tokens: maxTokens,
       }
-      // Only add tools if it is a non-empty array
-      if (Array.isArray(tools) && tools.length > 0) {
-        params.tools = tools
+      // Support both legacy array style and new options-object style
+      const toolsArray = Array.isArray(options) ? options : options?.tools
+      if (Array.isArray(toolsArray) && toolsArray.length > 0) {
+        params.tools = toolsArray
+        params.tool_choice = options?.tool_choice ?? 'auto'
+        if (options?.parallel_tool_calls !== undefined) {
+          params.parallel_tool_calls = options.parallel_tool_calls
+        }
+      }
+      if (options?.temperature !== undefined) {
+        params.temperature = options.temperature
       }
       return await client.chat.completions.create(params)
     } catch (err) {
@@ -47,7 +55,7 @@ app.use(express.json())
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY
+  process.env.VITE_SUPABASE_ANON_KEY
 )
 
 // Service-role client — bypasses RLS for privileged server-side queries
@@ -191,7 +199,7 @@ async function generateFingerprint(complaint) {
 
   try {
     const completion = await groqClients[0].chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-8b-instant',
       messages: [{
         role: 'system',
         content: `You are a maintenance complaint analyzer. Extract the core asset and fault from complaints. Return ONLY valid JSON.`
@@ -248,8 +256,7 @@ async function checkIncidentCluster(complaint, fingerprint) {
 
   const today = new Date().toISOString().split('T')[0]
 
-  const { data: todayCluster } = await supabase
-    .from('incident_clusters')
+  const { data: todayCluster } = await supabaseAdmin.from('incident_clusters')
     .select('*')
     .eq('society_id', complaint.society_id)
     .eq('fingerprint', fingerprint.fingerprint)
@@ -262,16 +269,14 @@ async function checkIncidentCluster(complaint, fingerprint) {
       complaint.id
     ]
 
-    await supabase
-      .from('incident_clusters')
+    await supabaseAdmin.from('incident_clusters')
       .update({
         complaint_ids: updatedIds,
         complaint_count: updatedIds.length
       })
       .eq('id', todayCluster.id)
 
-    await supabase
-      .from('complaints')
+    await supabaseAdmin.from('complaints')
       .update({
         incident_cluster_id: todayCluster.id,
         fingerprint: fingerprint.fingerprint
@@ -290,8 +295,7 @@ async function checkIncidentCluster(complaint, fingerprint) {
     }
   }
 
-  const { data: newCluster } = await supabase
-    .from('incident_clusters')
+  const { data: newCluster } = await supabaseAdmin.from('incident_clusters')
     .insert({
       society_id: complaint.society_id,
       fingerprint: fingerprint.fingerprint,
@@ -303,8 +307,7 @@ async function checkIncidentCluster(complaint, fingerprint) {
     .select()
     .single()
 
-  await supabase
-    .from('complaints')
+  await supabaseAdmin.from('complaints')
     .update({
       incident_cluster_id: newCluster.id,
       fingerprint: fingerprint.fingerprint
@@ -342,8 +345,7 @@ async function detectPattern(complaint, fingerprint, clusterResult) {
   const windowStart = new Date()
   windowStart.setDate(windowStart.getDate() - config.window_days)
 
-  const { data: clusters } = await supabase
-    .from('incident_clusters')
+  const { data: clusters } = await supabaseAdmin.from('incident_clusters')
     .select('*')
     .eq('society_id', complaint.society_id)
     .eq('fingerprint', fingerprint.fingerprint)
@@ -377,8 +379,7 @@ async function createChronicIssue(
     `[DNA-4] Creating chronic issue for: ${fingerprint.fingerprint}`
   )
 
-  const { data: existing } = await supabase
-    .from('chronic_issues')
+  const { data: existing } = await supabaseAdmin.from('chronic_issues')
     .select('*')
     .eq('society_id', complaint.society_id)
     .eq('fingerprint', fingerprint.fingerprint)
@@ -388,8 +389,7 @@ async function createChronicIssue(
   let chronicIssue
 
   if (existing) {
-    const { data: updated } = await supabase
-      .from('chronic_issues')
+    const { data: updated } = await supabaseAdmin.from('chronic_issues')
       .update({
         occurrence_count: patternResult.distinct_incidents,
         last_reported: new Date().toISOString(),
@@ -404,8 +404,7 @@ async function createChronicIssue(
   } else {
     const firstCluster = patternResult.clusters[0]
 
-    const { data: created } = await supabase
-      .from('chronic_issues')
+    const { data: created } = await supabaseAdmin.from('chronic_issues')
       .insert({
         society_id: complaint.society_id,
         asset_type: fingerprint.asset_type,
@@ -428,16 +427,14 @@ async function createChronicIssue(
     console.log(`[DNA-4] Created new chronic issue: ${created.id}`)
   }
 
-  await supabase
-    .from('complaints')
+  await supabaseAdmin.from('complaints')
     .update({
       is_chronic: true,
       chronic_issue_id: chronicIssue.id
     })
     .eq('id', complaint.id)
 
-  const { data: rootTicket } = await supabase
-    .from('root_cause_tickets')
+  const { data: rootTicket } = await supabaseAdmin.from('root_cause_tickets')
     .insert({
       chronic_issue_id: chronicIssue.id,
       society_id: complaint.society_id,
@@ -457,8 +454,7 @@ async function createChronicIssue(
 
   console.log(`[DNA-4] Root cause ticket created: ${rootTicket.id}`)
 
-  await supabase
-    .from('agent_context')
+  await supabaseAdmin.from('agent_context')
     .insert({
       society_id: complaint.society_id,
       context_type: 'chronic_issue',
@@ -517,7 +513,7 @@ async function notifyChronicIssue(
     `₹${patternResult.estimated_cost.toLocaleString('en-IN')}.`
 
   await Promise.all(admins.map(admin =>
-    supabase.from('notifications').insert({
+    supabaseAdmin.from('notifications').insert({
       recipient_id: admin.id,
       complaint_id: complaint.id,
       type: 'chronic_issue_detected',
@@ -539,8 +535,7 @@ async function runDNAPipeline(complaint) {
   try {
     const fingerprint = await generateFingerprint(complaint)
 
-    await supabase
-      .from('complaint_fingerprints')
+    await supabaseAdmin.from('complaint_fingerprints')
       .insert({
         complaint_id: complaint.id,
         society_id: complaint.society_id,
@@ -633,16 +628,16 @@ LIVE SOCIETY STATUS:
 ━━━━━━━━━━━━━━━━━━━
 Chronic Issues: ${chronic.count || 0} active
 ${chronic.chronic_issues?.map(i =>
-  `  • ${i.asset} (${i.severity}, ${i.occurrences}x in 30 days)`
-).join('\n') || '  None'}
+      `  • ${i.asset} (${i.severity}, ${i.occurrences}x in 30 days)`
+    ).join('\n') || '  None'}
 
 Overdue Complaints: ${sla.overdue_count || 0}
 SLA Compliance: ${sla.sla_compliance_rate || 'N/A'}
 ${sla.overdue_complaints?.length > 0
-  ? sla.overdue_complaints.map(c =>
-      `  • ${c.title} — ${c.hours_overdue}h overdue`
-    ).join('\n')
-  : '  All within SLA ✅'}
+        ? sla.overdue_complaints.map(c =>
+          `  • ${c.title} — ${c.hours_overdue}h overdue`
+        ).join('\n')
+        : '  All within SLA ✅'}
 
 This Week:
   Complaints: ${stats.total_complaints || 0} total
@@ -651,16 +646,16 @@ This Week:
 
 Equipment Alerts: ${criticalEquipment.length}
 ${criticalEquipment.map(e =>
-  `  • ${e.name} — ${e.status}`
-).join('\n') || '  All operational ✅'}
+          `  • ${e.name} — ${e.status}`
+        ).join('\n') || '  All operational ✅'}
 
 Technicians: ${techs.count || 0} total, ${techs.technicians?.filter(t => t.is_available).length || 0} available
 
 Season: ${isMonsoon
-  ? '🌧️ MONSOON — Water/drainage issues likely'
-  : isWinter
-    ? '❄️ WINTER — Heating system checks needed'
-    : '☀️ Normal season'}
+        ? '🌧️ MONSOON — Water/drainage issues likely'
+        : isWinter
+          ? '❄️ WINTER — Heating system checks needed'
+          : '☀️ Normal season'}
     `.trim(),
     chronic,
     sla,
@@ -674,7 +669,7 @@ Season: ${isMonsoon
 }
 
 
-async function runEstateManagerAgent(message, societyId, conversationHistory = []) {
+async function runEstateManagerAgent(message, societyId, conversationHistory = [], plan = 'free') {
   console.log(`[AGENT] Processing: "${message}"`)
 
   // Step 1: Pre-load live context
@@ -689,11 +684,57 @@ async function runEstateManagerAgent(message, societyId, conversationHistory = [
     hour12: true
   })
 
+
+  const isAgentMode = plan === 'growth'
+
+  const planContext = isAgentMode
+    ? `
+AGENT MODE ACTIVE 🤖
+
+⚠️ CRITICAL RULE — NO HALLUCINATION OF ACTIONS:
+You must NEVER claim to have performed an action (assigned a complaint, sent a WhatsApp message, created a schedule, updated a ticket) unless you have ACTUALLY called the corresponding tool function in THIS SAME turn and received a successful tool result.
+
+If the user asks you to perform an action:
+1. Call the appropriate tool IMMEDIATELY — do not describe what you are about to do, just call it
+2. Wait for the actual tool result
+3. ONLY THEN report what happened, based on the real tool result
+
+If you are missing required information (like a technician ID, complaint ID, or phone number), ask ONE clarifying question to get it. Do NOT fabricate IDs or describe a fake action.
+
+⚠️ TECHNICIAN NAME RESOLUTION RULE:
+If the admin refers to a technician by name (e.g. "assign to John"), you MUST call get_technicians first to retrieve their UUID before calling an action tool. Do NOT guess or make up a UUID.
+
+NEVER write a response that describes an action as done or in progress without a successful tool call result backing it. This is a hard requirement.
+
+Available action tools (call them directly when asked):
+  ✅ assign_complaint(complaint_id, technician_id, reason?)
+  ✅ send_whatsapp_to_technician(phone, message, technician_name)
+  ✅ create_maintenance_schedule(task_name, category, next_due, notes?)
+  ✅ update_root_cause_ticket(ticket_id, status?, root_cause_documented?, amc_notified?)`
+    : `
+ASSISTANT MODE ACTIVE 📖
+You can READ data and give recommendations.
+You CANNOT take actions directly.
+
+If admin asks you to DO something (assign, send, create, update):
+Respond with:
+"🔒 I can recommend this action, but taking it directly requires Agent Mode (Growth Plan).
+
+Here's what to do manually:
+[specific step by step instructions]
+
+Upgrade to Growth Plan to let me handle this automatically."
+
+DO NOT call action tools in assistant mode.
+Only call: get_complaints, get_chronic_issues, get_technicians, get_vendors, get_sla_status, get_society_stats, get_root_cause_tickets`
+
   const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
 
 You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
 
 ${context.summary}
+
+${planContext}
 
 YOUR CORE BEHAVIOR:
 1. You have the above live data already loaded
@@ -738,11 +779,11 @@ WHAT TO AVOID:
 
 CURRENT TIME: ${currentTime}
 ${context.isMonsoon
-  ? '⚠️ MONSOON SEASON ACTIVE: Proactively flag water pump, drainage, and terrace waterproofing issues in all responses.'
-  : ''}
+      ? '⚠️ MONSOON SEASON ACTIVE: Proactively flag water pump, drainage, and terrace waterproofing issues in all responses.'
+      : ''}
 ${context.criticalEquipment?.length > 0
-  ? `🚨 EQUIPMENT ALERT: ${context.criticalEquipment.map(e => e.name).join(', ')} need attention. Mention this proactively when relevant.`
-  : ''}`
+      ? `🚨 EQUIPMENT ALERT: ${context.criticalEquipment.map(e => e.name).join(', ')} need attention. Mention this proactively when relevant.`
+      : ''}`
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -750,17 +791,34 @@ ${context.criticalEquipment?.length > 0
     { role: 'user', content: message }
   ]
 
-  // Step 3: First Groq call
+  // Step 3: Build tool set filtered by plan and make first Groq call
+  const ACTION_TOOLS = [
+    'assign_complaint',
+    'send_whatsapp_to_technician',
+    'create_maintenance_schedule',
+    'update_root_cause_ticket'
+  ]
+  const readOnlyTools = agentTools.filter(t => !ACTION_TOOLS.includes(t.function.name))
+  const availableTools = isAgentMode ? agentTools : readOnlyTools
+
+  console.log(`[AGENT] Plan: ${plan}, isAgentMode: ${isAgentMode}`)
+  console.log(`[AGENT] Tools available for this request:`, JSON.stringify(availableTools.map(t => t.function?.name)))
+
   let response = await callLLM(messages, {
-    tools: agentTools,
+    tools: availableTools,
     tool_choice: 'auto',
-    temperature: 0.4,
+    temperature: 0.1,
     parallel_tool_calls: false
-  }, 600)
+  }, 600, 'llama-3.3-70b-versatile')
+
+  console.log(`[AGENT] LLM response finish_reason: ${response.choices[0].finish_reason}`)
+  console.log(`[AGENT] LLM response has tool_calls:`, !!(response.choices[0].message.tool_calls?.length))
+  console.log(`[AGENT] Tool calls:`, JSON.stringify(response.choices[0].message.tool_calls))
 
   // Step 4: Tool calling loop (max 3)
   let iterations = 0
   const maxIterations = 3
+  const actionsTaken = []
 
   while (
     response.choices[0].finish_reason === 'tool_calls' &&
@@ -769,7 +827,7 @@ ${context.criticalEquipment?.length > 0
     const assistantMessage = response.choices[0].message
     const toolCalls = assistantMessage.tool_calls
 
-    console.log(`[AGENT] Tools requested:`, toolCalls.map(t => t.function.name))
+    console.log(`[AGENT] Executing tool calls now...`, toolCalls.map(t => t.function.name))
 
     messages.push(assistantMessage)
 
@@ -795,24 +853,35 @@ ${context.criticalEquipment?.length > 0
         content: JSON.stringify(result)
       })
 
-      console.log(`[AGENT] Tool ${toolCall.function.name} executed`)
+      if (ACTION_TOOLS.includes(toolCall.function.name)) {
+        actionsTaken.push({
+          tool: toolCall.function.name,
+          result: toolResults[toolResults.length - 1]
+        })
+      }
+
+      console.log(`[AGENT] Tool ${toolCall.function.name} executed, result:`, JSON.stringify(result))
     }
+
+    console.log(`[AGENT] Tool execution results count:`, toolResults.length)
 
     messages.push(...toolResults)
 
     response = await callLLM(messages, {
-      tools: agentTools,
+      tools: availableTools,
       tool_choice: 'auto',
-      temperature: 0.4,
+      temperature: 0.1,
       parallel_tool_calls: false
-    }, 600)
+    }, 600, 'llama-3.3-70b-versatile')
 
     iterations++
   }
 
   const finalResponse = response.choices[0].message.content
 
-  console.log(`[AGENT] Response ready (${iterations} tool calls)`)
+  console.log(`[AGENT] Response ready — tool call iterations: ${iterations}`)
+  console.log(`[AGENT] Tool calls in this turn:`, iterations)
+  console.log(`[AGENT] Actions taken:`, actionsTaken)
 
   // Step 5: Update conversation history
   // Keep only last 6 exchanges to avoid token overflow
@@ -826,6 +895,7 @@ ${context.criticalEquipment?.length > 0
     response: finalResponse,
     tool_calls_made: iterations,
     updated_history: updatedHistory,
+    actions_taken: actionsTaken,
     context_summary: {
       chronic_count: context.chronic?.count || 0,
       overdue_count: context.sla?.overdue_count || 0,
@@ -891,11 +961,11 @@ const agentTools = [
         properties: {
           available_only: {
             type: 'boolean',
-            description: 'If true, return only available technicians'
+            description: 'If true, return only available technicians. Must be boolean true or false, never a string.'
           },
           specialization: {
             type: 'string',
-            description: 'Filter by specialization e.g. Plumbing, Electrical'
+            description: 'Filter by specialization e.g. Plumbing, Electrical. Omit this field entirely if not filtering by specialization.'
           }
         },
         required: []
@@ -1127,12 +1197,11 @@ async function executeTool(toolName, args, societyId) {
 
   console.log(`[AGENT] Executing tool: ${toolName}`, args)
 
-  switch(toolName) {
+  switch (toolName) {
 
     case 'get_complaints': {
       const safeArgs = args
-      let query = supabase
-        .from('complaints')
+      let query = supabaseAdmin.from('complaints')
         .select(`
           id, title, category, priority,
           status, created_at, sla_deadline,
@@ -1172,8 +1241,7 @@ async function executeTool(toolName, args, societyId) {
 
     case 'get_chronic_issues': {
       const safeArgs = args || {}
-      let query = supabase
-        .from('chronic_issues')
+      let query = supabaseAdmin.from('chronic_issues')
         .select(`
           *,
           root_cause_tickets(
@@ -1210,7 +1278,7 @@ async function executeTool(toolName, args, societyId) {
 
     case 'get_technicians': {
       const safeArgs = args || {}
-      let query = supabase
+      let query = supabaseAdmin
         .from('technicians')
         .select(`
           id, specializations,
@@ -1223,29 +1291,33 @@ async function executeTool(toolName, args, societyId) {
         query = query.eq('is_available', true)
       }
 
-      const { data: techs } = await query
+      console.log('[TOOL get_technicians] society_id:', societyId, 'available_only:', safeArgs.available_only, 'specialization filter:', safeArgs.specialization || 'none')
+
+      const { data: techs, error: techsError } = await query
+
+      console.log('[TOOL get_technicians] raw query returned', techs?.length ?? 0, 'rows, error:', techsError?.message || null)
+      if (techs?.length) console.log('[TOOL get_technicians] first row sample:', JSON.stringify(techs[0]))
 
       // Get workload for each technician
       const techsWithWorkload = await Promise.all(
         (techs || []).map(async (tech) => {
-          const { count } = await supabase
-            .from('complaints')
+          const { count } = await supabaseAdmin.from('complaints')
             .select('*', { count: 'exact' })
             .eq('assigned_tech_id', tech.id)
             .not('status', 'in', '("closed","verified","resolved")')
 
-          const { data: ratings } = await supabase
-            .from('ratings')
+          const { data: ratings } = await supabaseAdmin.from('ratings')
             .select('score')
             .eq('technician_id', tech.id)
 
           const avgRating = ratings?.length > 0
             ? (ratings.reduce(
-                (sum, r) => sum + r.score, 0
-              ) / ratings.length).toFixed(1)
+              (sum, r) => sum + r.score, 0
+            ) / ratings.length).toFixed(1)
             : 'No ratings yet'
 
           return {
+            id: tech.id,
             name: tech.users?.name,
             phone: tech.users?.phone,
             specializations: tech.specializations,
@@ -1262,6 +1334,8 @@ async function executeTool(toolName, args, societyId) {
         })
       )
 
+      console.log('[TOOL get_technicians] returning', techsWithWorkload.length, 'technicians with ids:', techsWithWorkload.map(t => ({ id: t.id, name: t.name, is_available: t.is_available })))
+
       return {
         count: techsWithWorkload.length,
         technicians: techsWithWorkload.sort(
@@ -1272,8 +1346,7 @@ async function executeTool(toolName, args, societyId) {
 
     case 'get_equipment_health': {
       const safeArgs = args || {}
-      let query = supabase
-        .from('equipment')
+      let query = supabaseAdmin.from('equipment')
         .select('*')
         .eq('society_id', societyId)
 
@@ -1305,8 +1378,7 @@ async function executeTool(toolName, args, societyId) {
 
     case 'get_vendors': {
       const safeArgs = args || {}
-      let query = supabase
-        .from('vendors')
+      let query = supabaseAdmin.from('vendors')
         .select('*')
         .eq('society_id', societyId)
 
@@ -1337,8 +1409,8 @@ async function executeTool(toolName, args, societyId) {
           status: v.status,
           days_until_expiry: v.contract_end_date
             ? Math.ceil(
-                (new Date(v.contract_end_date) - now) / (1000 * 60 * 60 * 24)
-              )
+              (new Date(v.contract_end_date) - now) / (1000 * 60 * 60 * 24)
+            )
             : null
         }))
       }
@@ -1348,8 +1420,7 @@ async function executeTool(toolName, args, societyId) {
       const safeArgs = args || {}
       const now = new Date().toISOString()
 
-      let query = supabase
-        .from('complaints')
+      let query = supabaseAdmin.from('complaints')
         .select(`
           id, title, category, priority,
           status, sla_deadline, created_at,
@@ -1408,32 +1479,32 @@ async function executeTool(toolName, args, societyId) {
         { count: chronicCount },
         { data: techData }
       ] = await Promise.all([
-        supabase.from('complaints')
+        supabaseAdmin.from('complaints')
           .select('*', { count: 'exact' })
           .eq('society_id', societyId)
           .gte('created_at', startDate.toISOString()),
-        supabase.from('complaints')
+        supabaseAdmin.from('complaints')
           .select('*', { count: 'exact' })
           .eq('society_id', societyId)
           .in('status', ['closed', 'verified'])
           .gte('created_at', startDate.toISOString()),
-        supabase.from('complaints')
+        supabaseAdmin.from('complaints')
           .select('*', { count: 'exact' })
           .eq('society_id', societyId)
           .in('status', ['open', 'assigned', 'in_progress', 'accepted']),
-        supabase.from('chronic_issues')
+        supabaseAdmin.from('chronic_issues')
           .select('*', { count: 'exact' })
           .eq('society_id', societyId)
           .eq('status', 'active'),
-        supabase.from('technicians')
+        supabaseAdmin.from('technicians')
           .select('performance_score')
           .eq('society_id', societyId)
       ])
 
       const avgScore = techData?.length > 0
         ? (techData.reduce(
-            (sum, t) => sum + t.performance_score, 0
-          ) / techData.length).toFixed(1)
+          (sum, t) => sum + t.performance_score, 0
+        ) / techData.length).toFixed(1)
         : 0
 
       const resolutionRate = totalComplaints > 0
@@ -1454,8 +1525,7 @@ async function executeTool(toolName, args, societyId) {
 
     case 'get_root_cause_tickets': {
       const safeArgs = args || {}
-      let query = supabase
-        .from('root_cause_tickets')
+      let query = supabaseAdmin.from('root_cause_tickets')
         .select(`
           *,
           chronic_issues(
@@ -1486,8 +1556,186 @@ async function executeTool(toolName, args, societyId) {
       }
     }
 
+
     default:
       return { error: `Unknown tool: ${toolName}` }
+
+    case 'assign_complaint': {
+      try {
+        // Step 1: Fetch the current complaint first to get submitted_by and current status
+        console.log('[AGENT ACTION] assign_complaint — fetching complaint id:', args.complaint_id)
+        const { data: existingComplaint, error: fetchError } = await supabaseAdmin.from('complaints')
+          .select('id, submitted_by, status')
+          .eq('id', args.complaint_id)
+          .single()
+
+        if (fetchError || !existingComplaint) {
+          console.error('[AGENT ACTION] Failed to fetch complaint:', fetchError)
+          return {
+            success: false,
+            error: `Complaint not found: ${fetchError?.message || 'no data returned'}`
+          }
+        }
+
+        const oldStatus = existingComplaint.status || 'open'
+        console.log('[AGENT ACTION] Complaint found, status:', oldStatus, 'submitted_by:', existingComplaint.submitted_by)
+
+        // Step 2: Update the complaint
+        console.log('[AGENT ACTION] Updating complaint, assigning technician_id:', args.technician_id)
+        const { error: updateError } = await supabaseAdmin.from('complaints')
+          .update({
+            assigned_tech_id: args.technician_id,
+            status: 'assigned',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', args.complaint_id)
+
+        if (updateError) {
+          console.error('[AGENT ACTION] Failed to update complaint:', updateError)
+          return {
+            success: false,
+            error: `Failed to update complaint: ${updateError.message}`
+          }
+        }
+
+        // Step 3: Log the action (non-fatal if it fails)
+        const { error: logError } = await supabaseAdmin.from('complaint_logs')
+          .insert({
+            complaint_id: args.complaint_id,
+            actor_id: existingComplaint.submitted_by,
+            action: 'assigned_by_agent',
+            old_status: oldStatus,
+            new_status: 'assigned',
+            note: `Assigned by Aria Agent. Reason: ${args.reason || 'Admin requested via agent'}`
+          })
+        if (logError) {
+          console.warn('[AGENT ACTION] complaint_logs insert failed (non-fatal):', logError.message)
+        }
+
+        // Step 4: Fetch technician name for confirmation message
+        console.log('[AGENT ACTION] Fetching technician id:', args.technician_id)
+        const { data: tech, error: techError } = await supabaseAdmin
+          .from('technicians')
+          .select('users(name, phone)')
+          .eq('id', args.technician_id)
+          .single()
+
+        if (techError) {
+          console.warn('[AGENT ACTION] Technician fetch failed (non-fatal):', techError.message)
+        }
+
+        const techName = tech?.users?.name || args.technician_id
+        console.log(`[AGENT ACTION] Complaint ${args.complaint_id} successfully assigned to ${techName}`)
+
+        return {
+          success: true,
+          action: 'complaint_assigned',
+          complaint_id: args.complaint_id,
+          assigned_to: techName,
+          message: `Complaint successfully assigned to ${techName}`
+        }
+      } catch (err) {
+        console.error('[AGENT ACTION] assign_complaint crashed:', err)
+        return { success: false, error: err.message }
+      }
+    }
+
+    case 'send_whatsapp_to_technician': {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID
+      const authToken = process.env.TWILIO_AUTH_TOKEN
+      const from = process.env.TWILIO_WHATSAPP_FROM
+
+      const encoded = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+
+      try {
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${encoded}`,
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+              From: `whatsapp:${from}`,
+              To: `whatsapp:${args.phone}`,
+              Body: args.message
+            })
+          }
+        )
+
+        console.log(`[AGENT ACTION] WhatsApp sent to ${args.technician_name}`)
+
+        return {
+          success: true,
+          action: 'whatsapp_sent',
+          sent_to: args.technician_name,
+          message: `WhatsApp sent to ${args.technician_name}`
+        }
+      } catch (err) {
+        return {
+          success: false,
+          error: 'WhatsApp send failed',
+          details: err.message
+        }
+      }
+    }
+
+    case 'create_maintenance_schedule': {
+      const { data } = await supabaseAdmin.from('maintenance_schedules')
+        .insert({
+          society_id: societyId,
+          task_name: args.task_name,
+          category: args.category,
+          next_due: args.next_due,
+          notes: args.notes,
+          status: 'upcoming',
+          frequency: 'one_time'
+        })
+        .select()
+        .single()
+
+      console.log(`[AGENT ACTION] Maintenance schedule created: ${args.task_name}`)
+
+      return {
+        success: true,
+        action: 'schedule_created',
+        task: args.task_name,
+        due: args.next_due,
+        message: `Maintenance task "${args.task_name}" scheduled for ${new Date(args.next_due).toLocaleDateString('en-IN')}`
+      }
+    }
+
+    case 'update_root_cause_ticket': {
+      const updateData = {
+        updated_at: new Date().toISOString()
+      }
+
+      if (args.status)
+        updateData.status = args.status
+      if (args.root_cause_documented)
+        updateData.root_cause_documented = args.root_cause_documented
+      if (args.amc_notified !== undefined)
+        updateData.amc_notified = args.amc_notified
+      if (args.status === 'resolved')
+        updateData.resolved_at = new Date().toISOString()
+
+      const { data } = await supabaseAdmin.from('root_cause_tickets')
+        .update(updateData)
+        .eq('id', args.ticket_id)
+        .select()
+        .single()
+
+      console.log(`[AGENT ACTION] Root cause ticket ${args.ticket_id} updated`)
+
+      return {
+        success: true,
+        action: 'ticket_updated',
+        ticket_id: args.ticket_id,
+        new_status: args.status,
+        message: `Root cause ticket updated to: ${args.status}`
+      }
+    }
   }
 }
 
@@ -1525,8 +1773,7 @@ async function stageTriage(complaint) {
   console.log(`[WORKFLOW-TRIAGE] Result:`, aiResult)
 
   // Persist AI triage result back to the complaint
-  await supabase
-    .from('complaints')
+  await supabaseAdmin.from('complaints')
     .update({
       ai_priority: aiResult.priority,
       ai_category: aiResult.category_confirmed,
@@ -1543,12 +1790,23 @@ async function stageTriage(complaint) {
 async function stageTechnicianMatch(complaint, aiResult) {
   console.log(`[WORKFLOW-MATCH] Finding technician for: ${complaint.id}`)
 
-  const { data: technicians } = await supabase
+  const category = complaint.category
+  const societyId = complaint.society_id
+
+  console.log('Technician search — category:', category, 'societyId:', societyId)
+
+  const { data: technicians, error } = await supabaseAdmin
     .from('technicians')
-    .select('*')
-    .eq('society_id', complaint.society_id)
+    .select('*, users(name)')
+    .eq('society_id', societyId)
     .eq('is_available', true)
-    .containedBy('skills', aiResult.skills_required || [])
+    .contains('specializations', [category])
+
+  if (error) {
+    console.error('Technician query failed:', error)
+  }
+
+  console.log('Technician query result:', JSON.stringify(technicians))
 
   if (!technicians || technicians.length === 0) {
     console.log(`[WORKFLOW-MATCH] No matching technician found`)
@@ -1556,8 +1814,7 @@ async function stageTechnicianMatch(complaint, aiResult) {
   }
 
   // Pick the technician with the fewest active assignments
-  const { data: assignments } = await supabase
-    .from('complaints')
+  const { data: assignments } = await supabaseAdmin.from('complaints')
     .select('assigned_to')
     .eq('society_id', complaint.society_id)
     .in('status', ['open', 'in_progress'])
@@ -1595,8 +1852,7 @@ async function runComplaintWorkflow(complaint) {
 
     if (!technician) {
       console.log(`[WORKFLOW] No technician available — complaint queued`)
-      await supabase
-        .from('complaints')
+      await supabaseAdmin.from('complaints')
         .update({ status: 'queued' })
         .eq('id', complaint.id)
       return { success: false, reason: 'no_technician' }
@@ -1613,8 +1869,7 @@ async function runComplaintWorkflow(complaint) {
       Date.now() + (slaHours[aiResult.priority] || 8) * 60 * 60 * 1000
     ).toISOString()
 
-    await supabase
-      .from('complaints')
+    await supabaseAdmin.from('complaints')
       .update({
         assigned_to: technician.id,
         status: 'assigned',
@@ -1642,8 +1897,7 @@ async function runComplaintWorkflow(complaint) {
     }
 
     // Stage 5: Notify the resident
-    await supabase
-      .from('notifications')
+    await supabaseAdmin.from('notifications')
       .insert({
         recipient_id: complaint.submitted_by,
         complaint_id: complaint.id,
@@ -1672,8 +1926,7 @@ app.post('/api/complaints/dna', async (req, res) => {
     return res.status(400).json({ error: 'complaint_id is required' })
   }
 
-  const { data: complaint, error } = await supabase
-    .from('complaints')
+  const { data: complaint, error } = await supabaseAdmin.from('complaints')
     .select('*')
     .eq('id', complaint_id)
     .single()
@@ -1740,8 +1993,7 @@ app.post('/dna/analyze', async (req, res) => {
 app.get('/dna/chronic/:societyId', async (req, res) => {
   const { societyId } = req.params
 
-  const { data: issues } = await supabase
-    .from('chronic_issues')
+  const { data: issues } = await supabaseAdmin.from('chronic_issues')
     .select(`
       *,
       root_cause_tickets(*)
@@ -1761,8 +2013,7 @@ app.get('/dna/chronic/:societyId', async (req, res) => {
 app.get('/dna/pattern/:societyId/:fingerprint', async (req, res) => {
   const { societyId, fingerprint } = req.params
 
-  const { data: clusters } = await supabase
-    .from('incident_clusters')
+  const { data: clusters } = await supabaseAdmin.from('incident_clusters')
     .select('*')
     .eq('society_id', societyId)
     .eq('fingerprint', fingerprint)
@@ -1786,8 +2037,7 @@ app.patch('/dna/root-cause/:ticketId', async (req, res) => {
     amc_notified
   } = req.body
 
-  const { data } = await supabase
-    .from('root_cause_tickets')
+  const { data } = await supabaseAdmin.from('root_cause_tickets')
     .update({
       root_cause_documented,
       fix_evidence_url,
@@ -1803,9 +2053,8 @@ app.patch('/dna/root-cause/:ticketId', async (req, res) => {
     .single()
 
   // If resolved, update chronic issue
-  if (status === 'resolved') {
-    await supabase
-      .from('chronic_issues')
+  if (status === 'resolved' && data?.chronic_issue_id) {
+    await supabaseAdmin.from('chronic_issues')
       .update({
         status: 'resolved',
         updated_at: new Date().toISOString()
@@ -1818,14 +2067,14 @@ app.patch('/dna/root-cause/:ticketId', async (req, res) => {
 
 // GET /health — Service health check
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'healthy',
     service: 'BlockFlow Workflow Engine',
     timestamp: new Date().toISOString(),
     workflows: [
       'complaint-resolution-pipeline',
       'complaint-dna-pipeline',
-      'sla-escalation-pipeline', 
+      'sla-escalation-pipeline',
       'performance-update-pipeline'
     ]
   })
@@ -1835,7 +2084,12 @@ app.get('/health', (req, res) => {
 
 // POST /agent/chat — Estate Manager Agent chat endpoint
 app.post('/agent/chat', async (req, res) => {
-  const { message, society_id, conversation_history } = req.body
+  const {
+    message,
+    society_id,
+    conversation_history,
+    plan  // 'free' or 'growth'
+  } = req.body
 
   if (!message || !society_id) {
     return res.status(400).json({
@@ -1844,19 +2098,21 @@ app.post('/agent/chat', async (req, res) => {
   }
 
   try {
-    console.log(`[API] Agent chat request: "${message}"`)
+    console.log(`[API] Agent chat request: "${message}" (plan: ${plan || 'free'})`)
 
     const result = await runEstateManagerAgent(
       message,
       society_id,
-      conversation_history || []
+      conversation_history || [],
+      plan || 'free'
     )
 
     res.json({
       success: true,
       response: result.response,
       tool_calls_made: result.tool_calls_made,
-      conversation_history: result.updated_history
+      conversation_history: result.updated_history,
+      actions_taken: result.actions_taken || []
     })
 
   } catch (err) {
