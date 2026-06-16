@@ -266,7 +266,7 @@ export default function ChronicIssuesPage() {
           50% { opacity: 0.5; }
         }
         body {
-          background-color: #D7DADC;
+          background-color: #EDEBE6;
         }
       `}</style>
 

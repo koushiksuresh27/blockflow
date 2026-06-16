@@ -57,7 +57,7 @@ function StatCard({
   icon: React.ElementType; accent: string;
 }) {
   return (
-    <div className={`rounded-2xl p-4 ${accent}`}>
+    <div className={`rounded-[16px] p-4 ${accent}`}>
       <div className="flex items-start justify-between mb-3">
         <Icon className="w-5 h-5 opacity-80" />
       </div>
@@ -128,14 +128,15 @@ async function loadProfileData(techId: string): Promise<{ stats: PerformanceStat
 
 export default function ProfileTab() {
   const navigate = useNavigate();
-  const { profile, refreshProfile } = useTechProfile();
+  const { profile } = useTechProfile();
   const toast = useToast();
 
   const [stats, setStats]     = useState<PerformanceStats | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [toggling, setToggling] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(false);
+  const [technicianId, setTechnicianId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!profile?.techId) return;
@@ -153,23 +154,47 @@ export default function ProfileTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleToggleAvailability = async () => {
-    if (!profile?.techId) return;
-    setToggling(true);
-    const newVal = !profile.isAvailable;
-    try {
-      const { error: upErr } = await supabase
+  useEffect(() => {
+    async function fetchAvailability() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: techData } = await supabase
         .from('technicians')
-        .update({ is_available: newVal })
-        .eq('id', profile.techId);
-      if (upErr) throw new Error(upErr.message);
-      await refreshProfile();
-      toast('success', newVal ? 'You are now available' : 'You are now busy', '');
-    } catch (e: unknown) {
-      toast('error', 'Failed to update availability', e instanceof Error ? e.message : '');
-    } finally {
-      setToggling(false);
+        .select('is_available, id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (techData) {
+        setIsAvailable(techData.is_available);
+        setTechnicianId(techData.id);
+      }
     }
+    fetchAvailability();
+  }, []);
+
+  const handleToggleAvailability = async () => {
+    if (!technicianId) return;
+    
+    const newVal = !isAvailable;
+    setIsAvailable(newVal); // optimistic update
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error: upErr } = await supabase
+      .from('technicians')
+      .update({ is_available: newVal })
+      .eq('user_id', user.id);
+    
+    if (upErr) {
+      console.error('Failed to update availability:', upErr);
+      setIsAvailable(!newVal); // revert
+      toast('error', 'Failed to update availability', upErr.message);
+      return;
+    }
+    
+    console.log('Availability updated:', newVal);
+    toast('success', newVal ? 'You are now available' : 'You are now busy', '');
   };
 
   const handleSignOut = async () => {
@@ -182,30 +207,30 @@ export default function ProfileTab() {
     : '—';
 
   return (
-    <div className="min-h-full bg-gray-50 pb-6">
+    <div className="min-h-full bg-[#EDEBE6] pb-6 font-inter">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-5 pt-8 pb-6">
+      <div className="bg-[#FFFFFF] border-b border-[#E0DDD9] px-5 pt-8 pb-6">
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-md">
+            <div className="w-16 h-16 rounded-[16px] bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] flex items-center justify-center shadow-none">
               <span className="text-white text-xl font-black">
                 {profile ? getInitials(profile.name) : '?'}
               </span>
             </div>
             <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-              profile?.isAvailable ? 'bg-green-500' : 'bg-red-400'
+              isAvailable ? 'bg-green-500' : 'bg-red-400'
             }`} />
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-black text-gray-900">{profile?.name ?? 'Loading…'}</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Technician</p>
+            <h1 className="text-xl font-black text-[#1C1917] font-recoleta">{profile?.name ?? 'Loading…'}</h1>
+            <p className="text-xs text-[#9C9894] mt-0.5">Technician</p>
             {/* Specializations */}
             {profile && profile.specializations.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {profile.specializations.map((spec) => (
-                  <span key={spec} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                  <span key={spec} className="text-[10px] font-bold px-2 py-0.5 rounded-[6px] bg-[#EFF6FF] text-[#2563EB]">
                     {spec}
                   </span>
                 ))}
@@ -218,24 +243,21 @@ export default function ProfileTab() {
         <button
           id="availability-toggle"
           onClick={handleToggleAvailability}
-          disabled={toggling}
-          className={`mt-4 w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 transition min-h-[48px] ${
-            profile?.isAvailable
+          className={`mt-4 w-full flex items-center justify-between px-4 py-3.5 rounded-[10px] border transition min-h-[48px] ${
+            isAvailable
               ? 'bg-green-50 border-green-200 text-green-700'
               : 'bg-red-50 border-red-200 text-red-600'
           }`}
         >
           <div className="flex items-center gap-2">
             <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${
-              profile?.isAvailable ? 'bg-green-500' : 'bg-red-400'
+              isAvailable ? 'bg-green-500' : 'bg-red-400'
             }`} />
             <span className="text-sm font-bold">
-              {toggling ? 'Updating…' : profile?.isAvailable ? 'Available for new tasks' : 'Marked as busy'}
+              {isAvailable ? 'Available for new tasks' : 'Marked as busy'}
             </span>
           </div>
-          {toggling ? (
-            <Loader2 className="w-5 h-5 animate-spin opacity-50" />
-          ) : profile?.isAvailable ? (
+          {isAvailable ? (
             <ToggleRight className="w-6 h-6" />
           ) : (
             <ToggleLeft className="w-6 h-6" />
@@ -257,7 +279,7 @@ export default function ProfileTab() {
           <>
             {/* Performance Stats Grid */}
             <div>
-              <h2 className="text-sm font-bold text-gray-900 mb-3">Performance</h2>
+              <h2 className="text-sm font-bold text-[#1C1917] font-recoleta mb-3">Performance</h2>
               <div className="grid grid-cols-2 gap-3">
                 <StatCard
                   label="Avg Rating"
@@ -291,25 +313,25 @@ export default function ProfileTab() {
 
             {/* Recent Ratings */}
             <div>
-              <h2 className="text-sm font-bold text-gray-900 mb-3">Recent Ratings</h2>
+              <h2 className="text-sm font-bold text-[#1C1917] font-recoleta mb-3">Recent Ratings</h2>
               {ratings.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center">
+                <div className="bg-[#FFFFFF] rounded-[16px] border border-[#E0DDD9] p-6 text-center">
                   <Star className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">No ratings yet</p>
+                  <p className="text-sm text-[#9C9894]">No ratings yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {ratings.map((r) => (
-                    <div key={r.id} className="bg-white rounded-2xl border border-gray-100 p-4">
+                    <div key={r.id} className="bg-[#FFFFFF] rounded-[16px] border border-[#E0DDD9] p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-700 truncate">{r.complaintTitle}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">{fmtDate(r.created_at)}</p>
+                          <p className="text-xs font-semibold text-[#1C1917] font-recoleta truncate">{r.complaintTitle}</p>
+                          <p className="text-[10px] text-[#9C9894] mt-0.5">{fmtDate(r.created_at)}</p>
                         </div>
                         <Stars score={r.score} />
                       </div>
                       {r.comment && (
-                        <p className="text-xs text-gray-500 italic mt-2 pt-2 border-t border-gray-50">
+                        <p className="text-xs text-[#6B6560] italic mt-2 pt-2 border-t border-[#E0DDD9]">
                           "{r.comment}"
                         </p>
                       )}
@@ -320,12 +342,12 @@ export default function ProfileTab() {
             </div>
 
             {/* Completed jobs quick stat */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-5 text-white">
+            <div className="bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] rounded-[16px] p-5 text-white">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-8 h-8 text-blue-200" strokeWidth={1.5} />
+                <CheckCircle2 className="w-8 h-8 text-[#EFF6FF]" strokeWidth={1.5} />
                 <div>
                   <p className="text-3xl font-black leading-none">{stats?.totalCompleted ?? 0}</p>
-                  <p className="text-blue-200 text-xs font-medium mt-1">Jobs completed in total</p>
+                  <p className="text-[#EFF6FF] text-xs font-medium mt-1">Jobs completed in total</p>
                 </div>
               </div>
             </div>
@@ -336,7 +358,7 @@ export default function ProfileTab() {
         <button
           id="logout-btn"
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 py-4 text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-2xl hover:bg-red-100 transition min-h-[48px] mt-2"
+          className="w-full flex items-center justify-center gap-2 py-[12px] px-[20px] text-sm font-bold text-[#dc2626] bg-[#fef2f2] border border-[#fecaca] rounded-[10px] hover:bg-[#fee2e2] transition min-h-[48px] mt-2"
         >
           <LogOut className="w-4 h-4" />
           Sign Out

@@ -25,8 +25,8 @@ export default function ResidentLayout() {
   };
 
   return (
-    <div className="bg-[#D7DADC] min-h-screen font-sans flex justify-center">
-      <div className="w-full max-w-[480px] bg-white min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
+    <div className="bg-[#EDEBE6] min-h-screen font-sans flex justify-center">
+      <div className="w-full max-w-[480px] bg-white min-h-screen flex flex-col relative overflow-hidden border-x border-[#E0DDD9] shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]">
         <main className="flex-1 overflow-y-auto pb-[64px]">
           <Outlet />
         </main>

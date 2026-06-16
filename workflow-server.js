@@ -988,6 +988,114 @@ const agentTools = [
         required: []
       }
     }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'assign_complaint',
+      description: 'AGENT MODE ONLY. Assign a complaint to a specific technician. Use when admin explicitly asks to assign a complaint.',
+      parameters: {
+        type: 'object',
+        properties: {
+          complaint_id: {
+            type: 'string',
+            description: 'UUID of the complaint to assign'
+          },
+          technician_id: {
+            type: 'string',
+            description: 'UUID of the technician to assign to'
+          },
+          reason: {
+            type: 'string',
+            description: 'Reason for this assignment'
+          }
+        },
+        required: ['complaint_id', 'technician_id']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_whatsapp_to_technician',
+      description: 'AGENT MODE ONLY. Send a WhatsApp message to a technician. Use when admin wants to notify or message a technician.',
+      parameters: {
+        type: 'object',
+        properties: {
+          technician_name: {
+            type: 'string',
+            description: 'Name of the technician'
+          },
+          phone: {
+            type: 'string',
+            description: 'Phone number with country code'
+          },
+          message: {
+            type: 'string',
+            description: 'Message to send'
+          }
+        },
+        required: ['phone', 'message', 'technician_name']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_maintenance_schedule',
+      description: 'AGENT MODE ONLY. Create a preventive maintenance task. Use when admin wants to schedule maintenance.',
+      parameters: {
+        type: 'object',
+        properties: {
+          task_name: {
+            type: 'string',
+            description: 'Name of the maintenance task'
+          },
+          category: {
+            type: 'string',
+            description: 'Category of maintenance'
+          },
+          next_due: {
+            type: 'string',
+            description: 'Due date in ISO format'
+          },
+          notes: {
+            type: 'string',
+            description: 'Additional notes'
+          }
+        },
+        required: ['task_name', 'category', 'next_due']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_root_cause_ticket',
+      description: 'AGENT MODE ONLY. Update a root cause investigation ticket status or add documentation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ticket_id: {
+            type: 'string',
+            description: 'UUID of the root cause ticket'
+          },
+          status: {
+            type: 'string',
+            enum: ['open', 'investigating', 'awaiting_vendor', 'resolved']
+          },
+          root_cause_documented: {
+            type: 'string',
+            description: 'Documentation of root cause'
+          },
+          amc_notified: {
+            type: 'boolean',
+            description: 'Whether AMC vendor was notified'
+          }
+        },
+        required: ['ticket_id']
+      }
+    }
   }
 ]
 

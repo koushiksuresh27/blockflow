@@ -116,7 +116,7 @@ function NotificationBell() {
             width: 7, height: 7,
             background: '#D97706',
             borderRadius: '50%',
-            border: '1.5px solid #D7DADC',
+            border: '1.5px solid #EDEBE6',
           }} />
         )}
       </button>
@@ -145,6 +145,87 @@ function NotificationBell() {
   );
 }
 
+// ── Admin Avatar Dropdown ─────────────────────────────────────────────────────
+function AdminAvatarDropdown({ adminName, initials, onLogout }: { adminName: string, initials: string, onLogout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div 
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: 32, height: 32,
+          background: '#1C1917',
+          borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'Space Grotesk',
+          fontWeight: 700,
+          fontSize: 12,
+          color: '#EDEBE6',
+          cursor: 'pointer',
+          flexShrink: 0,
+          userSelect: 'none',
+        }}
+      >
+        {initials}
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: 40,
+          background: '#FFFFFF',
+          border: '1px solid #E0DDD9',
+          borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          width: 240,
+          zIndex: 50,
+          padding: '12px 0',
+        }}>
+          <div style={{ padding: '4px 16px 12px' }}>
+            <p style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, color: '#1C1917', margin: 0 }}>{adminName}</p>
+            <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#6B6560', margin: '2px 0 0' }}>Society Admin</p>
+            <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 11, color: '#9C9894', margin: '2px 0 0' }}>Grand Omaxe</p>
+          </div>
+          <div style={{ height: 1, background: '#E0DDD9', margin: '0' }} />
+          <div style={{ padding: '8px' }}>
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              style={{
+                width: '100%',
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px',
+                borderRadius: 8,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#DC2626',
+                fontFamily: 'Inter',
+                fontWeight: 500,
+                fontSize: 13,
+                textAlign: 'left',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#FEF2F2'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >
+              <LogOut width={16} height={16} strokeWidth={1.5} />
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Layout ───────────────────────────────────────────────────────────────
 export default function AdminLayout({
   children,
@@ -158,7 +239,6 @@ export default function AdminLayout({
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [adminName, setAdminName] = useState('Admin');
-  const [searchFocused, setSearchFocused] = useState(false);
 
   const pageTitle = PAGE_TITLES[pathname] ?? 'Admin';
   const initials = adminName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -177,7 +257,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#D7DADC' }}>
+    <div style={{ minHeight: '100vh', background: '#EDEBE6' }}>
 
       {/* ── Sidebar ── */}
       <aside style={{
@@ -324,7 +404,7 @@ export default function AdminLayout({
               fontFamily: 'Space Grotesk',
               fontWeight: 700,
               fontSize: 13,
-              color: '#D7DADC',
+              color: '#EDEBE6',
               flexShrink: 0,
             }}>
               {initials}
@@ -366,7 +446,7 @@ export default function AdminLayout({
       <header style={{
         marginLeft: 240,
         height: 64,
-        background: '#D7DADC',
+        background: '#EDEBE6',
         borderBottom: '1px solid #E0DDD9',
         display: 'flex',
         alignItems: 'center',
@@ -388,40 +468,8 @@ export default function AdminLayout({
           {pageTitle}
         </span>
 
-        {/* Center search */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <div style={{
-            background: '#FFFFFF',
-            border: `1px solid ${searchFocused ? '#D97706' : '#E0DDD9'}`,
-            borderRadius: 10,
-            height: 38,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '0 14px',
-            maxWidth: 380,
-            width: '100%',
-            transition: 'border-color 0.15s',
-          }}>
-            <Search width={15} height={15} style={{ color: '#9C9894', flexShrink: 0 }} />
-            <input
-              type="text"
-              placeholder="Search..."
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={{
-                fontFamily: 'Inter',
-                fontWeight: 400,
-                fontSize: 14,
-                color: '#1C1917',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                flex: 1,
-              }}
-            />
-          </div>
-        </div>
+        {/* Center space (Search removed) */}
+        <div style={{ flex: 1 }} />
 
         {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -451,20 +499,7 @@ export default function AdminLayout({
           <NotificationBell />
 
           {/* Admin avatar */}
-          <div style={{
-            width: 32, height: 32,
-            background: '#1C1917',
-            borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Space Grotesk',
-            fontWeight: 700,
-            fontSize: 12,
-            color: '#D7DADC',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}>
-            {initials}
-          </div>
+          <AdminAvatarDropdown adminName={adminName} initials={initials} onLogout={handleSignOut} />
         </div>
       </header>
 

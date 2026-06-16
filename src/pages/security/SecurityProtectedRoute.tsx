@@ -42,10 +42,10 @@ export default function SecurityProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#EDEBE6] flex items-center justify-center font-inter">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-          <p className="text-sm text-slate-400 font-medium">Loading…</p>
+          <Loader2 className="w-8 h-8 animate-spin text-[#7C3AED]" />
+          <p className="text-sm text-[#6B6560] font-medium">Loading…</p>
         </div>
       </div>
     );

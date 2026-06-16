@@ -229,12 +229,12 @@ export default function EstateManagerAgent() {
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)' }}
       >
         {isOpen ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D7DADC" strokeWidth="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EDEBE6" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D7DADC" strokeWidth="1.5">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#EDEBE6" strokeWidth="1.5">
             <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10a9.96 9.96 0 0 1-4.95-1.31L2 22l1.31-5.05A9.96 9.96 0 0 1 2 12 10 10 0 0 1 12 2z" />
             <path d="M8 10h.01M12 10h.01M16 10h.01" />
           </svg>
@@ -320,7 +320,7 @@ export default function EstateManagerAgent() {
                 fontFamily: 'Inter', padding: '4px 8px', borderRadius: '6px',
                 transition: 'color 0.15s',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#D7DADC' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#EDEBE6' }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(215,218,220,0.6)' }}
             >
               New chat

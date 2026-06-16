@@ -164,7 +164,7 @@ export default function Onboarding() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 24,
-      backgroundColor: '#D7DADC',
+      backgroundColor: '#EDEBE6',
       fontFamily: 'Inter',
       boxSizing: 'border-box'
     }}>

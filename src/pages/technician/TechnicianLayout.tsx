@@ -45,7 +45,7 @@ function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#FFFFFF] border-t border-[#E0DDD9] z-30 shadow-none">
       <div className="flex items-stretch h-[68px]">
         {NAV_ITEMS.map(({ to, label, Icon }) => {
           const active = isActive(to);
@@ -57,19 +57,19 @@ function BottomNav() {
               className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors"
             >
               <div className={`relative flex flex-col items-center gap-1 transition-all duration-200 ${
-                active ? 'text-blue-600' : 'text-gray-400'
+                active ? 'text-[#2563EB]' : 'text-[#9C9894]'
               }`}>
                 <Icon
                   className={`transition-all duration-200 ${active ? 'w-[22px] h-[22px]' : 'w-5 h-5'}`}
                   strokeWidth={active ? 2.5 : 2}
                 />
-                <span className={`text-[10px] font-semibold transition-all duration-200 ${
-                  active ? 'text-blue-600' : 'text-gray-400'
+                <span className={`text-[10px] font-semibold font-inter transition-all duration-200 ${
+                  active ? 'text-[#2563EB]' : 'text-[#9C9894]'
                 }`}>
                   {label}
                 </span>
                 {active && (
-                  <span className="absolute -bottom-2.5 w-1 h-1 rounded-full bg-blue-600" />
+                  <span className="absolute -bottom-2.5 w-1 h-1 rounded-full bg-[#2563EB]" />
                 )}
               </div>
             </Link>
@@ -116,10 +116,10 @@ export default function TechnicianLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#EDEBE6] flex items-center justify-center font-inter">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-sm text-gray-500 font-medium">Loading your dashboard…</p>
+          <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
+          <p className="text-sm text-[#6B6560] font-medium font-inter">Loading your dashboard…</p>
         </div>
       </div>
     );
@@ -128,9 +128,9 @@ export default function TechnicianLayout() {
   return (
     <TechContext.Provider value={{ profile, refreshProfile }}>
       {/* Gray outer background — visible on desktop */}
-      <div className="min-h-screen bg-gray-100 flex justify-center">
+      <div className="min-h-screen bg-[#EDEBE6] flex justify-center font-inter">
         {/* White app shell — max 480px */}
-        <div className="relative w-full max-w-[480px] bg-white min-h-screen flex flex-col shadow-xl">
+        <div className="relative w-full max-w-[480px] bg-[#FFFFFF] min-h-screen flex flex-col border-x border-[#E0DDD9] shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]">
           {/* Scrollable content area above bottom nav */}
           <div className="flex-1 overflow-y-auto pb-[72px]">
             <Outlet />

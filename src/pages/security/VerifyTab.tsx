@@ -70,7 +70,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
           onChange={e => handleChange(i, e.target.value)}
           onKeyDown={e => handleKeyDown(i, e)}
           onPaste={handlePaste}
-          className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white transition-all text-gray-900 border-gray-200"
+          className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-[10px] focus:outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#E9D5FF] bg-[#FFFFFF] transition-all text-[#1C1917] border-[#E0DDD9]"
         />
       ))}
     </div>
@@ -172,17 +172,17 @@ export default function VerifyTab() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-130px)] pb-6">
+    <div className="flex flex-col min-h-[calc(100vh-130px)] pb-6 font-inter">
       {/* Main verify area */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
         {!foundPass && !notFound && (
           <div className="w-full max-w-sm">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[#F3E8FF] rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🔍</span>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Verify Gate Pass</h2>
-              <p className="text-sm text-gray-500 mt-1">Enter 6-digit code from resident</p>
+              <h2 className="text-xl font-bold text-[#1C1917] font-recoleta">Verify Gate Pass</h2>
+              <p className="text-sm text-[#6B6560] mt-1">Enter 6-digit code from resident</p>
             </div>
 
             <OtpInput value={otp} onChange={setOtp} />
@@ -190,7 +190,7 @@ export default function VerifyTab() {
             <button
               onClick={handleVerify}
               disabled={otp.length !== 6 || verifying}
-              className="w-full mt-8 h-14 bg-blue-600 text-white font-bold text-base rounded-2xl disabled:opacity-40 hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+              className="w-full mt-8 h-14 bg-[#7C3AED] text-[#FFFFFF] font-bold text-base rounded-[10px] disabled:opacity-40 hover:bg-[#6D28D9] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-none"
             >
               {verifying ? <Loader2 className="w-5 h-5 animate-spin" /> : ''}
               {verifying ? 'Verifying…' : 'Verify Pass'}
@@ -201,33 +201,33 @@ export default function VerifyTab() {
         {/* Valid pass card */}
         {foundPass && (
           <div className="w-full max-w-sm">
-            <div className="bg-green-50 border border-green-200 rounded-3xl p-6 mb-5 animate-[slideUp_0.3s_ease-out]">
+            <div className="bg-green-50 border border-green-200 rounded-[16px] p-6 mb-5 animate-[slideUp_0.3s_ease-out]">
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
                 <span className="font-bold text-green-800 text-lg">Valid Pass</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">{foundPass.visitor_name}</h3>
-              <div className="space-y-2 text-sm text-gray-700">
+              <h3 className="text-2xl font-bold text-[#1C1917] font-recoleta mb-4">{foundPass.visitor_name}</h3>
+              <div className="space-y-2 text-sm text-[#1C1917]">
                 {foundPass.purpose && (
                   <div className="flex gap-2">
-                    <span className="text-gray-400 w-24 shrink-0">Purpose:</span>
+                    <span className="text-[#6B6560] w-24 shrink-0">Purpose:</span>
                     <span className="font-medium">{foundPass.purpose}</span>
                   </div>
                 )}
                 {foundPass.users?.apartments && (
                   <div className="flex gap-2">
-                    <span className="text-gray-400 w-24 shrink-0">Visiting:</span>
+                    <span className="text-[#6B6560] w-24 shrink-0">Visiting:</span>
                     <span className="font-medium">
                       Flat {foundPass.users.apartments.flat_number}, {foundPass.users.apartments.towers?.name}
                     </span>
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <span className="text-gray-400 w-24 shrink-0">Approved by:</span>
+                  <span className="text-[#6B6560] w-24 shrink-0">Approved by:</span>
                   <span className="font-medium">{foundPass.users?.name ?? 'Resident'}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-gray-400 w-24 shrink-0">Valid until:</span>
+                  <span className="text-[#6B6560] w-24 shrink-0">Valid until:</span>
                   <span className="font-medium">{format(new Date(foundPass.valid_until), 'dd MMM, h:mm a')}</span>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function VerifyTab() {
               <button
                 onClick={handleAllow}
                 disabled={processing}
-                className="w-full h-14 bg-green-600 text-white font-bold rounded-2xl hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg"
+                className="w-full h-14 bg-green-600 text-white font-bold rounded-[10px] hover:bg-green-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-none"
               >
                 {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : '✅'}
                 Allow Entry
@@ -245,11 +245,11 @@ export default function VerifyTab() {
               <button
                 onClick={handleDeny}
                 disabled={processing}
-                className="w-full h-14 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="w-full h-14 bg-red-600 text-white font-bold rounded-[10px] hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 ❌ Deny Entry
               </button>
-              <button onClick={reset} className="w-full h-10 text-gray-500 text-sm underline">
+              <button onClick={reset} className="w-full h-10 text-[#6B6560] text-sm underline">
                 Try another code
               </button>
             </div>
@@ -259,14 +259,14 @@ export default function VerifyTab() {
         {/* Not found */}
         {notFound && (
           <div className="w-full max-w-sm">
-            <div className="bg-red-50 border border-red-200 rounded-3xl p-8 text-center mb-5 animate-[slideUp_0.3s_ease-out]">
+            <div className="bg-red-50 border border-red-200 rounded-[16px] p-8 text-center mb-5 animate-[slideUp_0.3s_ease-out]">
               <XCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-              <h3 className="font-bold text-red-800 text-lg mb-1">Invalid or Expired Pass</h3>
+              <h3 className="font-bold text-red-800 text-lg mb-1 font-recoleta">Invalid or Expired Pass</h3>
               <p className="text-sm text-red-600">The code was not found or has already been used.</p>
             </div>
             <button
               onClick={reset}
-              className="w-full h-14 bg-gray-800 text-white font-bold rounded-2xl hover:bg-gray-900 transition-all"
+              className="w-full h-14 bg-[#1C1917] text-[#FFFFFF] font-bold rounded-[10px] hover:bg-[#2C2925] transition-all"
             >
               Try Again
             </button>
@@ -278,7 +278,7 @@ export default function VerifyTab() {
       <div className="px-5 pb-2">
         <button
           onClick={() => setShowEmergency(true)}
-          className="w-full h-12 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 active:scale-[0.98] transition-all text-sm shadow-lg shadow-red-200 flex items-center justify-center gap-2"
+          className="w-full h-12 bg-red-600 text-white font-bold rounded-[10px] hover:bg-red-700 active:scale-[0.98] transition-all text-sm shadow-none flex items-center justify-center gap-2"
         >
           EMERGENCY ALERT
         </button>
@@ -287,25 +287,25 @@ export default function VerifyTab() {
       {/* Emergency sheet */}
       {showEmergency && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-[480px] bg-white rounded-t-3xl p-6 animate-[slideUp_0.3s_ease-out]">
+          <div className="w-full max-w-[480px] bg-[#FFFFFF] rounded-t-[16px] p-6 animate-[slideUp_0.3s_ease-out] font-inter">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-red-700">🚨 Emergency Alert</h3>
-              <button onClick={() => setShowEmergency(false)} className="p-2 hover:bg-gray-100 rounded-full">
+              <h3 className="text-lg font-bold text-red-700 font-recoleta">🚨 Emergency Alert</h3>
+              <button onClick={() => setShowEmergency(false)} className="p-2 hover:bg-[#F5F3F0] rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Send emergency alert to all admins?</p>
+            <p className="text-sm text-[#6B6560] mb-4">Send emergency alert to all admins?</p>
             <textarea
               value={emergencyDesc}
               onChange={e => setEmergencyDesc(e.target.value)}
               placeholder="Describe the emergency (optional)…"
               rows={3}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-4"
+              className="w-full border border-[#E0DDD9] bg-[#F5F3F0] rounded-[10px] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none mb-4 text-[#1C1917]"
             />
             <button
               onClick={handleEmergency}
               disabled={sendingEmergency}
-              className="w-full h-14 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 flex items-center justify-center gap-2"
+              className="w-full h-14 bg-red-600 text-white font-bold rounded-[10px] hover:bg-red-700 flex items-center justify-center gap-2"
             >
               {sendingEmergency ? <Loader2 className="w-5 h-5 animate-spin" /> : '🚨'}
               CONFIRM EMERGENCY

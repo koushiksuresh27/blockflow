@@ -198,7 +198,7 @@ export default function ResidentHome() {
                       <span className="text-xs font-display font-medium uppercase tracking-wider text-[#6B6560]">
                         {complaint.status.replace('_', ' ')}
                       </span>
-                      <span className="w-1 h-1 bg-[#D7DADC] rounded-full"></span>
+                      <span className="w-1 h-1 bg-[#EDEBE6] rounded-full"></span>
                       <span className="text-xs text-[#9C9894] font-sans">
                         {formatDistanceToNow(new Date(complaint.created_at), { addSuffix: true })}
                       </span>

@@ -136,25 +136,25 @@ function ActiveTaskCard({
   void userId;
 
   return (
-    <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex">
+    <article className="bg-[#FFFFFF] rounded-[16px] shadow-none border border-[#E0DDD9] overflow-hidden flex font-inter">
       <div className={`w-1.5 shrink-0 ${bar}`} />
       <div className="flex-1 p-4 space-y-3">
         <div>
-          <h3 className="text-sm font-bold text-gray-900">{task.title}</h3>
+          <h3 className="text-sm font-bold text-[#1C1917] font-recoleta">{task.title}</h3>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.bg} ${p.textColor}`}>{p.text}</span>
-            <span className="text-xs text-gray-400">{task.category}</span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>{p.text}</span>
+            <span className="text-xs text-[#9C9894]">{task.category}</span>
           </div>
         </div>
         {task.location_apt && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          <div className="flex items-center gap-1.5 text-xs text-[#6B6560]">
+            <MapPin className="w-3.5 h-3.5 text-[#9C9894] shrink-0" />
             <span>{task.location_apt}</span>
           </div>
         )}
         <div className="flex items-center gap-2 flex-wrap">
           <SlaChip deadline={task.sla_deadline} />
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusPill}`}>
+          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-[6px] ${statusPill}`}>
             {formatStatus(task.status)}
           </span>
         </div>
@@ -165,7 +165,7 @@ function ActiveTaskCard({
                 id={`jobs-accept-${task.id}`}
                 disabled={transitioning}
                 onClick={() => onAccept(task.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+                className="flex-1 flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
               >
                 {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" />Accept</>}
               </button>
@@ -173,7 +173,7 @@ function ActiveTaskCard({
                 id={`jobs-reject-${task.id}`}
                 disabled={transitioning}
                 onClick={() => onReject(task)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+                className="flex-1 flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-[#1C1917] bg-[#FFFFFF] hover:bg-[#F5F3F0] border border-[#1C1917] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
               >
                 <X className="w-4 h-4" />Reject
               </button>
@@ -184,7 +184,7 @@ function ActiveTaskCard({
               id={`jobs-start-${task.id}`}
               disabled={transitioning}
               onClick={() => onStart(task.id)}
-              className="w-full flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+              className="w-full flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
             >
               {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Play className="w-4 h-4 fill-white" />Start Job</>}
             </button>
@@ -194,7 +194,7 @@ function ActiveTaskCard({
               id={`jobs-complete-${task.id}`}
               disabled={transitioning}
               onClick={() => onComplete(task.id)}
-              className="w-full flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+              className="w-full flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
             >
               {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" />Mark Complete</>}
             </button>
@@ -359,10 +359,10 @@ export default function JobsTab() {
   const completionTask = activeTasks.find((t) => t.id === completeTarget);
 
   return (
-    <div className="min-h-full bg-gray-50">
+    <div className="min-h-full bg-[#EDEBE6] font-inter">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-5 pt-8 pb-0 sticky top-0 z-10">
-        <h1 className="text-lg font-black text-gray-900 mb-4">My Jobs</h1>
+      <header className="bg-[#FFFFFF] border-b border-[#E0DDD9] px-5 pt-8 pb-0 sticky top-0 z-10">
+        <h1 className="text-lg font-black text-[#1C1917] mb-4 font-recoleta">My Jobs</h1>
 
         {/* Sub-tabs */}
         <div className="flex">
@@ -373,8 +373,8 @@ export default function JobsTab() {
               onClick={() => setSubTab(tab)}
               className={`flex-1 py-3 text-sm font-bold capitalize transition border-b-2 ${
                 subTab === tab
-                  ? 'text-blue-600 border-blue-600'
-                  : 'text-gray-400 border-transparent hover:text-gray-600'
+                  ? 'text-[#2563EB] border-[#2563EB]'
+                  : 'text-[#9C9894] border-transparent hover:text-[#6B6560]'
               }`}
             >
               {tab === 'active' ? `Active (${activeTasks.length})` : `Completed (${completedTasks.length})`}
@@ -393,10 +393,10 @@ export default function JobsTab() {
                 <button
                   key={chip.value}
                   onClick={() => setPriorityFilter(chip.value)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition ${
+                  className={`shrink-0 px-3.5 py-1.5 rounded-[10px] text-xs font-bold transition ${
                     priorityFilter === chip.value
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-white text-gray-600 border border-gray-200'
+                      ? 'bg-[#2563EB] text-[#FFFFFF] shadow-none'
+                      : 'bg-[#FFFFFF] text-[#6B6560] border border-[#E0DDD9]'
                   }`}
                 >
                   {chip.label}
@@ -412,11 +412,11 @@ export default function JobsTab() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
-                  <ClipboardList className="w-8 h-8 text-blue-300" />
+                <div className="w-16 h-16 rounded-[16px] bg-[#EFF6FF] flex items-center justify-center">
+                  <ClipboardList className="w-8 h-8 text-[#2563EB]" />
                 </div>
-                <p className="text-sm font-bold text-gray-600">No active tasks</p>
-                <p className="text-xs text-gray-400">{priorityFilter ? `No ${priorityFilter} priority tasks` : 'All done for now!'}</p>
+                <p className="text-sm font-bold text-[#1C1917] font-recoleta">No active tasks</p>
+                <p className="text-xs text-[#9C9894]">{priorityFilter ? `No ${priorityFilter} priority tasks` : 'All done for now!'}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -452,14 +452,14 @@ export default function JobsTab() {
             ) : (
               <div className="space-y-3">
                 {completedTasks.map((task) => (
-                  <article key={task.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                  <article key={task.id} className="bg-[#FFFFFF] rounded-[16px] shadow-none border border-[#E0DDD9] p-4 font-inter">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-900 truncate">{task.title}</h3>
+                        <h3 className="text-sm font-bold text-[#1C1917] font-recoleta truncate">{task.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-400">{task.category}</span>
-                          <span className="w-1 h-1 rounded-full bg-gray-200" />
-                          <span className="text-xs text-gray-400">{fmtDate(task.updated_at)}</span>
+                          <span className="text-xs text-[#9C9894]">{task.category}</span>
+                          <span className="w-1 h-1 rounded-full bg-[#E0DDD9]" />
+                          <span className="text-xs text-[#9C9894]">{fmtDate(task.updated_at)}</span>
                         </div>
                       </div>
                       <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">

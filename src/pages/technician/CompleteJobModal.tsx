@@ -96,7 +96,7 @@ function PhotoPicker({
 
 function SuccessScreen({ onBack }: { onBack: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center px-6 text-center">
+    <div className="fixed inset-0 z-50 bg-[#FFFFFF] flex flex-col items-center justify-center px-6 text-center font-inter">
       <div className="relative mb-6">
         <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center animate-bounceIn">
           <CheckCircle2 className="w-12 h-12 text-green-500" strokeWidth={1.5} />
@@ -104,8 +104,8 @@ function SuccessScreen({ onBack }: { onBack: () => void }) {
         <div className="absolute inset-0 rounded-full bg-green-200 animate-ping opacity-30" />
       </div>
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Job Complete! 🎉</h2>
-      <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+      <h2 className="text-2xl font-bold text-[#1C1917] font-recoleta mb-2">Job Complete! 🎉</h2>
+      <p className="text-[#6B6560] text-sm leading-relaxed max-w-xs">
         Your job has been marked as resolved and is waiting for resident verification.
       </p>
 
@@ -118,7 +118,7 @@ function SuccessScreen({ onBack }: { onBack: () => void }) {
       <button
         id="back-to-home-btn"
         onClick={onBack}
-        className="mt-8 w-full max-w-xs py-4 bg-blue-600 text-white font-bold text-sm rounded-2xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-[0_4px_15px_rgba(37,99,235,0.3)]"
+        className="mt-8 w-full max-w-xs py-4 bg-[#2563EB] text-white font-bold text-sm rounded-[10px] hover:bg-[#1D4ED8] active:scale-[0.98] transition-all shadow-none"
       >
         Back to Home
       </button>
@@ -214,7 +214,7 @@ export default function CompleteJobModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="complete-job-title"
-        className="bg-white w-full max-w-[480px] rounded-t-3xl max-h-[92vh] flex flex-col shadow-2xl"
+        className="bg-[#FFFFFF] w-full max-w-[480px] rounded-t-[16px] max-h-[92vh] flex flex-col shadow-2xl font-inter"
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
@@ -222,13 +222,13 @@ export default function CompleteJobModal({
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#E0DDD9]">
           <div>
-            <h2 id="complete-job-title" className="text-base font-bold text-gray-900">Complete Job</h2>
-            <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[240px]">{complaintTitle}</p>
+            <h2 id="complete-job-title" className="text-base font-bold text-[#1C1917] font-recoleta">Complete Job</h2>
+            <p className="text-xs text-[#9C9894] mt-0.5 truncate max-w-[240px]">{complaintTitle}</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="w-9 h-9 rounded-xl hover:bg-gray-100 flex items-center justify-center transition">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={onClose} aria-label="Close" className="w-9 h-9 rounded-xl hover:bg-[#F5F3F0] flex items-center justify-center transition">
+            <X className="w-5 h-5 text-[#6B6560]" />
           </button>
         </div>
 
@@ -251,9 +251,9 @@ export default function CompleteJobModal({
 
           {/* Resolution notes */}
           <div>
-            <label htmlFor="resolution-notes" className="text-sm font-semibold text-gray-700 mb-2 block">
+            <label htmlFor="resolution-notes" className="text-sm font-semibold text-[#1C1917] mb-2 block">
               Resolution Notes <span className="text-red-500">*</span>
-              <span className="ml-2 text-xs font-normal text-gray-400">(min 20 characters)</span>
+              <span className="ml-2 text-xs font-normal text-[#9C9894]">(min 20 characters)</span>
             </label>
             <textarea
               id="resolution-notes"
@@ -261,8 +261,8 @@ export default function CompleteJobModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Describe what you fixed and how the issue was resolved…"
-              className={`w-full px-4 py-3 text-sm border rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50 ${
-                errors.notes ? 'border-red-300 bg-red-50' : 'border-gray-200'
+              className={`w-full px-4 py-3 text-sm border rounded-[10px] resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition bg-[#F5F3F0] ${
+                errors.notes ? 'border-red-300 bg-red-50' : 'border-[#E0DDD9]'
               }`}
             />
             <div className="flex items-center justify-between mt-1">
@@ -279,9 +279,9 @@ export default function CompleteJobModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-100 space-y-3">
+        <div className="px-5 py-4 border-t border-[#E0DDD9] space-y-3">
           {!canSubmit && (
-            <p className="text-xs text-center text-gray-400">
+            <p className="text-xs text-center text-[#9C9894]">
               Upload both photos and add notes to enable submission
             </p>
           )}
@@ -289,7 +289,7 @@ export default function CompleteJobModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3.5 text-sm font-semibold text-gray-600 border border-gray-200 rounded-2xl hover:bg-gray-50 transition min-h-[48px]"
+              className="flex-1 py-3.5 text-sm font-semibold text-[#6B6560] border border-[#E0DDD9] rounded-[10px] hover:bg-[#F5F3F0] transition min-h-[48px]"
             >
               Cancel
             </button>
@@ -298,7 +298,7 @@ export default function CompleteJobModal({
               type="button"
               onClick={handleSubmit}
               disabled={submitting || !canSubmit}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 rounded-2xl transition min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
             >
               {submitting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</>

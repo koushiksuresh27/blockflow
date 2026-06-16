@@ -330,7 +330,7 @@ export default function AnalyticsPage() {
                       width: 32, height: 32, borderRadius: '50%',
                       background: '#1C1917',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 12, color: '#D7DADC',
+                      fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 12, color: '#EDEBE6',
                       flexShrink: 0,
                     }}>
                       {t.name.charAt(0).toUpperCase()}

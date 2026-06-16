@@ -4,13 +4,17 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.cdnfonts.com/css/recoleta');
+
+.font-recoleta { font-family: 'Recoleta', serif !important; }
+.font-inter { font-family: 'Inter', sans-serif !important; }
 
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 :root {
-  --bg:           #D7DADC;
+  --bg:           #EDEBE6;
   --primary:      #1C1917;
   --primary-hover:#2C2925;
   --accent:       #D97706;

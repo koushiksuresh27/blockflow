@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Loader2, AlertCircle, ClipboardList, MapPin, Clock, CheckCircle2, AlertTriangle, Play, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTechProfile } from './TechnicianLayout';
@@ -153,26 +154,26 @@ function TaskCard({
   void userId; void techId;
 
   return (
-    <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex">
+    <article className="bg-[#FFFFFF] rounded-[16px] shadow-none border border-[#E0DDD9] overflow-hidden flex font-inter">
       {/* Priority left bar */}
       <div className={`w-1.5 shrink-0 ${bar}`} />
 
       <div className="flex-1 p-4 space-y-3">
         {/* Title + category */}
         <div>
-          <h3 className="text-sm font-bold text-gray-900 leading-snug">{task.title}</h3>
+          <h3 className="text-sm font-bold text-[#1C1917] leading-snug font-recoleta">{task.title}</h3>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.bg} ${p.textColor}`}>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>
               {p.text}
             </span>
-            <span className="text-xs text-gray-400">{task.category}</span>
+            <span className="text-xs text-[#9C9894]">{task.category}</span>
           </div>
         </div>
 
         {/* Location */}
         {task.location_apt && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          <div className="flex items-center gap-1.5 text-xs text-[#6B6560]">
+            <MapPin className="w-3.5 h-3.5 text-[#9C9894] shrink-0" />
             <span>{task.location_apt}</span>
           </div>
         )}
@@ -180,7 +181,7 @@ function TaskCard({
         {/* Badges */}
         <div className="flex items-center gap-2 flex-wrap">
           <SlaChip deadline={task.sla_deadline} />
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusPill}`}>
+          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-[6px] ${statusPill}`}>
             {formatStatus(task.status)}
           </span>
         </div>
@@ -193,7 +194,7 @@ function TaskCard({
                 id={`accept-${task.id}`}
                 disabled={transitioning}
                 onClick={() => onAccept(task.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+                className="flex-1 flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
               >
                 {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                   <><CheckCircle2 className="w-4 h-4" />Accept</>
@@ -203,7 +204,7 @@ function TaskCard({
                 id={`reject-${task.id}`}
                 disabled={transitioning}
                 onClick={() => onReject(task)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+                className="flex-1 flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-[#1C1917] bg-[#FFFFFF] hover:bg-[#F5F3F0] border border-[#1C1917] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
               >
                 <X className="w-4 h-4" />Reject
               </button>
@@ -214,7 +215,7 @@ function TaskCard({
               id={`start-${task.id}`}
               disabled={transitioning}
               onClick={() => onStart(task.id)}
-              className="w-full flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-white bg-green-500 hover:bg-green-600 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+              className="w-full flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
             >
               {transitioning ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -228,7 +229,7 @@ function TaskCard({
               id={`complete-${task.id}`}
               disabled={transitioning}
               onClick={() => onComplete(task.id)}
-              className="w-full flex items-center justify-center gap-1.5 py-3 text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 rounded-xl transition min-h-[48px]"
+              className="w-full flex items-center justify-center gap-1.5 py-[12px] px-[20px] text-sm font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-50 rounded-[10px] transition min-h-[48px]"
             >
               {transitioning ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -337,12 +338,19 @@ async function loadHomeData(techId: string): Promise<{ tasks: Task[]; stats: Sta
 export default function HomeTab() {
   const { profile } = useTechProfile();
   const toast = useToast();
+  const navigate = useNavigate();
 
   const [tasks, setTasks]       = useState<Task[]>([]);
   const [stats, setStats]       = useState<Stats>({ todayTasks: 0, completedToday: 0, slaRisk: 0 });
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [transitioning, setTrans] = useState<Record<string, boolean>>({});
+
+  const [unreadCount, setUnreadCount] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   // Modals
   const [rejectTarget, setRejectTarget]   = useState<Task | null>(null);
@@ -373,16 +381,50 @@ export default function HomeTab() {
     }
   }, [profile, load]);
 
-  // Realtime refresh
+  const loadNotifications = useCallback(async () => {
+    if (!profile?.userId) return;
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', profile.userId)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      setNotifications(data);
+      setUnreadCount(data.length);
+    }
+  }, [profile?.userId]);
+
   useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!profile?.userId) return;
     const channel = supabase
-      .channel('tech-home-rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'complaints' }, () => {
-        if (techIdRef.current) load();
-      })
+      .channel('tech-notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${profile.userId}`
+      }, () => { loadNotifications(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [load]);
+  }, [profile?.userId, loadNotifications]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Realtime refresh
 
   // ── Action Handlers ──────────────────────────────────────────────────────────
 
@@ -437,71 +479,123 @@ export default function HomeTab() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-full bg-gray-50">
+    <div className="min-h-full bg-[#EDEBE6] font-inter">
       {/* ── Header ── */}
-      <header className="bg-blue-600 px-5 pt-8 pb-16 relative overflow-hidden">
-        {/* Decorative circle */}
-        <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-blue-500 opacity-40" />
-        <div className="absolute top-4 right-12 w-20 h-20 rounded-full bg-blue-400 opacity-30" />
+      <header className="bg-[#2563EB] px-5 pt-8 pb-16 relative overflow-hidden">
+
 
         <div className="relative flex items-start justify-between">
           <div>
-            <p className="text-blue-200 text-sm font-medium">{getGreeting()},</p>
-            <h1 className="text-white text-2xl font-black mt-0.5 leading-tight">
+            <p className="text-white/80 text-sm font-medium">{getGreeting()},</p>
+            <h1 className="text-[#FFFFFF] text-2xl font-black mt-0.5 leading-tight font-recoleta">
               {profile.name.split(' ')[0]}
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              id="notification-bell"
-              aria-label="Notifications"
-              className="w-10 h-10 rounded-full bg-blue-500/50 flex items-center justify-center hover:bg-blue-500 transition"
+            <div className="relative" ref={notifRef}>
+              <button
+                id="notification-bell"
+                aria-label="Notifications"
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition"
+              >
+                <div style={{ position: 'relative' }}>
+                  <Bell width={22} height={22} strokeWidth={1.5} className="text-[#FFFFFF]" />
+                  {unreadCount > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-4px',
+                      right: '-4px',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: '#dc2626',
+                      color: 'white',
+                      fontSize: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                    }}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </div>
+                  )}
+                </div>
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 top-12 w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden text-left">
+                  <div className="p-3 border-b border-gray-50 bg-gray-50">
+                    <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">No unread notifications</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n.id} 
+                          onClick={async () => {
+                            await supabase.from('notifications').update({ is_read: true }).eq('id', n.id);
+                            loadNotifications();
+                          }}
+                          className="p-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer"
+                        >
+                          <p className="text-sm text-gray-800">{n.message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(n.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div 
+              onClick={() => navigate('/technician/profile')}
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center cursor-pointer"
             >
-              <Bell className="w-5 h-5 text-white" />
-            </button>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center border-2 border-white/30">
               <span className="text-white text-sm font-bold">{getInitials(profile.name)}</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ── Stats Cards (overlap header) ── */}
       <div className="px-4 -mt-10 relative z-10">
         <div className="flex gap-3">
           <StatCard
             label="Today's Tasks"
             value={stats.todayTasks}
-            accent="bg-white text-blue-700 shadow-sm border border-blue-100"
+            accent="bg-[#FFFFFF] text-[#2563EB] shadow-none border border-[#E0DDD9]"
             icon={ClipboardList}
           />
           <StatCard
             label="Completed"
             value={stats.completedToday}
-            accent="bg-green-500 text-white shadow-sm"
+            accent="bg-[#FFFFFF] text-[#2563EB] shadow-none border border-[#E0DDD9]"
             icon={CheckCircle2}
           />
           <StatCard
             label="SLA Risk"
             value={stats.slaRisk}
-            accent={stats.slaRisk > 0 ? 'bg-red-500 text-white shadow-sm' : 'bg-white text-gray-600 shadow-sm border border-gray-100'}
+            accent="bg-[#FFFFFF] text-[#2563EB] shadow-none border border-[#E0DDD9]"
             icon={AlertTriangle}
           />
         </div>
       </div>
 
-      {/* ── Task Queue ── */}
       <div className="px-4 mt-5 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-gray-900">Task Queue</h2>
+          <h2 className="text-sm font-bold text-[#1C1917] font-recoleta">Task Queue</h2>
           {!loading && (
-            <span className="text-xs text-gray-400 font-medium">{tasks.length} active</span>
+            <span className="text-xs text-[#9C9894] font-medium">{tasks.length} active</span>
           )}
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            <Loader2 className="w-6 h-6 text-[#2563EB] animate-spin" />
           </div>
         ) : error ? (
           <div className="flex items-start gap-2.5 p-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-700">
@@ -513,12 +607,12 @@ export default function HomeTab() {
           </div>
         ) : tasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
-              <ClipboardList className="w-8 h-8 text-blue-300" />
+            <div className="w-16 h-16 rounded-2xl bg-[#EFF6FF] flex items-center justify-center">
+              <ClipboardList className="w-8 h-8 text-[#2563EB]" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold text-gray-700">All clear!</p>
-              <p className="text-xs text-gray-400 mt-1 max-w-[200px]">
+              <p className="text-sm font-bold text-[#1C1917] font-recoleta">All clear!</p>
+              <p className="text-xs text-[#9C9894] mt-1 max-w-[200px]">
                 No active tasks assigned to you right now.
               </p>
             </div>
