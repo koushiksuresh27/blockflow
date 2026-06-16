@@ -129,8 +129,7 @@ export default function SubmitComplaint() {
 
   const validate = (): boolean => {
     const errs: FormErrors = {};
-    if (!title.trim()) errs.title = 'Title is required.';
-    else if (title.trim().length > 100) errs.title = 'Title must be 100 characters or fewer.';
+    if (title.trim().length > 100) errs.title = 'Title must be 100 characters or fewer.';
     if (!category) errs.category = 'Please select a category.';
     if (!description.trim()) errs.description = 'Description is required.';
     else if (description.trim().length < 20) errs.description = 'Description must be at least 20 characters.';
@@ -208,7 +207,7 @@ export default function SubmitComplaint() {
           category,
           priority,
           status: 'open',
-          title: title.trim(),
+          title: title.trim() || description.slice(0, 60) || 'Complaint',
           description: description.trim(),
           preferred_slot: preferredSlot || null,
           sla_deadline: slaDeadline,
@@ -377,10 +376,108 @@ export default function SubmitComplaint() {
         <div className="bg-white border border-[#E0DDD9] rounded-card shadow-sm p-5 sm:p-8">
           <form onSubmit={handleSubmit} noValidate className="space-y-6">
 
+            {/* ── SECTION 1: Quick voice input ── */}
+            <div className="bg-[#F5F3F0] p-4 rounded-[16px]">
+              <h2 className="text-sm font-sans font-semibold text-[#1C1917] mb-3">Quick voice input</h2>
+              <div className="flex items-center gap-3 mb-3">
+                <label htmlFor="lang-selector" className="text-xs font-sans font-medium text-[#6B6560]">Language:</label>
+                <select
+                  id="lang-selector"
+                  value={lang}
+                  onChange={(e) => setLang(e.target.value as SarvamLanguage)}
+                  className="text-xs font-sans bg-white border border-[#E0DDD9] rounded-[6px] px-2 py-1 outline-none focus:ring-1 focus:ring-[#1C1917]"
+                >
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <option key={opt.code} value={opt.code}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <VoiceRecorder
+                selectedLanguage={lang}
+                onTranscript={handleTranscript}
+                onSuggestion={handleSuggestion}
+              />
+
+              {suggestion && suggestion.confidence > 0.5 && (
+                <div style={{
+                  background: '#FEF3C7',
+                  border: '1px solid #D97706',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  marginTop: '12px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px'
+                }}>
+                  <span style={{ fontSize: '16px' }}>✨</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#92400E',
+                      margin: '0 0 4px',
+                      fontFamily: 'Space Grotesk'
+                    }}>
+                      AI Suggestion
+                    </p>
+                    <p style={{
+                      fontSize: '12px',
+                      color: '#92400E',
+                      margin: 0,
+                      fontFamily: 'Inter',
+                      lineHeight: '1.5'
+                    }}>
+                      Category: <strong>{suggestion.category}</strong> · Priority: <strong>{suggestion.priority}</strong> · Confidence: {Math.round(suggestion.confidence * 100)}%
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestion(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#92400E',
+                      cursor: 'pointer',
+                      fontSize: '18px',
+                      lineHeight: 1,
+                      padding: 0,
+                      flexShrink: 0
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              borderTop: '1px solid #E0DDD9',
+              margin: '24px 0',
+              position: 'relative'
+            }}>
+              <span style={{
+                position: 'absolute',
+                top: '-11px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: '#FFFFFF',
+                padding: '0 12px',
+                fontSize: '12px',
+                color: '#9C9894'
+              }}>
+                OR FILL MANUALLY
+              </span>
+            </div>
+
+            {/* ── SECTION 2: Manual form ── */}
+
             {/* ── Title ── */}
             <div>
               <label htmlFor="complaint-title" className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
-                Title <span className="text-[#D97706]">*</span>
+                Title <span className="font-normal text-[#9C9894]">(optional)</span>
               </label>
               <input
                 id="complaint-title"
@@ -464,81 +561,6 @@ export default function SubmitComplaint() {
               <label htmlFor="complaint-description" className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">
                 Description <span className="text-[#D97706]">*</span>
               </label>
-
-              <div className="mb-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <label htmlFor="lang-selector" className="text-xs font-sans font-medium text-[#6B6560]">Language:</label>
-                  <select
-                    id="lang-selector"
-                    value={lang}
-                    onChange={(e) => setLang(e.target.value as SarvamLanguage)}
-                    className="text-xs font-sans bg-[#F5F3F0] border border-[#E0DDD9] rounded-[6px] px-2 py-1 outline-none focus:ring-1 focus:ring-[#1C1917]"
-                  >
-                    {LANGUAGE_OPTIONS.map((opt) => (
-                      <option key={opt.code} value={opt.code}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <VoiceRecorder
-                  selectedLanguage={lang}
-                  onTranscript={handleTranscript}
-                  onSuggestion={handleSuggestion}
-                />
-
-                {suggestion && suggestion.confidence > 0.5 && (
-                  <div style={{
-                    background: '#FEF3C7',
-                    border: '1px solid #D97706',
-                    borderRadius: '10px',
-                    padding: '12px 16px',
-                    marginTop: '12px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '10px'
-                  }}>
-                    <span style={{ fontSize: '16px' }}>✨</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        color: '#92400E',
-                        margin: '0 0 4px',
-                        fontFamily: 'Space Grotesk'
-                      }}>
-                        AI Suggestion
-                      </p>
-                      <p style={{
-                        fontSize: '12px',
-                        color: '#92400E',
-                        margin: 0,
-                        fontFamily: 'Inter',
-                        lineHeight: '1.5'
-                      }}>
-                        Category: <strong>{suggestion.category}</strong> · Priority: <strong>{suggestion.priority}</strong> · Confidence: {Math.round(suggestion.confidence * 100)}%
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSuggestion(null)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#92400E',
-                        cursor: 'pointer',
-                        fontSize: '18px',
-                        lineHeight: 1,
-                        padding: 0,
-                        flexShrink: 0
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
 
               <textarea
                 id="complaint-description"

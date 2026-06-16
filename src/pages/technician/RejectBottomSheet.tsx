@@ -37,12 +37,12 @@ export default function RejectBottomSheet({
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      // Return complaint to open, unassign tech
+      // Mark as rejected but do NOT set assigned_tech_id to null (violates RLS)
       const { error: upErr } = await supabase
         .from('complaints')
         .update({
-          status:           'open',
-          assigned_tech_id: null,
+          status:           'rejected',
+          rejection_reason: finalNote,
           updated_at:       new Date().toISOString(),
         })
         .eq('id', complaintId);
@@ -54,7 +54,7 @@ export default function RejectBottomSheet({
         actor_id:     userId,
         action:       'rejected',
         old_status:   'assigned',
-        new_status:   'open',
+        new_status:   'rejected',
         note:         finalNote || 'Rejected by technician.',
       });
 

@@ -106,26 +106,9 @@ export default function EstateManagerAgent() {
   const [isOpen, setIsOpen] = useState(false)
   const [conversationHistory, setConversationHistory] = useState<object[]>([])
   const [isBriefingLoading, setIsBriefingLoading] = useState(false)
-  const [mode, setMode] = useState<'assistant' | 'agent'>('assistant')
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [plan, setPlan] = useState('free')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const isAgentUnlocked = plan === 'growth'
-
-  // Fetch society plan
-  useEffect(() => {
-    const fetchPlan = async () => {
-      const { data } = await supabase
-        .from('societies')
-        .select('plan')
-        .eq('id', SOCIETY_ID)
-        .single()
-      if (data?.plan) setPlan(data.plan)
-    }
-    fetchPlan()
-  }, [])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -188,7 +171,7 @@ export default function EstateManagerAgent() {
           message: userMessage,
           society_id: SOCIETY_ID,
           conversation_history: conversationHistory,
-          plan: isAgentUnlocked && mode === 'agent' ? 'growth' : 'free',
+          plan: 'free',
         }),
       })
 
@@ -338,64 +321,6 @@ export default function EstateManagerAgent() {
               </p>
             </div>
 
-            {/* Mode toggle */}
-            <div style={{
-              display: 'flex',
-              gap: '4px',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              padding: '3px',
-            }}>
-              <button
-                onClick={() => setMode('assistant')}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontFamily: 'Space Grotesk',
-                  fontWeight: '500',
-                  background: mode === 'assistant' ? '#FFFFFF' : 'transparent',
-                  color: mode === 'assistant' ? '#1C1917' : 'rgba(215,218,220,0.7)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                Assistant
-              </button>
-              <button
-                onClick={() => {
-                  if (!isAgentUnlocked) {
-                    setShowUpgradeModal(true)
-                  } else {
-                    setMode('agent')
-                  }
-                }}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontFamily: 'Space Grotesk',
-                  fontWeight: '500',
-                  background: mode === 'agent' ? '#D97706' : 'transparent',
-                  color: mode === 'agent' ? '#FFFFFF' : 'rgba(215,218,220,0.7)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {!isAgentUnlocked && (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                  </svg>
-                )}
-                Agent
-              </button>
-            </div>
-
             <button
               onClick={clearChat}
               title="New conversation"
@@ -412,33 +337,6 @@ export default function EstateManagerAgent() {
               New chat
             </button>
           </div>
-
-          {/* Agent mode indicator */}
-          {mode === 'agent' && isAgentUnlocked && (
-            <div style={{
-              background: '#FEF3C7',
-              borderBottom: '1px solid #FDE68A',
-              padding: '6px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}>
-              <div style={{
-                width: '6px', height: '6px',
-                borderRadius: '50%',
-                background: '#D97706',
-                animation: 'ema-pulse 1.5s infinite',
-              }} />
-              <span style={{
-                fontSize: '11px',
-                fontFamily: 'Inter',
-                color: '#92400E',
-                fontWeight: '500',
-              }}>
-                Agent Mode Active — Aria can take actions on your behalf
-              </span>
-            </div>
-          )}
 
           {/* Messages area */}
           <div style={{
@@ -512,41 +410,7 @@ export default function EstateManagerAgent() {
                     </p>
                   )}
 
-                  {/* Actions taken */}
-                  {msg.actions_taken && msg.actions_taken.length > 0 && (
-                    <div style={{
-                      marginTop: '8px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}>
-                      {msg.actions_taken.map((action, j) => {
-                        let label = action.tool
-                        try {
-                          if (action.result?.content) {
-                            const parsed = JSON.parse(action.result.content)
-                            if (parsed?.message) label = parsed.message
-                          }
-                        } catch { /* keep label as tool name */ }
-                        return (
-                          <div key={j} style={{
-                            background: '#F0FDF4',
-                            border: '1px solid #86EFAC',
-                            borderRadius: '8px',
-                            padding: '6px 10px',
-                            fontSize: '11px',
-                            fontFamily: 'Inter',
-                            color: '#15803D',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                          }}>
-                            ✅ {label}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
+
                 </div>
               </div>
             ))}
@@ -658,141 +522,6 @@ export default function EstateManagerAgent() {
             </button>
           </div>
 
-          {/* Upgrade modal */}
-          {showUpgradeModal && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(28,25,23,0.5)',
-              borderRadius: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 10,
-              padding: '24px',
-            }}>
-              <div style={{
-                background: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '28px 24px',
-                width: '100%',
-              }}>
-                <div style={{ fontSize: '28px', textAlign: 'center', marginBottom: '12px' }}>🤖</div>
-
-                <p style={{
-                  fontFamily: 'Space Grotesk',
-                  fontWeight: '700',
-                  fontSize: '18px',
-                  color: '#1C1917',
-                  textAlign: 'center',
-                  margin: '0 0 8px',
-                }}>
-                  Unlock Agent Mode
-                </p>
-
-                <p style={{
-                  fontFamily: 'Inter',
-                  fontSize: '13px',
-                  color: '#6B6560',
-                  textAlign: 'center',
-                  margin: '0 0 20px',
-                  lineHeight: '1.6',
-                }}>
-                  Let Aria take actions on your behalf — assign complaints, send WhatsApp alerts, schedule maintenance, and more.
-                </p>
-
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  marginBottom: '20px',
-                }}>
-                  {[
-                    'Assign complaints automatically',
-                    'Send WhatsApp to technicians',
-                    'Create maintenance schedules',
-                    'Update root cause tickets',
-                    'Generate committee reports',
-                  ].map((f, i) => (
-                    <div key={i} style={{
-                      display: 'flex',
-                      gap: '8px',
-                      alignItems: 'center',
-                      fontSize: '13px',
-                      fontFamily: 'Inter',
-                      color: '#1C1917',
-                    }}>
-                      <span style={{ color: '#D97706' }}>✓</span>
-                      {f}
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{
-                  background: '#F5F3F0',
-                  borderRadius: '10px',
-                  padding: '12px',
-                  textAlign: 'center',
-                  marginBottom: '16px',
-                }}>
-                  <p style={{
-                    fontFamily: 'Space Grotesk',
-                    fontWeight: '700',
-                    fontSize: '24px',
-                    color: '#1C1917',
-                    margin: '0 0 2px',
-                  }}>
-                    ₹12
-                    <span style={{ fontSize: '13px', fontWeight: '400', color: '#6B6560' }}>/flat/month</span>
-                  </p>
-                  <p style={{
-                    fontFamily: 'Inter',
-                    fontSize: '11px',
-                    color: '#9C9894',
-                    margin: 0,
-                  }}>
-                    Free trial · No bank details needed
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    background: '#1C1917',
-                    color: '#FFFFFF',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontFamily: 'Space Grotesk',
-                    fontWeight: '600',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Upgrade to Growth Plan
-                </button>
-
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    background: 'transparent',
-                    color: '#9C9894',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontFamily: 'Inter',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Maybe later
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 

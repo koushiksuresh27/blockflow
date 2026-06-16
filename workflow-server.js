@@ -669,7 +669,7 @@ Season: ${isMonsoon
 }
 
 
-async function runEstateManagerAgent(message, societyId, conversationHistory = [], plan = 'free') {
+async function runEstateManagerAgent(message, societyId, conversationHistory = []) {
   console.log(`[AGENT] Processing: "${message}"`)
 
   // Step 1: Pre-load live context
@@ -684,34 +684,12 @@ async function runEstateManagerAgent(message, societyId, conversationHistory = [
     hour12: true
   })
 
+  const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
 
-  const isAgentMode = plan === 'growth'
+You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
 
-  const planContext = isAgentMode
-    ? `
-AGENT MODE ACTIVE 🤖
+${context.summary}
 
-⚠️ CRITICAL RULE — NO HALLUCINATION OF ACTIONS:
-You must NEVER claim to have performed an action (assigned a complaint, sent a WhatsApp message, created a schedule, updated a ticket) unless you have ACTUALLY called the corresponding tool function in THIS SAME turn and received a successful tool result.
-
-If the user asks you to perform an action:
-1. Call the appropriate tool IMMEDIATELY — do not describe what you are about to do, just call it
-2. Wait for the actual tool result
-3. ONLY THEN report what happened, based on the real tool result
-
-If you are missing required information (like a technician ID, complaint ID, or phone number), ask ONE clarifying question to get it. Do NOT fabricate IDs or describe a fake action.
-
-⚠️ TECHNICIAN NAME RESOLUTION RULE:
-If the admin refers to a technician by name (e.g. "assign to John"), you MUST call get_technicians first to retrieve their UUID before calling an action tool. Do NOT guess or make up a UUID.
-
-NEVER write a response that describes an action as done or in progress without a successful tool call result backing it. This is a hard requirement.
-
-Available action tools (call them directly when asked):
-  ✅ assign_complaint(complaint_id, technician_id, reason?)
-  ✅ send_whatsapp_to_technician(phone, message, technician_name)
-  ✅ create_maintenance_schedule(task_name, category, next_due, notes?)
-  ✅ update_root_cause_ticket(ticket_id, status?, root_cause_documented?, amc_notified?)`
-    : `
 ASSISTANT MODE ACTIVE 📖
 You can READ data and give recommendations.
 You CANNOT take actions directly.
@@ -726,15 +704,7 @@ Here's what to do manually:
 Upgrade to Growth Plan to let me handle this automatically."
 
 DO NOT call action tools in assistant mode.
-Only call: get_complaints, get_chronic_issues, get_technicians, get_vendors, get_sla_status, get_society_stats, get_root_cause_tickets`
-
-  const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
-
-You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
-
-${context.summary}
-
-${planContext}
+Only call: get_complaints, get_chronic_issues, get_technicians, get_vendors, get_sla_status, get_society_stats, get_root_cause_tickets
 
 YOUR CORE BEHAVIOR:
 1. You have the above live data already loaded
@@ -792,20 +762,10 @@ ${context.criticalEquipment?.length > 0
   ]
 
   // Step 3: Build tool set filtered by plan and make first Groq call
-  const ACTION_TOOLS = [
-    'assign_complaint',
-    'send_whatsapp_to_technician',
-    'create_maintenance_schedule',
-    'update_root_cause_ticket'
-  ]
-  const readOnlyTools = agentTools.filter(t => !ACTION_TOOLS.includes(t.function.name))
-  const availableTools = isAgentMode ? agentTools : readOnlyTools
-
-  console.log(`[AGENT] Plan: ${plan}, isAgentMode: ${isAgentMode}`)
-  console.log(`[AGENT] Tools available for this request:`, JSON.stringify(availableTools.map(t => t.function?.name)))
+  console.log(`[AGENT] Tools available for this request:`, JSON.stringify(agentTools.map(t => t.function?.name)))
 
   let response = await callLLM(messages, {
-    tools: availableTools,
+    tools: agentTools,
     tool_choice: 'auto',
     temperature: 0.1,
     parallel_tool_calls: false
@@ -818,7 +778,6 @@ ${context.criticalEquipment?.length > 0
   // Step 4: Tool calling loop (max 3)
   let iterations = 0
   const maxIterations = 3
-  const actionsTaken = []
 
   while (
     response.choices[0].finish_reason === 'tool_calls' &&
@@ -853,13 +812,6 @@ ${context.criticalEquipment?.length > 0
         content: JSON.stringify(result)
       })
 
-      if (ACTION_TOOLS.includes(toolCall.function.name)) {
-        actionsTaken.push({
-          tool: toolCall.function.name,
-          result: toolResults[toolResults.length - 1]
-        })
-      }
-
       console.log(`[AGENT] Tool ${toolCall.function.name} executed, result:`, JSON.stringify(result))
     }
 
@@ -868,7 +820,7 @@ ${context.criticalEquipment?.length > 0
     messages.push(...toolResults)
 
     response = await callLLM(messages, {
-      tools: availableTools,
+      tools: agentTools,
       tool_choice: 'auto',
       temperature: 0.1,
       parallel_tool_calls: false
@@ -881,7 +833,6 @@ ${context.criticalEquipment?.length > 0
 
   console.log(`[AGENT] Response ready — tool call iterations: ${iterations}`)
   console.log(`[AGENT] Tool calls in this turn:`, iterations)
-  console.log(`[AGENT] Actions taken:`, actionsTaken)
 
   // Step 5: Update conversation history
   // Keep only last 6 exchanges to avoid token overflow
@@ -895,7 +846,6 @@ ${context.criticalEquipment?.length > 0
     response: finalResponse,
     tool_calls_made: iterations,
     updated_history: updatedHistory,
-    actions_taken: actionsTaken,
     context_summary: {
       chronic_count: context.chronic?.count || 0,
       overdue_count: context.sla?.overdue_count || 0,
@@ -1059,114 +1009,6 @@ const agentTools = [
       }
     }
   },
-  {
-    type: 'function',
-    function: {
-      name: 'assign_complaint',
-      description: 'AGENT MODE ONLY. Assign a complaint to a specific technician. Use when admin explicitly asks to assign a complaint.',
-      parameters: {
-        type: 'object',
-        properties: {
-          complaint_id: {
-            type: 'string',
-            description: 'UUID of the complaint to assign'
-          },
-          technician_id: {
-            type: 'string',
-            description: 'UUID of the technician to assign to'
-          },
-          reason: {
-            type: 'string',
-            description: 'Reason for this assignment'
-          }
-        },
-        required: ['complaint_id', 'technician_id']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'send_whatsapp_to_technician',
-      description: 'AGENT MODE ONLY. Send a WhatsApp message to a technician. Use when admin wants to notify or message a technician.',
-      parameters: {
-        type: 'object',
-        properties: {
-          technician_name: {
-            type: 'string',
-            description: 'Name of the technician'
-          },
-          phone: {
-            type: 'string',
-            description: 'Phone number with country code'
-          },
-          message: {
-            type: 'string',
-            description: 'Message to send'
-          }
-        },
-        required: ['phone', 'message', 'technician_name']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'create_maintenance_schedule',
-      description: 'AGENT MODE ONLY. Create a preventive maintenance task. Use when admin wants to schedule maintenance.',
-      parameters: {
-        type: 'object',
-        properties: {
-          task_name: {
-            type: 'string',
-            description: 'Name of the maintenance task'
-          },
-          category: {
-            type: 'string',
-            description: 'Category of maintenance'
-          },
-          next_due: {
-            type: 'string',
-            description: 'Due date in ISO format'
-          },
-          notes: {
-            type: 'string',
-            description: 'Additional notes'
-          }
-        },
-        required: ['task_name', 'category', 'next_due']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'update_root_cause_ticket',
-      description: 'AGENT MODE ONLY. Update a root cause investigation ticket status or add documentation.',
-      parameters: {
-        type: 'object',
-        properties: {
-          ticket_id: {
-            type: 'string',
-            description: 'UUID of the root cause ticket'
-          },
-          status: {
-            type: 'string',
-            enum: ['open', 'investigating', 'awaiting_vendor', 'resolved']
-          },
-          root_cause_documented: {
-            type: 'string',
-            description: 'Documentation of root cause'
-          },
-          amc_notified: {
-            type: 'boolean',
-            description: 'Whether AMC vendor was notified'
-          }
-        },
-        required: ['ticket_id']
-      }
-    }
-  }
 ]
 
 
@@ -1560,182 +1402,6 @@ async function executeTool(toolName, args, societyId) {
     default:
       return { error: `Unknown tool: ${toolName}` }
 
-    case 'assign_complaint': {
-      try {
-        // Step 1: Fetch the current complaint first to get submitted_by and current status
-        console.log('[AGENT ACTION] assign_complaint — fetching complaint id:', args.complaint_id)
-        const { data: existingComplaint, error: fetchError } = await supabaseAdmin.from('complaints')
-          .select('id, submitted_by, status')
-          .eq('id', args.complaint_id)
-          .single()
-
-        if (fetchError || !existingComplaint) {
-          console.error('[AGENT ACTION] Failed to fetch complaint:', fetchError)
-          return {
-            success: false,
-            error: `Complaint not found: ${fetchError?.message || 'no data returned'}`
-          }
-        }
-
-        const oldStatus = existingComplaint.status || 'open'
-        console.log('[AGENT ACTION] Complaint found, status:', oldStatus, 'submitted_by:', existingComplaint.submitted_by)
-
-        // Step 2: Update the complaint
-        console.log('[AGENT ACTION] Updating complaint, assigning technician_id:', args.technician_id)
-        const { error: updateError } = await supabaseAdmin.from('complaints')
-          .update({
-            assigned_tech_id: args.technician_id,
-            status: 'assigned',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', args.complaint_id)
-
-        if (updateError) {
-          console.error('[AGENT ACTION] Failed to update complaint:', updateError)
-          return {
-            success: false,
-            error: `Failed to update complaint: ${updateError.message}`
-          }
-        }
-
-        // Step 3: Log the action (non-fatal if it fails)
-        const { error: logError } = await supabaseAdmin.from('complaint_logs')
-          .insert({
-            complaint_id: args.complaint_id,
-            actor_id: existingComplaint.submitted_by,
-            action: 'assigned_by_agent',
-            old_status: oldStatus,
-            new_status: 'assigned',
-            note: `Assigned by Aria Agent. Reason: ${args.reason || 'Admin requested via agent'}`
-          })
-        if (logError) {
-          console.warn('[AGENT ACTION] complaint_logs insert failed (non-fatal):', logError.message)
-        }
-
-        // Step 4: Fetch technician name for confirmation message
-        console.log('[AGENT ACTION] Fetching technician id:', args.technician_id)
-        const { data: tech, error: techError } = await supabaseAdmin
-          .from('technicians')
-          .select('users(name, phone)')
-          .eq('id', args.technician_id)
-          .single()
-
-        if (techError) {
-          console.warn('[AGENT ACTION] Technician fetch failed (non-fatal):', techError.message)
-        }
-
-        const techName = tech?.users?.name || args.technician_id
-        console.log(`[AGENT ACTION] Complaint ${args.complaint_id} successfully assigned to ${techName}`)
-
-        return {
-          success: true,
-          action: 'complaint_assigned',
-          complaint_id: args.complaint_id,
-          assigned_to: techName,
-          message: `Complaint successfully assigned to ${techName}`
-        }
-      } catch (err) {
-        console.error('[AGENT ACTION] assign_complaint crashed:', err)
-        return { success: false, error: err.message }
-      }
-    }
-
-    case 'send_whatsapp_to_technician': {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID
-      const authToken = process.env.TWILIO_AUTH_TOKEN
-      const from = process.env.TWILIO_WHATSAPP_FROM
-
-      const encoded = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
-
-      try {
-        await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${encoded}`,
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-              From: `whatsapp:${from}`,
-              To: `whatsapp:${args.phone}`,
-              Body: args.message
-            })
-          }
-        )
-
-        console.log(`[AGENT ACTION] WhatsApp sent to ${args.technician_name}`)
-
-        return {
-          success: true,
-          action: 'whatsapp_sent',
-          sent_to: args.technician_name,
-          message: `WhatsApp sent to ${args.technician_name}`
-        }
-      } catch (err) {
-        return {
-          success: false,
-          error: 'WhatsApp send failed',
-          details: err.message
-        }
-      }
-    }
-
-    case 'create_maintenance_schedule': {
-      const { data } = await supabaseAdmin.from('maintenance_schedules')
-        .insert({
-          society_id: societyId,
-          task_name: args.task_name,
-          category: args.category,
-          next_due: args.next_due,
-          notes: args.notes,
-          status: 'upcoming',
-          frequency: 'one_time'
-        })
-        .select()
-        .single()
-
-      console.log(`[AGENT ACTION] Maintenance schedule created: ${args.task_name}`)
-
-      return {
-        success: true,
-        action: 'schedule_created',
-        task: args.task_name,
-        due: args.next_due,
-        message: `Maintenance task "${args.task_name}" scheduled for ${new Date(args.next_due).toLocaleDateString('en-IN')}`
-      }
-    }
-
-    case 'update_root_cause_ticket': {
-      const updateData = {
-        updated_at: new Date().toISOString()
-      }
-
-      if (args.status)
-        updateData.status = args.status
-      if (args.root_cause_documented)
-        updateData.root_cause_documented = args.root_cause_documented
-      if (args.amc_notified !== undefined)
-        updateData.amc_notified = args.amc_notified
-      if (args.status === 'resolved')
-        updateData.resolved_at = new Date().toISOString()
-
-      const { data } = await supabaseAdmin.from('root_cause_tickets')
-        .update(updateData)
-        .eq('id', args.ticket_id)
-        .select()
-        .single()
-
-      console.log(`[AGENT ACTION] Root cause ticket ${args.ticket_id} updated`)
-
-      return {
-        success: true,
-        action: 'ticket_updated',
-        ticket_id: args.ticket_id,
-        new_status: args.status,
-        message: `Root cause ticket updated to: ${args.status}`
-      }
-    }
   }
 }
 
@@ -2087,8 +1753,7 @@ app.post('/agent/chat', async (req, res) => {
   const {
     message,
     society_id,
-    conversation_history,
-    plan  // 'free' or 'growth'
+    conversation_history
   } = req.body
 
   if (!message || !society_id) {
@@ -2098,21 +1763,19 @@ app.post('/agent/chat', async (req, res) => {
   }
 
   try {
-    console.log(`[API] Agent chat request: "${message}" (plan: ${plan || 'free'})`)
+    console.log(`[API] Agent chat request: "${message}"`)
 
     const result = await runEstateManagerAgent(
       message,
       society_id,
-      conversation_history || [],
-      plan || 'free'
+      conversation_history || []
     )
 
     res.json({
       success: true,
       response: result.response,
       tool_calls_made: result.tool_calls_made,
-      conversation_history: result.updated_history,
-      actions_taken: result.actions_taken || []
+      conversation_history: result.updated_history
     })
 
   } catch (err) {
