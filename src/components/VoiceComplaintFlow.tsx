@@ -87,7 +87,7 @@ export default function VoiceComplaintFlow() {
       setState('processing');
       try {
         const result = await transcribeAudio(audioBlob);
-        const t = result.transcript;
+        const t = result;
         if (!t.trim()) {
           setErrorMsg('No speech detected. Please speak clearly and try again.');
           setState('error');

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import { transcribeAudio, LANGUAGES } from '../../lib/sarvam'
+import { textToSpeech, playBase64Audio } from '../../lib/sarvamTTS'
+import { Microphone, SoundHigh, SoundOff, SendDiagonal } from 'iconoir-react'
 
 const WORKFLOW_URL = import.meta.env.VITE_WORKFLOW_URL || 'http://localhost:3001'
 const SOCIETY_ID = import.meta.env.VITE_SOCIETY_ID || 'eafc59c7-4148-44ee-b66b-256a5338718b'
@@ -97,6 +99,20 @@ const QUICK_ACTIONS = [
   "Cost savings this month",
 ]
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  'en-IN': 'English',
+  'hi-IN': 'Hindi',
+  'kn-IN': 'Kannada',
+  'ta-IN': 'Tamil',
+  'te-IN': 'Telugu',
+  'ml-IN': 'Malayalam',
+  'mr-IN': 'Marathi',
+  'gu-IN': 'Gujarati',
+  'bn-IN': 'Bengali',
+  'pa-IN': 'Punjabi',
+  'od-IN': 'Odia',
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function EstateManagerAgent() {
@@ -108,6 +124,141 @@ export default function EstateManagerAgent() {
   const [isBriefingLoading, setIsBriefingLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const [isRecording, setIsRecording] = useState(false)
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false)
+  const [voiceLanguage, setVoiceLanguage] = useState('hi-IN')
+  const [responseLanguage, setResponseLanguage] = useState('en-IN')
+  const [ttsEnabled, setTtsEnabled] = useState(true)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        stream.getTracks().forEach(t => t.stop())
+        await processVoiceInput(blob)
+      }
+
+      mediaRecorder.start()
+      setIsRecording(true)
+    } catch (err) {
+      console.error('Mic error:', err)
+    }
+  }
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      setIsProcessingVoice(true)
+    }
+  }
+
+  const processVoiceInput = async (blob: Blob) => {
+    try {
+      // Step 1: Sarvam STT
+      const result = await transcribeAudio(blob, voiceLanguage)
+      const transcript = result
+      if (!transcript || typeof transcript !== 'string' || transcript.trim() === '') {
+        setIsProcessingVoice(false)
+        return
+      }
+
+      // Add user message immediately
+      setMessages(prev => [...prev, {
+        role: 'user',
+        content: transcript,
+        timestamp: new Date()
+      }])
+
+      setIsLoading(true)
+      setIsProcessingVoice(false)
+
+      // Step 2: Send to Aria
+      const res = await fetch(`${WORKFLOW_URL}/agent/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: transcript,
+          society_id: SOCIETY_ID,
+          conversation_history: conversationHistory,
+          plan: 'free',
+          response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.response) {
+        setMessages(prev => [...prev, {
+          role: 'agent',
+          content: data.response,
+          timestamp: new Date(),
+          tool_calls: data.tool_calls_made,
+          actions_taken: data.actions_taken || [],
+        }])
+        setConversationHistory(data.conversation_history || [])
+
+        // Step 3: Sarvam TTS — speak response
+        if (ttsEnabled) {
+          await speakResponse(data.response)
+        }
+      }
+    } catch (err) {
+      console.error('Voice processing error:', err)
+    } finally {
+      setIsLoading(false)
+      setIsProcessingVoice(false)
+    }
+  }
+
+  const speakResponse = async (text: string) => {
+    try {
+      // Strip emojis and markdown for cleaner speech
+      const cleanText = text
+        .replace(/[🚨⚠️📋✅🔒🤖]/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/→ Next action:/g, 'Next action:')
+        .trim()
+      
+      const audioBase64 = await textToSpeech(cleanText, responseLanguage, 'meera')
+      const audio = playBase64Audio(audioBase64)
+      setCurrentAudio(audio)
+
+      audio.onended = () => setCurrentAudio(null)
+    } catch (err) {
+      console.error('TTS error:', err)
+    }
+  }
+
+  const stopSpeaking = () => {
+    if (currentAudio) {
+      currentAudio.pause()
+      setCurrentAudio(null)
+    }
+  }
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      stopVoiceRecording()
+    } else {
+      startVoiceRecording()
+    }
+  }
 
 
   // Auto scroll to bottom
@@ -137,6 +288,9 @@ export default function EstateManagerAgent() {
           content: data.briefing,
           timestamp: new Date(),
         }])
+        if (ttsEnabled && data.briefing) {
+          await speakResponse(data.briefing)
+        }
       }
     } catch {
       setMessages([{
@@ -172,6 +326,7 @@ export default function EstateManagerAgent() {
           society_id: SOCIETY_ID,
           conversation_history: conversationHistory,
           plan: 'free',
+          response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
         }),
       })
 
@@ -321,21 +476,49 @@ export default function EstateManagerAgent() {
               </p>
             </div>
 
-            <button
-              onClick={clearChat}
-              title="New conversation"
-              style={{
-                background: 'none', border: 'none',
-                color: 'rgba(215,218,220,0.6)',
-                cursor: 'pointer', fontSize: '11px',
-                fontFamily: 'Inter', padding: '4px 8px', borderRadius: '6px',
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#EDEBE6' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(215,218,220,0.6)' }}
-            >
-              New chat
-            </button>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              {/* TTS toggle */}
+              <button
+                onClick={() => {
+                  setTtsEnabled(!ttsEnabled);
+                  if (ttsEnabled) stopSpeaking();
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'rgba(215,218,220,0.7)',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title={ttsEnabled ? 'Voice responses ON' : 'Voice responses OFF'}
+              >
+                {ttsEnabled ? (
+                  <SoundHigh width={16} height={16} strokeWidth={1.5} />
+                ) : (
+                  <SoundOff width={16} height={16} strokeWidth={1.5} />
+                )}
+              </button>
+              <button
+                onClick={clearChat}
+                title="New conversation"
+                style={{
+                  background: 'none', border: 'none',
+                  color: 'rgba(215,218,220,0.6)',
+                  cursor: 'pointer', fontSize: '11px',
+                  fontFamily: 'Inter', padding: '4px 8px', borderRadius: '6px',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#EDEBE6' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(215,218,220,0.6)' }}
+              >
+                New chat
+              </button>
+            </div>
           </div>
 
           {/* Messages area */}
@@ -468,58 +651,195 @@ export default function EstateManagerAgent() {
             padding: '12px 16px',
             borderTop: '1px solid #E0DDD9',
             background: '#FFFFFF',
-            borderRadius: '0 0 16px 16px',
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'flex-end',
+            borderRadius: '0 0 16px 16px'
           }}>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything about your society..."
-              rows={1}
-              style={{
-                flex: 1,
-                border: '1px solid #E0DDD9',
-                borderRadius: '10px',
-                padding: '9px 12px',
+            {/* Language selector for voice */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginBottom: '8px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{
+                  fontSize: '11px',
+                  color: '#9C9894',
+                  fontFamily: 'Inter'
+                }}>
+                  Voice language:
+                </span>
+                <select
+                  value={voiceLanguage}
+                  onChange={(e) => setVoiceLanguage(e.target.value)}
+                  disabled={isRecording}
+                  style={{
+                    fontSize: '11px',
+                    color: '#1C1917',
+                    background: '#F5F3F0',
+                    border: '1px solid #E0DDD9',
+                    borderRadius: '6px',
+                    padding: '3px 6px',
+                    fontFamily: 'Inter',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {LANGUAGES.map(l => (
+                    <option key={l.code} value={l.code}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginLeft: '4px'
+              }}>
+                <span style={{
+                  fontSize: '11px',
+                  color: '#9C9894',
+                  fontFamily: 'Inter'
+                }}>
+                  Reply in:
+                </span>
+                <select
+                  value={responseLanguage}
+                  onChange={(e) => setResponseLanguage(e.target.value)}
+                  style={{
+                    fontSize: '11px',
+                    color: '#1C1917',
+                    background: '#F5F3F0',
+                    border: '1px solid #E0DDD9',
+                    borderRadius: '6px',
+                    padding: '3px 6px',
+                    fontFamily: 'Inter',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {LANGUAGES.map(l => (
+                    <option key={l.code} value={l.code}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {currentAudio && (
+                <button
+                  onClick={stopSpeaking}
+                  style={{
+                    fontSize: '11px',
+                    color: '#DC2626',
+                    background: '#FEE2E2',
+                    border: '1px solid #FCA5A5',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter',
+                    marginLeft: 'auto'
+                  }}
+                >
+                  ⏸ Stop speaking
+                </button>
+              )}
+            </div>
+
+            {/* Input row */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'flex-end'
+            }}>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isRecording ? "Listening..." : "Type or tap mic to speak..."}
+                disabled={isRecording || isProcessingVoice}
+                rows={1}
+                style={{
+                  flex: 1,
+                  border: '1px solid #E0DDD9',
+                  borderRadius: '10px',
+                  padding: '9px 12px',
+                  fontFamily: 'Inter',
+                  fontSize: '13px',
+                  color: '#1C1917',
+                  background: isRecording ? '#FEE2E2' : '#F5F3F0',
+                  resize: 'none',
+                  outline: 'none',
+                  lineHeight: '1.5',
+                  maxHeight: '80px',
+                  transition: 'border-color 0.15s',
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#D97706' }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#E0DDD9' }}
+              />
+
+              {/* Mic button */}
+              <button
+                onClick={handleMicClick}
+                disabled={isProcessingVoice || isLoading}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: isRecording ? '#DC2626' : '#F5F3F0',
+                  border: isRecording ? 'none' : '1px solid #E0DDD9',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all 0.15s',
+                  animation: isRecording ? 'pulse 1.5s infinite' : 'none'
+                }}
+              >
+                <Microphone 
+                  width={16} height={16} 
+                  strokeWidth={1.5}
+                  color={isRecording ? '#FFFFFF' : '#6B6560'} 
+                />
+              </button>
+
+              {/* Send button */}
+              <button
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || isLoading || isRecording}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: input.trim() && !isLoading ? '#1C1917' : '#E0DDD9',
+                  border: 'none',
+                  cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <SendDiagonal width={16} height={16}
+                  strokeWidth={2}
+                  color={input.trim() && !isLoading ? '#FFFFFF' : '#9C9894'} />
+              </button>
+            </div>
+            
+            {isProcessingVoice && (
+              <p style={{
+                fontSize: '11px',
+                color: '#D97706',
                 fontFamily: 'Inter',
-                fontSize: '13px',
-                color: '#1C1917',
-                background: '#F5F3F0',
-                resize: 'none',
-                outline: 'none',
-                lineHeight: '1.5',
-                maxHeight: '80px',
-                overflowY: 'auto',
-                transition: 'border-color 0.15s',
-              }}
-              onFocus={e => { e.currentTarget.style.borderColor = '#D97706' }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#E0DDD9' }}
-            />
-            <button
-              onClick={() => sendMessage()}
-              disabled={!input.trim() || isLoading}
-              style={{
-                width: '36px', height: '36px',
-                borderRadius: '10px',
-                background: input.trim() && !isLoading ? '#1C1917' : '#E0DDD9',
-                border: 'none',
-                cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-                transition: 'all 0.15s',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke={input.trim() && !isLoading ? '#FFFFFF' : '#9C9894'}
-                strokeWidth="2">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
+                margin: '6px 0 0',
+                textAlign: 'center'
+              }}>
+                Transcribing your voice...
+              </p>
+            )}
           </div>
 
         </div>
@@ -537,6 +857,10 @@ export default function EstateManagerAgent() {
         @keyframes ema-pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
+        }
+        @keyframes pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
         }
       `}</style>
     </>

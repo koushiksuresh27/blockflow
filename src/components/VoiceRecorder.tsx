@@ -111,7 +111,7 @@ export default function VoiceRecorder({
       let transcript = '';
       try {
         const result = await transcribeAudio(audioBlob, selectedLanguage);
-        transcript = result.transcript;
+        transcript = result;
         if (!transcript.trim()) {
           setErrorMsg('No speech detected. Please speak clearly and try again.');
           setStatus('error');
