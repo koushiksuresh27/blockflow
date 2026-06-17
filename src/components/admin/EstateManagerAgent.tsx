@@ -279,7 +279,10 @@ export default function EstateManagerAgent() {
       const res = await fetch(`${WORKFLOW_URL}/agent/briefing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ society_id: SOCIETY_ID }),
+        body: JSON.stringify({
+          society_id: SOCIETY_ID,
+          response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
+        }),
       })
       const data = await res.json()
       if (data.briefing) {

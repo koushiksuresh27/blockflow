@@ -669,7 +669,13 @@ Season: ${isMonsoon
 }
 
 
-async function runEstateManagerAgent(message, societyId, conversationHistory = []) {
+async function runEstateManagerAgent(
+  message, 
+  societyId, 
+  conversationHistory = [], 
+  plan,
+  responseLanguage = 'English'
+) {
   console.log(`[AGENT] Processing: "${message}"`)
 
   // Step 1: Pre-load live context
@@ -684,12 +690,26 @@ async function runEstateManagerAgent(message, societyId, conversationHistory = [
     hour12: true
   })
 
+  const languageInstruction = 
+    responseLanguage === 'English'
+      ? ''
+      : `\n\nCRITICAL LANGUAGE INSTRUCTION: 
+You MUST respond ENTIRELY in ${responseLanguage}. 
+Do not mix English and ${responseLanguage} 
+unless a technical term has no good 
+${responseLanguage} equivalent (e.g. 
+"WhatsApp", "SLA", "AMC" can stay in English). 
+Numbers, dates, and proper nouns 
+(names like "John", "Kumar") stay as is. 
+Every sentence of your response must be 
+in ${responseLanguage}.\n\n`
+
   const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
 
 You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
 
 ${context.summary}
-
+${languageInstruction}
 ASSISTANT MODE ACTIVE 📖
 You can READ data and give recommendations.
 You CANNOT take actions directly.
@@ -1753,7 +1773,9 @@ app.post('/agent/chat', async (req, res) => {
   const {
     message,
     society_id,
-    conversation_history
+    conversation_history,
+    plan,
+    response_language
   } = req.body
 
   if (!message || !society_id) {
@@ -1768,7 +1790,9 @@ app.post('/agent/chat', async (req, res) => {
     const result = await runEstateManagerAgent(
       message,
       society_id,
-      conversation_history || []
+      conversation_history || [],
+      plan,
+      response_language || 'English'
     )
 
     res.json({
@@ -1789,7 +1813,7 @@ app.post('/agent/chat', async (req, res) => {
 
 // POST /agent/briefing — Get proactive morning briefing
 app.post('/agent/briefing', async (req, res) => {
-  const { society_id } = req.body
+  const { society_id, plan, response_language } = req.body
 
   if (!society_id) {
     return res.status(400).json({
@@ -1813,7 +1837,9 @@ app.post('/agent/briefing', async (req, res) => {
   
   Be specific. Use real data. Give me a prioritized action list.`,
       society_id,
-      []
+      [],
+      plan,
+      response_language || 'English'
     )
 
     res.json({
