@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, Community, Key, Bell } from 'iconoir-react';
+import { Home, Community, Key, Bell, Calendar } from 'iconoir-react';
 
 export default function ResidentLayout() {
   const location = useLocation();
@@ -34,6 +34,7 @@ export default function ResidentLayout() {
         <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#E0DDD9] flex justify-around items-center h-[64px] z-10 px-2 pb-safe rounded-b-[16px]">
           <NavItem path="/resident" icon={Home} label="Home" />
           <NavItem path="/resident/community" icon={Community} label="Community" />
+          <NavItem path="/resident/bookings" icon={Calendar} label="Bookings" />
           <NavItem path="/resident/gatepass" icon={Key} label="Gate Pass" />
           <NavItem path="/resident/notifications" icon={Bell} label="Alerts" />
         </nav>
