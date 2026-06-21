@@ -3,14 +3,28 @@ import { Building, Gym, Droplet, TennisBall, Leaf, Calendar } from 'iconoir-reac
 import { supabase } from '../../lib/supabase';
 import { format, parse, addMinutes, isAfter } from 'date-fns';
 
-const mockCurrentUserId = 'mock-user-1';
-const mockSocietyId = 'mock-society-1';
-
 export default function BookingsTab() {
   const [activeTab, setActiveTab] = useState<'amenities' | 'parking'>('amenities');
   const [amenities, setAmenities] = useState<any[]>([]);
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [societyId, setSocietyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setCurrentUserId(user.id);
+        supabase.from('users').select('society_id').eq('id', user.id).single()
+          .then(({ data }) => {
+            if (data?.society_id) {
+              setSocietyId(data.society_id);
+            }
+          });
+      }
+    });
+  }, []);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,11 +38,11 @@ export default function BookingsTab() {
   const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
 
   useEffect(() => {
-    if (activeTab === 'amenities') {
-      fetchAmenities();
-      fetchMyBookings();
+    if (activeTab === 'amenities' && societyId && currentUserId) {
+      fetchAmenities(societyId);
+      fetchMyBookings(currentUserId);
     }
-  }, [activeTab]);
+  }, [activeTab, societyId, currentUserId]);
 
   useEffect(() => {
     if (selectedAmenity && selectedDate) {
@@ -36,12 +50,12 @@ export default function BookingsTab() {
     }
   }, [selectedAmenity, selectedDate]);
 
-  const fetchAmenities = async () => {
+  const fetchAmenities = async (socId: string) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('amenities')
       .select('*')
-      .eq('society_id', mockSocietyId)
+      .eq('society_id', socId)
       .eq('status', 'active')
       .order('name');
     
@@ -51,11 +65,11 @@ export default function BookingsTab() {
     setLoading(false);
   };
 
-  const fetchMyBookings = async () => {
+  const fetchMyBookings = async (userId: string) => {
     const { data, error } = await supabase
       .from('amenity_bookings')
       .select('*, amenities(name, type)')
-      .eq('resident_id', mockCurrentUserId)
+      .eq('resident_id', userId)
       .order('booking_date', { ascending: true });
     
     if (!error && data) {
@@ -74,16 +88,27 @@ export default function BookingsTab() {
     const bookings = data || [];
 
     // Fallbacks if not set in DB
-    const startTime = amenity.available_start_time || '08:00';
-    const endTime = amenity.available_end_time || '22:00';
+    const startTime = amenity.available_start_time?.slice(0, 5) || '08:00';
+    const endTime = amenity.available_end_time?.slice(0, 5) || '22:00';
     const durationMinutes = amenity.slot_duration_minutes || 60;
+
+    if (amenity.booking_type === 'full_day') {
+      const isBooked = bookings.length > 0;
+      setSlots([{
+        start: startTime,
+        end: endTime,
+        available: !isBooked,
+        isFullDay: true
+      }]);
+      return;
+    }
 
     const generatedSlots = generateSlots(startTime, endTime, durationMinutes, bookings);
     setSlots(generatedSlots);
   };
 
   const parseTime = (timeStr: string) => {
-    return parse(timeStr, 'HH:mm', new Date());
+    return parse(timeStr.slice(0, 5), 'HH:mm', new Date());
   };
 
   const formatTime = (dateObj: Date) => {
@@ -154,14 +179,16 @@ export default function BookingsTab() {
     setMessage(null);
 
     const durationHours = (selectedAmenity.slot_duration_minutes || 60) / 60;
-    const cost = (selectedAmenity.hourly_rate || 0) * durationHours;
+    const cost = selectedAmenity.booking_type === 'full_day'
+      ? (selectedAmenity.hourly_rate || 0)
+      : (selectedAmenity.hourly_rate || 0) * durationHours;
 
     const { error } = await supabase
       .from('amenity_bookings')
       .insert({
         amenity_id: selectedAmenity.id,
-        society_id: mockSocietyId,
-        resident_id: mockCurrentUserId,
+        society_id: societyId,
+        resident_id: currentUserId,
         booking_date: selectedDate,
         start_time: selectedSlot.start,
         end_time: selectedSlot.end,
@@ -181,7 +208,7 @@ export default function BookingsTab() {
     setMessage({ type: 'success', text: 'Booking confirmed!' });
     setTimeout(() => {
       closeModal();
-      fetchMyBookings();
+      if (currentUserId) fetchMyBookings(currentUserId);
     }, 1500);
   };
 
@@ -228,7 +255,7 @@ export default function BookingsTab() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-[#1C1917]">{amenity.name}</h3>
-                        <p className="text-sm text-[#78716C]">Max capacity: {amenity.max_capacity}</p>
+                        <p className="text-sm text-[#78716C]">Max capacity: {amenity.capacity || '—'}</p>
                       </div>
                     </div>
                     <button 
@@ -322,7 +349,7 @@ export default function BookingsTab() {
                               : 'bg-white text-[#1C1917] border-[#E0DDD9] hover:border-[#1C1917]'
                         }`}
                       >
-                        {slot.start}
+                        {slot.isFullDay ? 'Full Day' : slot.start}
                       </button>
                     ))}
                   </div>
@@ -356,7 +383,9 @@ export default function BookingsTab() {
                 <div className="p-4 bg-[#F5F4F0] rounded-xl flex justify-between items-center">
                   <span className="text-sm font-medium text-[#1C1917]">Total Amount</span>
                   <span className="text-lg font-bold text-[#1C1917]">
-                    ${((selectedAmenity.hourly_rate || 0) * ((selectedAmenity.slot_duration_minutes || 60) / 60)).toFixed(2)}
+                    ₹{selectedAmenity.booking_type === 'full_day' 
+                       ? (selectedAmenity.hourly_rate || 0).toFixed(2)
+                       : ((selectedAmenity.hourly_rate || 0) * ((selectedAmenity.slot_duration_minutes || 60) / 60)).toFixed(2)}
                   </span>
                 </div>
               </div>

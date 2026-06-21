@@ -4,6 +4,20 @@ const express = require('express')
 const cors = require('cors')
 const { createClient } = require('@supabase/supabase-js')
 const Groq = require('groq-sdk')
+const multer = require('multer')
+const os = require('os')
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}_${file.originalname}`)
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }
+})
+
+const { digitizeDocument } = require('./sarvamVision')
 
 const groqClients = [
   new Groq({ apiKey: process.env.GROQ_API_KEY_1 }),
@@ -1852,6 +1866,149 @@ app.post('/agent/briefing', async (req, res) => {
     console.error('[API] Briefing error:', err)
     res.status(500).json({
       error: 'Briefing failed'
+    })
+  }
+})
+
+async function parseVendorsFromText(extractedText) {
+  console.log(`[IMPORT] Parsing extracted text (${extractedText.length} chars) into vendor records...`)
+
+  const completion = await groqClients[0].chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [{
+      role: 'system',
+      content: `You extract vendor/contractor records from documents for an apartment maintenance platform. Return ONLY valid JSON, nothing else.`
+    }, {
+      role: 'user',
+      content: `Extract all vendor/contractor records from this document content. The content may be HTML, Markdown, or plain text — extract whatever vendor data is present (tables, lists, paragraphs).
+
+For each vendor found, extract these fields:
+- company_name (required, the business name)
+- service_type (best guess: Plumbing, Electrical, Lift, Security, Housekeeping, Pest Control, Generator, Landscaping, or Other)
+- contact_name (person's name if mentioned, else null)
+- contact_phone (phone number if mentioned, else null)
+- contract_cost (numeric value only, strip ₹/Rs/commas, else null)
+- contract_end_date (ISO format YYYY-MM-DD if a date is mentioned, else null)
+- notes (any other relevant details, else null)
+
+Document content:
+${extractedText.slice(0, 8000)}
+
+Return exactly this JSON structure:
+{"vendors": [{"company_name": "...", "service_type": "...", "contact_name": "...", "contact_phone": "...", "contract_cost": 0, "contract_end_date": null, "notes": "..."}]}
+
+If no vendor data is found, return {"vendors": []}`
+    }],
+    temperature: 0.1,
+    max_tokens: 2000,
+    response_format: { type: 'json_object' }
+  })
+
+  const result = JSON.parse(completion.choices[0].message.content)
+
+  console.log(`[IMPORT] Extracted ${result.vendors?.length || 0} vendor records:`, JSON.stringify(result.vendors))
+
+  return result.vendors || []
+}
+
+// TEST endpoint — just verify Vision pipeline
+// returns extracted text correctly
+app.post('/import/test-vision', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      error: 'No file uploaded'
+    })
+  }
+
+  try {
+    console.log(`[API] Testing vision pipeline: ${req.file.originalname} at ${req.file.path}`)
+
+    const result = await digitizeDocument(req.file.path, 'en-IN')
+
+    res.json({
+      success: true,
+      extracted_length: result.extractedText.length,
+      extracted_preview: result.extractedText.slice(0, 2000),
+      has_json: !!result.jsonData
+    })
+
+  } catch (err) {
+    console.error('[API] Vision test error:', err)
+    res.status(500).json({
+      error: 'Vision pipeline failed',
+      details: err.message
+    })
+  }
+})
+
+app.post('/import/vendors/analyze', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      error: 'No file uploaded'
+    })
+  }
+
+  try {
+    console.log(`[API] Vendor import analyze: ${req.file.originalname}`)
+
+    const { extractedText } = await digitizeDocument(req.file.path, 'en-IN')
+    const vendors = await parseVendorsFromText(extractedText)
+
+    res.json({
+      success: true,
+      vendors,
+      count: vendors.length
+    })
+
+  } catch (err) {
+    console.error('[API] Vendor import error:', err)
+    res.status(500).json({
+      error: 'Import analysis failed',
+      details: err.message
+    })
+  }
+})
+
+app.post('/import/vendors/confirm', async (req, res) => {
+  const { vendors, society_id } = req.body
+
+  if (!vendors || !Array.isArray(vendors) || !society_id) {
+    return res.status(400).json({
+      error: 'vendors array and society_id required'
+    })
+  }
+
+  try {
+    const rows = vendors.map(v => ({
+      society_id,
+      company_name: v.company_name,
+      service_type: v.service_type || 'Other',
+      contact_name: v.contact_name || null,
+      contact_phone: v.contact_phone || null,
+      contract_cost: v.contract_cost || null,
+      contract_end_date: v.contract_end_date || null,
+      status: 'active'
+    }))
+
+    const { data, error } = await supabase
+      .from('vendors')
+      .insert(rows)
+      .select()
+
+    if (error) throw error
+
+    console.log(`[API] Imported ${data.length} vendors for society ${society_id}`)
+
+    res.json({
+      success: true,
+      imported_count: data.length
+    })
+
+  } catch (err) {
+    console.error('[API] Vendor confirm error:', err)
+    res.status(500).json({
+      error: 'Import confirm failed',
+      details: err.message
     })
   }
 })

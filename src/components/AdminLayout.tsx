@@ -23,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/vendors': 'Vendors',
   '/admin/alerts': 'Alerts',
   '/admin/settings': 'Settings',
+  '/admin/amenities': 'Amenities',
 };
 
 //  Nav groups
@@ -42,6 +43,7 @@ const NAV_GROUPS = [
       { to: '/admin/residents', icon: Community, label: 'Residents' },
       { to: '/admin/technicians', icon: Wrench, label: 'Technicians & Security' },
       { to: '/admin/housekeeping', icon: Map, label: 'Housekeeping' },
+      { to: '/admin/amenities', icon: Building, label: 'Amenities' },
     ],
   },
   {

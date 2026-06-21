@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Landing from './pages/Landing';
 import Onboarding from './pages/Onboarding';
@@ -16,6 +16,7 @@ import SettingsPage from './pages/admin/SettingsPage';
 import VendorsPage from './pages/admin/VendorsPage';
 import ResidentsPage from './pages/admin/ResidentsPage';
 import HousekeepingPage from './pages/admin/HousekeepingPage';
+import AmenitiesPage from './pages/admin/AmenitiesPage';
 import EquipmentPage from './pages/admin/EquipmentPage';
 import MaintenancePage from './pages/admin/MaintenancePage';
 import AlertsPage from './pages/admin/AlertsPage';
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/admin/dna" element={<ChronicIssuesPage />} />
         <Route path="/admin/technicians" element={<TechniciansPage />} />
         <Route path="/admin/housekeeping" element={<HousekeepingPage />} />
+        <Route path="/admin/amenities" element={<AmenitiesPage />} />
         <Route path="/admin/equipment" element={<EquipmentPage />} />
         <Route path="/admin/maintenance" element={<MaintenancePage />} />
         <Route path="/admin/vendors" element={<VendorsPage />} />
