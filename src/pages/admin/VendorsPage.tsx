@@ -3,7 +3,8 @@ import AdminLayout from '../../components/AdminLayout';
 import { supabase } from '../../lib/supabase';
 import type { Vendor } from '../../types/vendor';
 import { VENDOR_SERVICE_TYPES, VENDOR_STATUS_COLORS } from '../../constants/vendorTypes';
-import { Plus, EditPencil, Trash } from 'iconoir-react';
+import { Plus, EditPencil, Trash, CloudUpload } from 'iconoir-react';
+import VendorImportModal from '../../components/admin/VendorImportModal';
 
 const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
 
@@ -15,6 +16,7 @@ export default function VendorsPage() {
   const [filterExpiring, setFilterExpiring] = useState(false);
   const [modalState, setModalState] = useState<null | 'add' | { vendor: Vendor }>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Form state
   const [form, setForm] = useState<Partial<Vendor>>({});
@@ -225,20 +227,43 @@ export default function VendorsPage() {
             <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 18, color: '#1C1917', margin: 0 }}>
               Vendors
             </h2>
-            <button 
-              onClick={openAddModal}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                background: '#1C1917', color: '#FFFFFF',
-                border: 'none', borderRadius: 10,
-                padding: '8px 16px',
-                fontFamily: 'Inter', fontWeight: 500, fontSize: 13,
-                cursor: 'pointer'
-              }}
-            >
-              <Plus width={18} height={18} strokeWidth={1.5} />
-              Add Vendor
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowImportModal(true)}
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E0DDD9',
+                  color: '#1C1917',
+                  borderRadius: '10px',
+                  padding: '10px 16px',
+                  fontFamily: 'Space Grotesk',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  marginRight: '8px'
+                }}
+              >
+                <CloudUpload width={16} height={16} strokeWidth={1.5} />
+                Import from Document
+              </button>
+              <button 
+                onClick={openAddModal}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: '#1C1917', color: '#FFFFFF',
+                  border: 'none', borderRadius: 10,
+                  padding: '8px 16px',
+                  fontFamily: 'Inter', fontWeight: 500, fontSize: 13,
+                  cursor: 'pointer'
+                }}
+              >
+                <Plus width={18} height={18} strokeWidth={1.5} />
+                Add Vendor
+              </button>
+            </div>
           </div>
           
           {/* Search */}
@@ -487,6 +512,17 @@ export default function VendorsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showImportModal && (
+        <VendorImportModal
+          societyId={SOCIETY_ID}
+          onClose={() => setShowImportModal(false)}
+          onImportComplete={() => {
+            alert('Vendors imported successfully!')
+            loadVendors()
+          }}
+        />
       )}
 
     </AdminLayout>

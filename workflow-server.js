@@ -1970,38 +1970,47 @@ app.post('/import/vendors/analyze', upload.single('file'), async (req, res) => {
 })
 
 app.post('/import/vendors/confirm', async (req, res) => {
-  const { vendors, society_id } = req.body
+  const { vendors, society_id: societyId } = req.body
 
-  if (!vendors || !Array.isArray(vendors) || !society_id) {
+  if (!vendors || !Array.isArray(vendors) || !societyId) {
     return res.status(400).json({
       error: 'vendors array and society_id required'
     })
   }
 
   try {
-    const rows = vendors.map(v => ({
-      society_id,
-      company_name: v.company_name,
-      service_type: v.service_type || 'Other',
-      contact_name: v.contact_name || null,
-      contact_phone: v.contact_phone || null,
-      contract_cost: v.contract_cost || null,
-      contract_end_date: v.contract_end_date || null,
-      status: 'active'
+    const mappedVendors = vendors.map(v => ({
+      society_id: societyId,
+      company_name: v.company_name || v.name || '',
+      service_type: v.service_type || v.type || 'Other',
+      contact_person: v.contact_person || v.contact_name || null,
+      phone: v.phone || v.contact_phone || null,
+      email: v.email || null,
+      contract_start: v.contract_start || null,
+      contract_end: v.contract_end || v.contract_end_date || null,
+      monthly_cost: v.monthly_cost || v.contract_cost || v.cost || null,
+      rating: v.rating || null,
+      notes: v.notes || null,
+      status: v.status || 'active',
     }))
+
+    console.log('Inserting vendors:', JSON.stringify(mappedVendors, null, 2))
 
     const { data, error } = await supabase
       .from('vendors')
-      .insert(rows)
+      .insert(mappedVendors)
       .select()
 
-    if (error) throw error
+    if (error) {
+      console.error('Vendor insert error:', error)
+      return res.status(500).json({ 
+        error: error.message 
+      })
+    }
 
-    console.log(`[API] Imported ${data.length} vendors for society ${society_id}`)
-
-    res.json({
-      success: true,
-      imported_count: data.length
+    return res.json({ 
+      success: true, 
+      imported: data.length 
     })
 
   } catch (err) {

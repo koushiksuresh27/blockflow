@@ -33,7 +33,7 @@ export default function AIDailyBriefing() {
         supabase.from('complaints').select('*', { count: 'exact', head: true }),
         supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('status', 'open'),
         supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('status', 'resolved'),
-        supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('sla_breached', true),
+        supabase.from('complaints').select('*', { count: 'exact', head: true }).lt('sla_deadline', new Date().toISOString()).not('status', 'in', '("resolved","closed","verified")'),
         supabase.from('complaints').select('category'),
         supabase.from('technicians').select('*', { count: 'exact', head: true }).eq('society_id', SOCIETY_ID),
         supabase.from('technicians').select('*', { count: 'exact', head: true }).eq('society_id', SOCIETY_ID).eq('is_available', true),
