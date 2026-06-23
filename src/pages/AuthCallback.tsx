@@ -92,25 +92,36 @@ export default function AuthCallback() {
         return;
       }
 
-      // Step 3: Brand new user — create as pending resident
-      const { data: society } = await supabase
-        .from('societies')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
+      // Step 3: Brand new user logic
+      const pendingSocietyId = localStorage.getItem('pendingSocietyId');
+      
+      if (pendingSocietyId) {
+        // New resident signup
+        const pendingName = localStorage.getItem('pendingResidentName');
+        const pendingTower = localStorage.getItem('pendingResidentTower');
+        const pendingFlat = localStorage.getItem('pendingResidentFlat');
 
-      if (cancelled) return;
+        await supabase.from('users').insert({
+          id: session.user.id,
+          name: pendingName || session.user.user_metadata?.full_name || session.user.email,
+          email: session.user.email,
+          role: 'resident',
+          status: 'pending',
+          society_id: pendingSocietyId,
+          tower: pendingTower || null,
+          flat_number: pendingFlat || null,
+        });
 
-      await supabase.from('users').insert({
-        id: session.user.id,
-        name: session.user.user_metadata?.full_name || session.user.email,
-        email: session.user.email,
-        role: 'resident',
-        status: 'pending',
-        society_id: society?.id || null,
-      });
+        localStorage.removeItem('pendingSocietyId');
+        localStorage.removeItem('pendingResidentName');
+        localStorage.removeItem('pendingResidentTower');
+        localStorage.removeItem('pendingResidentFlat');
 
-      navigate('/pending', { replace: true });
+        navigate('/pending', { replace: true });
+      } else {
+        // Fallback for unexpected case where no profile exists but no pending society ID
+        navigate('/get-started', { replace: true });
+      }
     }
 
     handleCallback();
