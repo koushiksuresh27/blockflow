@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BlockFlow | Maintenance automation for modern property teams</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style>
+        /* Custom Font Setup assuming Geist or similar sans-serif */
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-400-normal.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-500-normal.woff2') format('woff2');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-600-normal.woff2') format('woff2');
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        .blueprint-bg {
+            background-image:
+                linear-gradient(#1C1917 1px, transparent 1px),
+                linear-gradient(90deg, #1C1917 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: transparent;
+            opacity: 0.05;
+        }
+
+        .industrial-border {
+            border: 2px solid #1C1917;
+            position: relative;
+        }
+
+        .industrial-border::before,
+        .industrial-border::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #1C1917;
+        }
+
+        .industrial-border::before {
+            top: -2px;
+            left: -2px;
+        }
+
+        .industrial-border::after {
+            bottom: -2px;
+            right: -2px;
+        }
+
+        .btn-primary {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            border: 2px solid #1C1917;
+            background: #1C1917;
+            color: #EDEBE6;
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: #1C1917;
+        }
+
+        .btn-secondary {
+            transition: all 0.2s ease;
+            border: 2px solid #1C1917;
+            background: transparent;
+            color: #1C1917;
+        }
+
+        .btn-secondary:hover {
+            background: #1C1917;
+            color: #EDEBE6;
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delay-100 {
+            animation-delay: 100ms;
+        }
+
+        .delay-200 {
+            animation-delay: 200ms;
+        }
+
+        .delay-300 {
+            animation-delay: 300ms;
+        }
+
+        .text-texture-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            opacity: 0.03;
+            font-size: 12rem;
+            line-height: 1;
+            font-weight: 700;
+            user-select: none;
+            position: absolute;
+            z-index: 0;
+            color: #1C1917;
+        }
+
+        .text-texture-horizontal {
+            opacity: 0.03;
+            font-size: 8rem;
+            line-height: 1;
+            font-weight: 700;
+            user-select: none;
+            position: absolute;
+            z-index: 0;
+            color: #1C1917;
+            white-space: nowrap;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#1C1917",
+                        "secondary": "#6a635e",
+                        "background": "#EDEBE6",
+                        "surface": "#EDEBE6",
+                        "on-surface": "#1b1c19",
+                        "outline": "#1C1917",
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Geist", "sans-serif"],
+                        "code-sm": ["JetBrains Mono", "monospace"],
+                        "headline-lg": ["Geist", "sans-serif"],
+                        "display-lg": ["Geist", "sans-serif"],
+                        "label-caps": ["JetBrains Mono", "monospace"],
+                        "headline-md": ["Geist", "sans-serif"],
+                        "body-md": ["Geist", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body
+    class="bg-background text-primary font-body-md antialiased selection:bg-primary selection:text-background relative">
+    <!-- Meta Corners -->
+    <div class="fixed top-4 left-4 z-50 font-code-sm text-[10px] text-primary/50 tracking-widest hidden md:block">
+        SYS.BLK.FLW // V.2.4</div>
+    <div class="fixed bottom-4 right-4 z-50 font-code-sm text-[10px] text-primary/50 tracking-widest hidden md:block">
+        CRD: 34.0522° N, 118.2437° W</div>
+    <!-- TopNavBar -->
+    <header class="fixed top-0 w-full z-40 border-b-2 border-primary bg-background/90 backdrop-blur-sm">
+        <div class="flex justify-between items-center px-6 py-4 max-w-[1440px] mx-auto">
+            <div class="flex items-center gap-8">
+                <a class="font-headline-md font-bold tracking-tight text-primary uppercase" href="#">BlockFlow</a>
+                <nav class="hidden md:flex items-center gap-6 font-code-sm text-[12px] uppercase tracking-wider">
+                    <a class="text-primary hover:opacity-70 transition-opacity" href="#product">[ Product ]</a>
+                    <a class="text-primary hover:opacity-70 transition-opacity" href="#solutions">[ Solutions ]</a>
+                    <a class="text-primary hover:opacity-70 transition-opacity" href="#pricing">[ Pricing ]</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4 font-code-sm text-[12px] uppercase tracking-wider">
+                <a class="hidden sm:block hover:underline underline-offset-4" href="#demo">Book a Demo</a>
+                <a class="btn-primary px-4 py-2 font-bold" href="#start">Init_System</a>
+            </div>
+        </div>
+    </header>
+    <main class="pt-[80px]">
+        <!-- Hero Section -->
+        <section
+            class="min-h-[90vh] relative overflow-hidden flex flex-col md:flex-row items-center border-b-2 border-primary">
+            <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <img alt="City Skyline Background" class="w-full h-full object-cover opacity-100"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhws9CoInp-WcY5jE5Arxpdv_KUYbeFXx3UgF-r9KAtRW0XdTvSVYHbzdPIQuqTnLemAlKZapPUywu5NLt4RcBI6CRNQwTaq4_vvEvQ-hlbizKZbUg7qgkfAiOTgUMcuQH3MGoKArSyFuGz6SP4X7-q5Nrg813dLMKJod2gqj5aiz1c-MCTPhrsSs8ZnMXVzLmt2odgdie77zQKCSk2FlnPNuDUM0kHyCUp36cFkSsm11MVHYgAACFXZJL5Awgf2lw3Nex87sS8YdT" />
+            </div>
+            <div class="absolute inset-0 blueprint-bg pointer-events-none"></div>
+            <div class="text-texture-vertical left-0 top-0">AUTOMATED</div>
+            <div class="text-texture-vertical right-0 bottom-0 rotate-180">MAINTENANCE</div>
+            <div class="w-full md:w-1/2 p-6 md:p-16 z-10 fade-in-up relative">
+                <div class="font-code-sm text-[10px] text-primary/70 mb-4 tracking-widest">SEQ: 001_HERO // ACTIVE</div>
+                <h1
+                    class="font-display-lg text-5xl md:text-7xl font-bold text-primary tracking-tight leading-none mb-6">
+                    Maintenance<br />automation<br />for modern<br />property teams.
+                </h1>
+                <p class="font-body-md text-secondary max-w-md leading-relaxed mb-8 border-l-2 border-primary pl-4">
+                    BlockFlow uses AI to convert resident complaints into structured work orders and routes them to
+                    technicians in seconds.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 font-code-sm text-[14px]">
+                    <a class="btn-primary px-8 py-3 uppercase tracking-wider text-center font-bold" href="#start">Deploy
+                        System_</a>
+                    <a class="btn-secondary px-8 py-3 uppercase tracking-wider text-center font-bold"
+                        href="#demo">Req_Demo</a>
+                </div>
+            </div>
+            <!-- Hero Abstract UI -->
+            <div
+                class="w-full md:w-1/2 h-[50vh] md:h-full min-h-[500px] border-t-2 md:border-t-0 md:border-l-2 border-primary relative bg-primary/5 p-8 flex items-center justify-center fade-in-up delay-200">
+                <div class="absolute top-4 left-4 font-code-sm text-[10px] text-primary/50">HUD_VISUALIZATION</div>
+                <div class="absolute bottom-4 right-4 font-code-sm text-[10px] text-primary/50">DATA_STREAM_ACTIVE</div>
+                <div class="w-full max-w-lg industrial-border bg-background p-6 space-y-4 shadow-[8px_8px_0_0_#1C1917]">
+                    <div class="flex justify-between items-center border-b-2 border-primary pb-2">
+                        <span class="font-code-sm text-[12px] font-bold">LIVE_ROUTING_LOG</span>
+                        <div class="flex gap-1">
+                            <div class="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                            <div class="w-2 h-2 bg-primary/30 rounded-full"></div>
+                            <div class="w-2 h-2 bg-primary/30 rounded-full"></div>
+                        </div>
+                    </div>
+                    <!-- Log Item 1 -->
+                    <div class="border-l-2 border-primary pl-3">
+                        <div class="font-code-sm text-[10px] text-secondary">TIME: 14:02:44 // SRC: SMS</div>
+                        <div class="font-body-sm text-primary font-medium">"AC in unit 304 is blowing warm air."</div>
+                        <div class="flex gap-2 mt-1">
+                            <span
+                                class="bg-primary text-background font-code-sm text-[9px] px-1 py-0.5 uppercase">HVAC</span>
+                            <span
+                                class="border border-primary text-primary font-code-sm text-[9px] px-1 py-0.5 uppercase">HIGH_PRI</span>
+                        </div>
+                        <div class="font-code-sm text-[10px] mt-2 text-primary">--&gt; DISPATCH: TECH_04 (ETA 12m)</div>
+                    </div>
+                    <!-- Log Item 2 -->
+                    <div class="border-l-2 border-primary pl-3 opacity-50">
+                        <div class="font-code-sm text-[10px] text-secondary">TIME: 14:01:12 // SRC: APP</div>
+                        <div class="font-body-sm text-primary font-medium">"Hallway light bulb burnt out on 2nd fl."
+                        </div>
+                        <div class="flex gap-2 mt-1">
+                            <span
+                                class="bg-primary/20 text-primary font-code-sm text-[9px] px-1 py-0.5 uppercase">ELEC</span>
+                            <span
+                                class="border border-primary/20 text-primary font-code-sm text-[9px] px-1 py-0.5 uppercase">LOW_PRI</span>
+                        </div>
+                        <div class="font-code-sm text-[10px] mt-2 text-primary">--&gt; QUEUED: MAIN_RTI</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Social Proof -->
+        <section class="py-12 border-b-2 border-primary relative overflow-hidden">
+            <div class="text-texture-horizontal top-0 left-0">TRUSTED_PARTNERS</div>
+            <div
+                class="max-w-[1440px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8 z-10 relative">
+                <div class="font-code-sm text-[12px] uppercase tracking-widest font-bold whitespace-nowrap">Integrated
+                    By //</div>
+                <div class="flex flex-wrap justify-center items-center gap-12 flex-grow">
+                    <div
+                        class="font-headline-md font-bold text-2xl tracking-tighter uppercase border-b-4 border-primary">
+                        AcmeProp</div>
+                    <div
+                        class="font-headline-md font-bold text-2xl tracking-tighter uppercase border-b-4 border-primary/50">
+                        NexusEstate</div>
+                    <div
+                        class="font-headline-md font-bold text-2xl tracking-tighter uppercase border-b-4 border-primary/50">
+                        Urbane</div>
+                    <div
+                        class="font-headline-md font-bold text-2xl tracking-tighter uppercase border-b-4 border-primary/50">
+                        SkylineMgmt</div>
+                </div>
+            </div>
+        </section>
+        <!-- Features Bento -->
+        <section class="py-24 px-6 max-w-[1440px] mx-auto relative" id="product">
+            <div class="font-code-sm text-[10px] text-primary/70 mb-8 tracking-widest">SEQ: 002_CAPABILITIES</div>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(250px,auto)]">
+                <!-- Bento 1: AI Routing (Large Offset) -->
+                <div
+                    class="md:col-span-8 industrial-border p-8 bg-primary text-background flex flex-col justify-between group hover:bg-primary/95 transition-colors fade-in-up">
+                    <div class="flex justify-between items-start">
+                        <span class="font-code-sm text-[12px] opacity-70 tracking-widest">FT.01</span>
+                        <span class="material-symbols-outlined text-4xl">smart_toy</span>
+                    </div>
+                    <div class="max-w-md mt-12">
+                        <h3 class="font-display-lg text-3xl mb-4 leading-tight">AI Complaint Routing</h3>
+                        <p class="font-code-sm text-sm opacity-80 leading-relaxed">Convert multilingual messages from
+                            residents into structured, prioritized work orders automatically. Pattern recognition
+                            handles ambiguities.</p>
+                    </div>
+                </div>
+                <!-- Bento 2: Dispatch (Tall) -->
+                <div
+                    class="md:col-span-4 md:row-span-2 industrial-border p-8 flex flex-col justify-between fade-in-up delay-100 bg-background relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-32 h-32 blueprint-bg opacity-20"></div>
+                    <div class="flex justify-between items-start z-10">
+                        <span class="font-code-sm text-[12px] tracking-widest font-bold">FT.02</span>
+                        <span class="material-symbols-outlined text-4xl text-primary">route</span>
+                    </div>
+                    <div class="z-10 mt-12">
+                        <h3 class="font-display-lg text-2xl mb-4 leading-tight">Smart Dispatch Algorithm</h3>
+                        <p class="font-code-sm text-sm text-secondary leading-relaxed mb-8">Intelligently route tasks to
+                            the right technician based on specialized skills, location, and current availability.</p>
+                        <!-- Micro UI Dispatch -->
+                        <div class="border-2 border-primary p-4 bg-white/50">
+                            <div class="font-code-sm text-[10px] border-b border-primary/20 pb-2 mb-2">MATCHING_MATRIX
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[10px] font-code-sm"><span>TECH_A
+                                        (PLUMB)</span><span class="text-primary font-bold">98% MATCH</span></div>
+                                <div class="flex justify-between text-[10px] font-code-sm opacity-50"><span>TECH_B
+                                        (HVAC)</span><span>12% MATCH</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bento 3: Analytics (Wide) -->
+                <div class="md:col-span-8 industrial-border p-8 flex items-center gap-8 fade-in-up delay-200">
+                    <div class="flex-grow">
+                        <div class="font-code-sm text-[12px] tracking-widest font-bold mb-4">FT.03</div>
+                        <h3 class="font-display-lg text-2xl mb-4 leading-tight">Real-time Analytics</h3>
+                        <p class="font-code-sm text-sm text-secondary leading-relaxed max-w-sm">Track maintenance
+                            performance metrics, resolution times, and overall resident satisfaction in one unified
+                            view.</p>
+                    </div>
+                    <div class="hidden sm:block w-48 h-32 border-2 border-primary relative flex-shrink-0">
+                        <div class="absolute bottom-0 left-0 w-full h-[60%] border-t border-primary/20 bg-primary/5">
+                        </div>
+                        <div class="absolute bottom-0 left-4 w-6 h-[80%] bg-primary"></div>
+                        <div class="absolute bottom-0 left-12 w-6 h-[40%] bg-primary/60"></div>
+                        <div class="absolute bottom-0 left-20 w-6 h-[90%] bg-primary"></div>
+                        <div class="absolute bottom-0 left-28 w-6 h-[30%] bg-primary/40"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Workflow List -->
+        <section class="py-24 border-y-2 border-primary relative" id="solutions">
+            <div class="absolute inset-0 blueprint-bg pointer-events-none"></div>
+            <div class="max-w-[1440px] mx-auto px-6 relative z-10">
+                <div class="font-code-sm text-[10px] text-primary/70 mb-12 tracking-widest">SEQ: 003_PIPELINE</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                    <div class="sticky top-32 self-start hidden lg:block">
+                        <h2 class="font-display-lg text-6xl leading-none mb-6">Execution<br />Flow</h2>
+                        <div class="w-24 h-2 bg-primary"></div>
+                        <p class="font-code-sm mt-6 max-w-xs text-secondary">A seamless, deterministic pipeline from
+                            unstructured complaint to resolved work order.</p>
+                    </div>
+                    <div class="space-y-8">
+                        <!-- Step 1 -->
+                        <div
+                            class="industrial-border p-6 bg-background flex flex-col md:flex-row gap-6 items-start fade-in-up">
+                            <div class="font-display-lg text-5xl font-bold text-primary/20 min-w-[60px]">01</div>
+                            <div class="flex-grow">
+                                <h4 class="font-headline-md font-bold uppercase tracking-wider mb-2">Resident Input</h4>
+                                <p class="font-code-sm text-sm text-secondary mb-4">Issue reported via text, app, or
+                                    voice.</p>
+                                <div class="border border-primary p-3 bg-white/50 inline-block font-body-sm">
+                                    "The sink in unit 4B is leaking badly under the cabinet."
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Step 2 -->
+                        <div
+                            class="industrial-border p-6 bg-background flex flex-col md:flex-row gap-6 items-start fade-in-up delay-100 ml-0 md:ml-12">
+                            <div class="font-display-lg text-5xl font-bold text-primary/20 min-w-[60px]">02</div>
+                            <div class="flex-grow">
+                                <h4 class="font-headline-md font-bold uppercase tracking-wider mb-2">AI Structuring</h4>
+                                <p class="font-code-sm text-sm text-secondary mb-4">Categorizes, prioritizes, and
+                                    assigns details.</p>
+                                <div
+                                    class="grid grid-cols-2 gap-2 border border-primary p-3 bg-white/50 font-code-sm text-[11px]">
+                                    <div class="border-b border-primary/20 pb-1">TYPE: <span
+                                            class="font-bold">PLUMBING</span></div>
+                                    <div class="border-b border-primary/20 pb-1 text-right">PRIORITY: <span
+                                            class="font-bold">HIGH</span></div>
+                                    <div class="pt-1">LOC: <span class="font-bold">UNIT_4B</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Step 3 -->
+                        <div
+                            class="industrial-border p-6 bg-primary text-background flex flex-col md:flex-row gap-6 items-start fade-in-up delay-200 ml-0 md:ml-24">
+                            <div class="font-display-lg text-5xl font-bold text-background/20 min-w-[60px]">03</div>
+                            <div class="flex-grow">
+                                <h4 class="font-headline-md font-bold uppercase tracking-wider mb-2">Tech Dispatch</h4>
+                                <p class="font-code-sm text-sm opacity-80 mb-4">Actionable task pushed to technician
+                                    device.</p>
+                                <div class="border border-background/20 p-3 flex items-center gap-4">
+                                    <div class="w-10 h-10 border border-background/50 overflow-hidden bg-background/10">
+                                        <!-- Tech Headshot Placeholder using CSS structure -->
+                                        <div
+                                            class="w-full h-full flex items-center justify-center font-code-sm text-[8px] text-center">
+                                            IMG_SRC</div>
+                                    </div>
+                                    <div class="font-code-sm text-[10px]">
+                                        <div class="font-bold">WO-842 // ASSIGNED: MIKE_T</div>
+                                        <div class="opacity-70 mt-1">ETA: 15m | TOOLS: WRENCH_SET</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Pricing -->
+        <section class="py-24 px-6 max-w-[1440px] mx-auto" id="pricing">
+            <div class="font-code-sm text-[10px] text-primary/70 mb-12 tracking-widest">SEQ: 004_DEPLOYMENT_TIERS</div>
+            <h2 class="font-display-lg text-4xl mb-12 text-center">System Requirements</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                <!-- Starter -->
+                <div class="border-2 border-primary p-8 flex flex-col relative fade-in-up">
+                    <div class="font-code-sm text-[12px] font-bold tracking-widest mb-2">TIER_01 // STARTER</div>
+                    <div class="mb-8 border-b-2 border-primary pb-4">
+                        <span class="font-display-lg text-5xl">$199</span>
+                        <span class="font-code-sm text-[12px]">/MO</span>
+                    </div>
+                    <ul class="space-y-3 mb-12 flex-grow font-code-sm text-sm">
+                        <li class="flex items-center gap-2">[+] Up to 500 units</li>
+                        <li class="flex items-center gap-2">[+] Basic AI routing</li>
+                        <li class="flex items-center gap-2">[+] Standard support</li>
+                    </ul>
+                    <button
+                        class="w-full btn-secondary py-3 font-code-sm font-bold uppercase tracking-wider">Initialize</button>
+                </div>
+                <!-- Pro -->
+                <div
+                    class="industrial-border p-8 flex flex-col bg-primary text-background fade-in-up delay-100 transform md:-translate-y-4">
+                    <div
+                        class="absolute top-0 right-0 bg-background text-primary font-code-sm text-[10px] px-2 py-1 font-bold border-l-2 border-b-2 border-primary">
+                        RECOMMENDED</div>
+                    <div class="font-code-sm text-[12px] font-bold tracking-widest mb-2 text-background/70">TIER_02 //
+                        PRO</div>
+                    <div class="mb-8 border-b-2 border-background/20 pb-4">
+                        <span class="font-display-lg text-5xl">$499</span>
+                        <span class="font-code-sm text-[12px]">/MO</span>
+                    </div>
+                    <ul class="space-y-3 mb-12 flex-grow font-code-sm text-sm opacity-90">
+                        <li class="flex items-center gap-2">[+] Up to 2,000 units</li>
+                        <li class="flex items-center gap-2">[+] Advanced AI dispatch</li>
+                        <li class="flex items-center gap-2">[+] Real-time Analytics</li>
+                        <li class="flex items-center gap-2">[+] Priority routing</li>
+                    </ul>
+                    <button
+                        class="w-full bg-background text-primary hover:bg-background/90 transition-colors py-3 font-code-sm font-bold uppercase tracking-wider border-2 border-background">Deploy
+                        System</button>
+                </div>
+                <!-- Enterprise -->
+                <div class="border-2 border-primary p-8 flex flex-col relative fade-in-up delay-200">
+                    <div class="font-code-sm text-[12px] font-bold tracking-widest mb-2">TIER_03 // ENTERPRISE</div>
+                    <div class="mb-8 border-b-2 border-primary pb-4">
+                        <span class="font-display-lg text-5xl">CUST</span>
+                    </div>
+                    <ul class="space-y-3 mb-12 flex-grow font-code-sm text-sm">
+                        <li class="flex items-center gap-2">[+] Unlimited units</li>
+                        <li class="flex items-center gap-2">[+] API Access</li>
+                        <li class="flex items-center gap-2">[+] Dedicated Architect</li>
+                    </ul>
+                    <button
+                        class="w-full btn-secondary py-3 font-code-sm font-bold uppercase tracking-wider">Contact_Sales</button>
+                </div>
+            </div>
+        </section>
+        <!-- Footer -->
+        <footer class="border-t-2 border-primary bg-background pt-12 pb-6 px-6 relative overflow-hidden">
+            <div class="absolute inset-0 blueprint-bg pointer-events-none"></div>
+            <div
+                class="max-w-[1440px] mx-auto relative z-10 flex flex-col md:flex-row justify-between items-start gap-8">
+                <div>
+                    <div class="font-display-lg text-2xl font-bold uppercase mb-2">BlockFlow_</div>
+                    <p class="font-code-sm text-[10px] text-secondary max-w-xs">SYS.END // Engineering reliability for
+                        property teams. All sequences terminated gracefully.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-8 font-code-sm text-[12px] uppercase">
+                    <div class="flex flex-col gap-2">
+                        <span class="font-bold mb-2 border-b border-primary w-min">Nav</span>
+                        <a class="hover:underline" href="#product">Product</a>
+                        <a class="hover:underline" href="#solutions">Solutions</a>
+                        <a class="hover:underline" href="#pricing">Pricing</a>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <span class="font-bold mb-2 border-b border-primary w-min">Legal</span>
+                        <a class="hover:underline" href="#">Privacy_Pol</a>
+                        <a class="hover:underline" href="#">Terms_Cond</a>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="max-w-[1440px] mx-auto mt-12 pt-6 border-t border-primary/20 flex justify-between items-center font-code-sm text-[10px] text-secondary">
+                <span>© 2024 BLOCKFLOW</span>
+                <span>STATUS: ONLINE</span>
+            </div>
+        </footer>
+    </main>
+</body>
+
+</html>
