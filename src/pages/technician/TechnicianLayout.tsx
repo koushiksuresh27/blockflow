@@ -116,7 +116,7 @@ export default function TechnicianLayout() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#EDEBE6] flex items-center justify-center font-inter">
+      <div className="min-h-screen bg-[#F5F3F0] flex items-center justify-center font-inter">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-[#2563EB]" />
           <p className="text-sm text-[#6B6560] font-medium font-inter">Loading your dashboard…</p>
@@ -128,9 +128,9 @@ export default function TechnicianLayout() {
   return (
     <TechContext.Provider value={{ profile, refreshProfile }}>
       {/* Gray outer background — visible on desktop */}
-      <div className="min-h-screen bg-[#EDEBE6] flex justify-center font-inter">
-        {/* White app shell — max 480px */}
-        <div className="relative w-full max-w-[480px] bg-[#FFFFFF] min-h-screen flex flex-col border-x border-[#E0DDD9] shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]">
+      <div className="min-h-screen bg-[#F5F3F0] flex justify-center font-inter">
+        {/* Iron app shell — max 480px */}
+        <div className="relative w-full max-w-[480px] bg-[#F5F3F0] min-h-screen flex flex-col border-x border-[#E0DDD9] shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]">
           {/* Scrollable content area above bottom nav */}
           <div className="flex-1 overflow-y-auto pb-[72px]">
             <Outlet />

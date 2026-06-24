@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { Search, Group, User, Page } from 'iconoir-react';
 
 // ─── Security Context ─────────────────────────────────────────────────────────
 
@@ -42,10 +43,10 @@ function LiveClock() {
 // ─── Bottom Nav ───────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { to: '/security',           emoji: '🔍', label: 'Verify'   },
-  { to: '/security/visitors',  emoji: '👥', label: 'Visitors' },
-  { to: '/security/staff',     emoji: '👷', label: 'Staff'    },
-  { to: '/security/log',       emoji: '📋', label: 'Log'      },
+  { to: '/security',        Icon: Group,  label: 'Visitors' },
+  { to: '/security/verify', Icon: Search, label: 'Verify'   },
+  { to: '/security/staff',  Icon: User,   label: 'Staff'    },
+  { to: '/security/log',    Icon: Page,   label: 'Log'      },
 ];
 
 function BottomNav() {
@@ -59,7 +60,7 @@ function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#FFFFFF] border-t border-[#E0DDD9] z-30 shadow-none font-inter">
       <div className="flex items-stretch h-[68px]">
-        {NAV_ITEMS.map(({ to, emoji, label }) => {
+        {NAV_ITEMS.map(({ to, Icon, label }) => {
           const active = isActive(to);
           return (
             <Link
@@ -67,13 +68,16 @@ function BottomNav() {
               to={to}
               className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
             >
-              <span className={`text-xl transition-all duration-200 ${active ? 'scale-110' : 'opacity-60'}`}>
-                {emoji}
-              </span>
-              <span className={`text-[10px] font-semibold transition-colors ${active ? 'text-[#7C3AED]' : 'text-[#9C9894]'}`}>
+              <Icon 
+                width={20} 
+                height={20} 
+                strokeWidth={1.5} 
+                className={`transition-all duration-200 ${active ? 'text-[#6D28D9] scale-110' : 'text-[#9C9894] opacity-60'}`}
+              />
+              <span className={`text-[10px] transition-colors ${active ? "text-[#6D28D9] font-['Space_Grotesk'] font-semibold" : 'text-[#9C9894] font-inter font-normal'}`}>
                 {label}
               </span>
-              {active && <span className="w-1 h-1 rounded-full bg-[#7C3AED] mt-0.5" />}
+              {active && <span className="w-1 h-1 rounded-full bg-[#6D28D9] mt-0.5" />}
             </Link>
           );
         })}
@@ -126,8 +130,8 @@ export default function SecurityLayout() {
           {/* Header */}
           <header className="bg-[#FFFFFF] border-b border-[#E0DDD9] px-5 py-4 flex justify-between items-start">
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-[#1C1917] font-recoleta">BlockFlow Security</h1>
-              <p className="text-[#6B6560] text-xs mt-0.5">{profile?.societyName}</p>
+              <h1 className="text-lg font-bold tracking-tight text-[#1C1917] font-['Space_Grotesk']">BlockFlow Security</h1>
+              <p className="text-[#9C9894] text-xs mt-0.5 font-inter font-normal">{profile?.societyName}</p>
             </div>
             <LiveClock />
           </header>

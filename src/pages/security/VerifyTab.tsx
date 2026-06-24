@@ -70,7 +70,9 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
           onChange={e => handleChange(i, e.target.value)}
           onKeyDown={e => handleKeyDown(i, e)}
           onPaste={handlePaste}
-          className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-[10px] focus:outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#E9D5FF] bg-[#FFFFFF] transition-all text-[#1C1917] border-[#E0DDD9]"
+          className={`w-12 h-14 text-center text-2xl font-bold font-['Space_Grotesk'] border-[1.5px] rounded-[12px] focus:outline-none focus:border-[#6D28D9] bg-[#FFFFFF] transition-all text-[#1C1917] ${
+            value[i] ? 'border-[#6D28D9]' : 'border-[#E0DDD9]'
+          }`}
         />
       ))}
     </div>
@@ -177,12 +179,9 @@ export default function VerifyTab() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
         {!foundPass && !notFound && (
           <div className="w-full max-w-sm">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-[#F3E8FF] rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-3xl">🔍</span>
-              </div>
-              <h2 className="text-xl font-bold text-[#1C1917] font-recoleta">Verify Gate Pass</h2>
-              <p className="text-sm text-[#6B6560] mt-1">Enter 6-digit code from resident</p>
+            <div className="text-center mb-8 mt-8">
+              <h2 className="text-xl font-bold text-[#1C1917] font-['Space_Grotesk']">Verify Gate Pass</h2>
+              <p className="text-sm text-[#6B6560] font-inter font-normal mt-1">Enter 6-digit code from resident</p>
             </div>
 
             <OtpInput value={otp} onChange={setOtp} />
@@ -190,7 +189,11 @@ export default function VerifyTab() {
             <button
               onClick={handleVerify}
               disabled={otp.length !== 6 || verifying}
-              className="w-full mt-8 h-14 bg-[#7C3AED] text-[#FFFFFF] font-bold text-base rounded-[10px] disabled:opacity-40 hover:bg-[#6D28D9] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-none"
+              className={`w-full mt-8 p-4 flex items-center justify-center gap-2 rounded-[12px] font-['Space_Grotesk'] font-semibold text-[16px] transition-all ${
+                otp.length !== 6
+                  ? 'bg-[#E0DDD9] text-[#9C9894] cursor-not-allowed'
+                  : 'bg-[#6D28D9] text-[#FFFFFF] cursor-pointer hover:bg-[#5B21B6] active:scale-[0.98]'
+              }`}
             >
               {verifying ? <Loader2 className="w-5 h-5 animate-spin" /> : ''}
               {verifying ? 'Verifying…' : 'Verify Pass'}

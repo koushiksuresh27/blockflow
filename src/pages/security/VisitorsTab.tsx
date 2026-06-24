@@ -4,6 +4,7 @@ import { useSecurityProfile } from './SecurityLayout';
 import { useToast } from '../../components/Toast';
 import { formatDistanceToNow, isToday } from 'date-fns';
 import { Loader2, Plus, X, LogOut } from 'lucide-react';
+import { Group } from 'iconoir-react';
 
 interface VisitorEntry {
   id: string;
@@ -110,7 +111,9 @@ export default function VisitorsTab() {
         <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[#7C3AED]" /></div>
       ) : displayed.length === 0 ? (
         <div className="text-center py-12 text-[#9C9894]">
-          <span className="text-4xl block mb-2">👥</span>
+          <div className="w-[64px] h-[64px] rounded-[16px] bg-[#F5F3FF] flex items-center justify-center mx-auto mb-4">
+            <Group width={28} height={28} strokeWidth={1.5} color="#6D28D9" />
+          </div>
           <p className="text-sm">{subTab === 'inside' ? 'No visitors currently inside' : 'No visitors logged today'}</p>
         </div>
       ) : (

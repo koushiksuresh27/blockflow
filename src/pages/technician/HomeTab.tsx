@@ -161,7 +161,7 @@ function TaskCard({
       <div className="flex-1 p-4 space-y-3">
         {/* Title + category */}
         <div>
-          <h3 className="text-sm font-bold text-[#1C1917] leading-snug font-recoleta">{task.title}</h3>
+          <h3 className="text-sm font-semibold text-[#1C1917] leading-snug font-inter">{task.title}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>
               {p.text}
@@ -479,15 +479,15 @@ export default function HomeTab() {
   if (!profile) return null;
 
   return (
-    <div className="min-h-full bg-[#EDEBE6] font-inter">
+    <div className="min-h-full bg-[#F5F3F0] font-inter flex flex-col pb-24">
       {/* ── Header ── */}
-      <header className="bg-[#2563EB] px-5 pt-8 pb-16 relative overflow-hidden">
+      <header className="bg-white px-6 pt-12 pb-6 border-b border-[#E0DDD9] relative">
 
 
         <div className="relative flex items-start justify-between">
-          <div>
-            <p className="text-white/80 text-sm font-medium">{getGreeting()},</p>
-            <h1 className="text-[#FFFFFF] text-2xl font-black mt-0.5 leading-tight font-recoleta">
+          <div className="flex flex-col">
+            <p className="font-inter text-[14px] font-normal text-[#6B6560] leading-tight mb-1">{getGreeting()},</p>
+            <h1 className="font-['Space_Grotesk'] text-[28px] font-bold text-[#1C1917] leading-none">
               {profile.name.split(' ')[0]}
             </h1>
           </div>
@@ -497,40 +497,36 @@ export default function HomeTab() {
                 id="notification-bell"
                 aria-label="Notifications"
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition"
+                className="w-9 h-9 bg-[#FFFFFF] border border-[#E0DDD9] rounded-[10px] flex items-center justify-center hover:bg-[#F5F3F0] transition"
               >
                 <div style={{ position: 'relative' }}>
-                  <Bell width={22} height={22} strokeWidth={1.5} className="text-[#FFFFFF]" />
+                  <Bell width={18} height={18} strokeWidth={2} className="text-[#1A56DB]" />
                   {unreadCount > 0 && (
                     <div style={{
                       position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      width: '16px',
-                      height: '16px',
+                      top: '-2px',
+                      right: '-2px',
+                      width: '7px',
+                      height: '7px',
                       borderRadius: '50%',
-                      background: '#dc2626',
-                      color: 'white',
-                      fontSize: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                    }}>
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </div>
+                      background: '#1A56DB',
+                      border: '1.5px solid #FFFFFF',
+                    }} />
                   )}
                 </div>
               </button>
               
               {showNotifications && (
-                <div className="absolute right-0 top-12 w-72 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden text-left">
-                  <div className="p-3 border-b border-gray-50 bg-gray-50">
-                    <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+                <div 
+                  className="absolute right-0 w-[280px] bg-[#FFFFFF] border border-[#E0DDD9] rounded-[12px] z-50 text-left p-4"
+                  style={{ top: 'calc(100% + 8px)', boxShadow: '0 8px 24px rgba(28,25,23,0.12)' }}
+                >
+                  <div className="mb-3">
+                    <h3 className="text-[14px] font-semibold font-['Space_Grotesk'] text-[#1C1917]">Notifications</h3>
                   </div>
-                  <div className="max-h-[300px] overflow-y-auto">
+                  <div className="max-h-[300px] overflow-y-auto pr-1">
                     {notifications.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-gray-500">No unread notifications</div>
+                      <div className="text-center py-2 text-[13px] font-normal font-inter text-[#9C9894]">No new notifications</div>
                     ) : (
                       notifications.map(n => (
                         <div 
@@ -554,15 +550,15 @@ export default function HomeTab() {
             </div>
             <div 
               onClick={() => navigate('/technician/profile')}
-              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center cursor-pointer"
+              className="w-9 h-9 rounded-full bg-[#1A56DB] flex items-center justify-center cursor-pointer"
             >
-              <span className="text-white text-sm font-bold">{getInitials(profile.name)}</span>
+              <span className="text-[#FFFFFF] text-[14px] font-bold font-['Space_Grotesk']">{getInitials(profile.name)}</span>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="px-4 -mt-10 relative z-10">
+      <div className="px-4 mt-5 relative z-10">
         <div className="flex gap-3">
           <StatCard
             label="Today's Tasks"
@@ -587,7 +583,7 @@ export default function HomeTab() {
 
       <div className="px-4 mt-5 pb-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-[#1C1917] font-recoleta">Task Queue</h2>
+          <h2 className="text-sm font-bold text-[#1C1917] font-['Space_Grotesk']">Task Queue</h2>
           {!loading && (
             <span className="text-xs text-[#9C9894] font-medium">{tasks.length} active</span>
           )}
@@ -611,7 +607,7 @@ export default function HomeTab() {
               <ClipboardList className="w-8 h-8 text-[#2563EB]" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold text-[#1C1917] font-recoleta">All clear!</p>
+              <p className="text-sm font-bold text-[#1C1917] font-['Space_Grotesk']">All clear!</p>
               <p className="text-xs text-[#9C9894] mt-1 max-w-[200px]">
                 No active tasks assigned to you right now.
               </p>

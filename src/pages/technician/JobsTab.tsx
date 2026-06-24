@@ -140,7 +140,7 @@ function ActiveTaskCard({
       <div className={`w-1.5 shrink-0 ${bar}`} />
       <div className="flex-1 p-4 space-y-3">
         <div>
-          <h3 className="text-sm font-bold text-[#1C1917] font-recoleta">{task.title}</h3>
+          <h3 className="text-sm font-semibold text-[#1C1917] font-inter">{task.title}</h3>
           <div className="flex items-center gap-2 mt-1">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>{p.text}</span>
             <span className="text-xs text-[#9C9894]">{task.category}</span>
@@ -359,10 +359,10 @@ export default function JobsTab() {
   const completionTask = activeTasks.find((t) => t.id === completeTarget);
 
   return (
-    <div className="min-h-full bg-[#EDEBE6] font-inter">
+    <div className="min-h-full bg-[#F5F3F0] font-inter pb-24">
       {/* Header */}
-      <header className="bg-[#FFFFFF] border-b border-[#E0DDD9] px-5 pt-8 pb-0 sticky top-0 z-10">
-        <h1 className="text-lg font-black text-[#1C1917] mb-4 font-recoleta">My Jobs</h1>
+      <header className="bg-white px-6 pt-12 pb-0 border-b border-[#E0DDD9] sticky top-0 z-10">
+        <h1 className="text-lg font-bold text-[#1C1917] mb-4 font-['Space_Grotesk']">My Jobs</h1>
 
         {/* Sub-tabs */}
         <div className="flex">
@@ -415,7 +415,7 @@ export default function JobsTab() {
                 <div className="w-16 h-16 rounded-[16px] bg-[#EFF6FF] flex items-center justify-center">
                   <ClipboardList className="w-8 h-8 text-[#2563EB]" />
                 </div>
-                <p className="text-sm font-bold text-[#1C1917] font-recoleta">No active tasks</p>
+                <p className="text-sm font-bold text-[#1C1917] font-['Space_Grotesk']">No active tasks</p>
                 <p className="text-xs text-[#9C9894]">{priorityFilter ? `No ${priorityFilter} priority tasks` : 'All done for now!'}</p>
               </div>
             ) : (
@@ -455,7 +455,7 @@ export default function JobsTab() {
                   <article key={task.id} className="bg-[#FFFFFF] rounded-[16px] shadow-none border border-[#E0DDD9] p-4 font-inter">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-[#1C1917] font-recoleta truncate">{task.title}</h3>
+                        <h3 className="text-sm font-semibold text-[#1C1917] font-inter truncate">{task.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-[#9C9894]">{task.category}</span>
                           <span className="w-1 h-1 rounded-full bg-[#E0DDD9]" />

@@ -101,8 +101,8 @@ export default function App() {
         {/* Security Dashboard */}
         <Route path="/security" element={<SecurityProtectedRoute />}>
           <Route element={<SecurityLayout />}>
-            <Route index element={<VerifyTab />} />
-            <Route path="visitors" element={<VisitorsTab />} />
+            <Route index element={<VisitorsTab />} />
+            <Route path="verify" element={<VerifyTab />} />
             <Route path="staff" element={<StaffTab />} />
             <Route path="log" element={<LogTab />} />
           </Route>

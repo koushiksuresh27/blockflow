@@ -207,9 +207,9 @@ export default function ProfileTab() {
     : '—';
 
   return (
-    <div className="min-h-full bg-[#EDEBE6] pb-6 font-inter">
+    <div className="min-h-full bg-[#F5F3F0] font-inter pb-24">
       {/* Header */}
-      <div className="bg-[#FFFFFF] border-b border-[#E0DDD9] px-5 pt-8 pb-6">
+      <div className="bg-white px-6 pt-12 pb-6 border-b border-[#E0DDD9]">
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <div className="relative">
@@ -224,7 +224,7 @@ export default function ProfileTab() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-black text-[#1C1917] font-recoleta">{profile?.name ?? 'Loading…'}</h1>
+            <h1 className="text-xl font-bold text-[#1C1917] font-['Space_Grotesk']">{profile?.name ?? 'Loading…'}</h1>
             <p className="text-xs text-[#9C9894] mt-0.5">Technician</p>
             {/* Specializations */}
             {profile && profile.specializations.length > 0 && (
@@ -279,7 +279,7 @@ export default function ProfileTab() {
           <>
             {/* Performance Stats Grid */}
             <div>
-              <h2 className="text-sm font-bold text-[#1C1917] font-recoleta mb-3">Performance</h2>
+              <h2 className="text-sm font-bold text-[#1C1917] font-['Space_Grotesk'] mb-3">Performance</h2>
               <div className="grid grid-cols-2 gap-3">
                 <StatCard
                   label="Avg Rating"
@@ -313,7 +313,7 @@ export default function ProfileTab() {
 
             {/* Recent Ratings */}
             <div>
-              <h2 className="text-sm font-bold text-[#1C1917] font-recoleta mb-3">Recent Ratings</h2>
+              <h2 className="text-sm font-bold text-[#1C1917] font-['Space_Grotesk'] mb-3">Recent Ratings</h2>
               {ratings.length === 0 ? (
                 <div className="bg-[#FFFFFF] rounded-[16px] border border-[#E0DDD9] p-6 text-center">
                   <Star className="w-8 h-8 text-gray-200 mx-auto mb-2" />
@@ -325,7 +325,7 @@ export default function ProfileTab() {
                     <div key={r.id} className="bg-[#FFFFFF] rounded-[16px] border border-[#E0DDD9] p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-[#1C1917] font-recoleta truncate">{r.complaintTitle}</p>
+                          <p className="text-xs font-semibold text-[#1C1917] font-inter truncate">{r.complaintTitle}</p>
                           <p className="text-[10px] text-[#9C9894] mt-0.5">{fmtDate(r.created_at)}</p>
                         </div>
                         <Stars score={r.score} />

@@ -95,7 +95,7 @@ export default function RejectBottomSheet({
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#E0DDD9]">
-          <h2 className="text-base font-bold text-[#1C1917] font-recoleta">Reject Task</h2>
+          <h2 className="text-base font-bold text-[#1C1917] font-['Space_Grotesk']">Reject Task</h2>
           <button
             onClick={onClose}
             aria-label="Close"

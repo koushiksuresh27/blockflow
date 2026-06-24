@@ -52,9 +52,9 @@ export default function CommunityIssuesTab() {
   if (!profile) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#EDEBE6] pb-24 font-inter">
-      <div className="bg-[#FFFFFF] border-b border-[#E0DDD9] px-5 pt-12 pb-4 sticky top-0 z-10 shadow-none">
-        <h1 className="text-[22px] font-bold text-[#1C1917] tracking-tight font-recoleta">
+    <div className="flex flex-col min-h-screen bg-[#F5F3F0] pb-24 font-inter">
+      <div className="bg-white px-6 pt-12 pb-6 border-b border-[#E0DDD9] sticky top-0 z-10 shadow-none">
+        <h1 className="text-[22px] font-bold text-[#1C1917] tracking-tight font-['Space_Grotesk']">
           Community Issues
         </h1>
         <p className="text-sm font-medium text-[#6B6560] mt-1">
@@ -145,10 +145,10 @@ function CommunityComplaintTechCard({
   return (
     <div className="bg-[#FFFFFF] rounded-[16px] border border-[#E0DDD9] p-4 flex flex-col gap-3 font-inter">
       <div>
-        <h3 className="font-semibold text-[#1C1917] text-base font-recoleta">
+        <h3 className="font-semibold text-[#1C1917] text-base font-['Space_Grotesk']">
           {assetEmoji} {complaint.asset_label}
         </h3>
-        <p className="text-[#6B6560] text-sm mt-1">{complaint.title}</p>
+        <p className="text-[#1C1917] text-sm font-semibold mt-1">{complaint.title}</p>
       </div>
 
       <div className="flex items-center justify-between">

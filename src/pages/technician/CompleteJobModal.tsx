@@ -104,7 +104,7 @@ function SuccessScreen({ onBack }: { onBack: () => void }) {
         <div className="absolute inset-0 rounded-full bg-green-200 animate-ping opacity-30" />
       </div>
 
-      <h2 className="text-2xl font-bold text-[#1C1917] font-recoleta mb-2">Job Complete! 🎉</h2>
+      <h2 className="text-2xl font-bold text-[#1C1917] font-['Space_Grotesk'] mb-2">Job Complete! 🎉</h2>
       <p className="text-[#6B6560] text-sm leading-relaxed max-w-xs">
         Your job has been marked as resolved and is waiting for resident verification.
       </p>
@@ -224,7 +224,7 @@ export default function CompleteJobModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#E0DDD9]">
           <div>
-            <h2 id="complete-job-title" className="text-base font-bold text-[#1C1917] font-recoleta">Complete Job</h2>
+            <h2 id="complete-job-title" className="text-base font-bold text-[#1C1917] font-['Space_Grotesk']">Complete Job</h2>
             <p className="text-xs text-[#9C9894] mt-0.5 truncate max-w-[240px]">{complaintTitle}</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="w-9 h-9 rounded-xl hover:bg-[#F5F3F0] flex items-center justify-center transition">
