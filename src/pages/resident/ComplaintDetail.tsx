@@ -28,7 +28,7 @@ export default function ComplaintDetail() {
 
   useEffect(() => {
     if (!id) return;
-    
+
     const fetchDetail = async () => {
       const { data: complaint, error } = await supabase
         .from('complaints')
@@ -40,7 +40,7 @@ export default function ComplaintDetail() {
         `)
         .eq('id', id)
         .single();
-        
+
       if (!error && complaint) {
         const c = complaint as any;
         setData({
@@ -58,14 +58,14 @@ export default function ComplaintDetail() {
       }
       setLoading(false);
     };
-    
+
     fetchDetail();
   }, [id]);
 
   const updateStatus = async (newStatus: string) => {
     if (!id || !data) return;
     setUpdating(true);
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -77,7 +77,7 @@ export default function ComplaintDetail() {
       new_status: newStatus,
       note: newStatus === 'verified' ? 'Resident verified the resolution.' : 'Resident reopened the complaint.',
     });
-    
+
     setData({ ...data, status: newStatus });
     setUpdating(false);
   };
@@ -85,7 +85,7 @@ export default function ComplaintDetail() {
   const submitRating = async () => {
     if (!id || !data || selectedStars === 0) return;
     setUpdating(true);
-    
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -109,7 +109,7 @@ export default function ComplaintDetail() {
     }
 
     await supabase.from('complaints').update({ status: 'closed' }).eq('id', id);
-    
+
     alert('Thank you for your rating!');
     navigate('/resident');
   };
@@ -117,7 +117,7 @@ export default function ComplaintDetail() {
   const skipRating = async () => {
     if (!id || !data) return;
     setUpdating(true);
-    
+
     await supabase.from('complaints').update({ status: 'closed' }).eq('id', id);
     navigate('/resident');
   };
@@ -138,7 +138,7 @@ export default function ComplaintDetail() {
       <div className="min-h-full bg-white flex flex-col pt-20 px-6 items-center">
         <h1 className="text-2xl font-display font-bold text-[#1C1917] mb-2">Rate the service</h1>
         <p className="text-[#6B6560] font-sans mb-10 text-center">How was the technician's work?</p>
-        
+
         <div className="flex gap-4 mb-12">
           {[1, 2, 3, 4, 5].map(star => (
             <button
@@ -146,12 +146,11 @@ export default function ComplaintDetail() {
               onClick={() => setSelectedStars(star)}
               className="p-2 -m-2 transition-transform active:scale-90"
             >
-              <Star 
-                className={`w-12 h-12 ${
-                  star <= selectedStars 
-                    ? 'fill-[#D97706] text-[#D97706]' 
+              <Star
+                className={`w-12 h-12 ${star <= selectedStars
+                    ? 'fill-[#D97706] text-[#D97706]'
                     : 'text-[#E0DDD9]'
-                }`} 
+                  }`}
               />
             </button>
           ))}
@@ -165,7 +164,7 @@ export default function ComplaintDetail() {
           {updating && <Loader2 className="w-5 h-5 animate-spin" />}
           Submit Rating
         </button>
-        
+
         <button
           onClick={skipRating}
           disabled={updating}
@@ -212,7 +211,7 @@ export default function ComplaintDetail() {
         <div className="bg-white rounded-card p-5 shadow-sm border border-[#E0DDD9]">
           <h2 className="text-xl font-display font-bold text-[#1C1917] mb-2">{data.title}</h2>
           <p className="text-sm text-[#6B6560] font-sans leading-relaxed mb-5">{data.description}</p>
-          
+
           <div className="flex flex-col gap-3 text-sm text-[#6B6560] bg-[#F5F3F0] p-4 rounded-xl font-sans">
             {data.preferred_slot && (
               <div className="flex items-center gap-3">
@@ -235,17 +234,15 @@ export default function ComplaintDetail() {
               const status = getStepStatus(step.id);
               return (
                 <div key={idx} className="relative flex items-start gap-4">
-                  <div className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-white relative z-10 ${
-                    status === 'completed' ? 'border-green-600' :
-                    status === 'current' ? 'border-[#D97706]' : 'border-[#E0DDD9]'
-                  }`}>
+                  <div className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-white relative z-10 ${status === 'completed' ? 'border-green-600' :
+                      status === 'current' ? 'border-[#D97706]' : 'border-[#E0DDD9]'
+                    }`}>
                     {status === 'completed' && <Check className="w-3 h-3 text-green-600" />}
                     {status === 'current' && <div className="w-2 h-2 rounded-full bg-[#D97706]" />}
                   </div>
                   <div className="pt-0.5">
-                    <h4 className={`text-sm font-sans font-semibold ${
-                      status === 'completed' || status === 'current' ? 'text-[#1C1917]' : 'text-[#9C9894]'
-                    }`}>{step.label}</h4>
+                    <h4 className={`text-sm font-sans font-semibold ${status === 'completed' || status === 'current' ? 'text-[#1C1917]' : 'text-[#9C9894]'
+                      }`}>{step.label}</h4>
                   </div>
                 </div>
               );
@@ -259,14 +256,14 @@ export default function ComplaintDetail() {
             <h3 className="text-sm font-display font-bold text-[#1C1917] mb-2">Resolution Action Required</h3>
             <p className="text-xs text-[#1C1917]/80 font-sans mb-4">The technician marked this as resolved. Please verify if the issue is fixed, or reopen it.</p>
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setShowRatingScreen(true)}
                 disabled={updating}
                 className="flex-1 bg-[#1C1917] text-white font-sans font-semibold py-2.5 rounded-button hover:bg-[#2C2925] transition flex items-center justify-center gap-2"
               >
                 Verify
               </button>
-              <button 
+              <button
                 onClick={() => updateStatus('reopened')}
                 disabled={updating}
                 className="flex-1 bg-white text-[#1C1917] font-sans font-semibold py-2.5 rounded-button border border-[#E0DDD9] hover:bg-[#F5F3F0] transition"
@@ -283,7 +280,7 @@ export default function ComplaintDetail() {
             <h3 className="text-sm font-display font-bold text-[#1C1917] mb-4 flex items-center gap-2">
               <Camera className="w-4 h-4 text-[#9C9894]" /> Photos
             </h3>
-            
+
             {beforePhotos.length > 0 && (
               <div className="mb-4">
                 <h4 className="text-xs font-sans font-semibold text-[#6B6560] mb-2 uppercase tracking-wider">Issue Photos</h4>
@@ -294,7 +291,7 @@ export default function ComplaintDetail() {
                 </div>
               </div>
             )}
-            
+
             {afterPhotos.length > 0 && (
               <div>
                 <h4 className="text-xs font-sans font-semibold text-[#6B6560] mb-2 uppercase tracking-wider">Resolution Photos</h4>

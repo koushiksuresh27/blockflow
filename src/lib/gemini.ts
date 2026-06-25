@@ -6,6 +6,8 @@ export interface ComplaintSuggestion {
   category: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   confidence: number;
+  title_en: string;
+  description_en: string;
 }
 
 const VALID_CATEGORIES = [
@@ -41,8 +43,10 @@ Rules:
 - medium = slow drain, flickering light, minor damage
 - low = cosmetic issues, suggestions, general requests
 
+Translate the complaint into an English title and English description (if it is already English, just return it as-is).
+
 Respond with exactly this JSON:
-{"category": "<one of the categories>", "priority": "<low|medium|high|urgent>", "confidence": <0.0 to 1.0>}`;
+{"category": "<one of the categories>", "priority": "<low|medium|high|urgent>", "confidence": <0.0 to 1.0>, "title_en": "<translated title>", "description_en": "<translated description>"}`;
 
   const response = await fetch(GROQ_API_URL, {
     method: 'POST',
@@ -79,7 +83,7 @@ Respond with exactly this JSON:
     return parsed;
   } catch {
     console.error('Groq returned non-JSON:', rawText);
-    return { category: 'Other', priority: 'medium', confidence: 0 };
+    return { category: 'Other', priority: 'medium', confidence: 0, title_en: '', description_en: '' };
   }
 }
 

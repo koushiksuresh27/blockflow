@@ -100,7 +100,7 @@ export default function VoiceComplaintFlow() {
           setSuggestion(sugg);
         } catch (err) {
           console.warn('AI suggestion failed:', err);
-          setSuggestion({ category: 'Other', priority: 'medium', confidence: 0 });
+          setSuggestion({ category: 'Other', priority: 'medium', confidence: 0, title_en: '', description_en: '' });
         }
 
         setState('preview');

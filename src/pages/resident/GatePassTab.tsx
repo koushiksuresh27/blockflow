@@ -133,18 +133,20 @@ export default function GatePassTab() {
 
   return (
     <div className="px-5 py-6 pb-24 min-h-full bg-[#F5F3F0]">
-      <div className="flex justify-between items-center mb-6 mt-4">
-        <div>
-          <h2 className="text-2xl font-display font-bold text-[#1C1917]">Gate Passes</h2>
-          <p className="text-sm font-sans text-[#6B6560] mt-0.5">Generate codes for your visitors</p>
+      <div className="bg-white px-4 py-4 border-b border-[#E0DDD9] -mx-5 -mt-6 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-display font-bold text-[#1C1917]">Gate Passes</h2>
+            <p className="text-sm font-sans text-[#6B6560] mt-0.5">Generate codes for your visitors</p>
+          </div>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 bg-[#1C1917] text-white px-4 py-2.5 rounded-button text-sm font-sans font-bold hover:bg-[#2C2925] transition shadow-md active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            New Pass
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-[#1C1917] text-white px-4 py-2.5 rounded-button text-sm font-sans font-bold hover:bg-[#2C2925] transition shadow-md active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          New Pass
-        </button>
       </div>
 
       {/* New pass result card */}

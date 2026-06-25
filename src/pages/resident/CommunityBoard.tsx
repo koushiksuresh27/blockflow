@@ -35,15 +35,15 @@ export default function CommunityBoard() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [societyId, setSocietyId] = useState<string | null>(null);
-  
+
   const [showNewPost, setShowNewPost] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newBody, setNewBody] = useState('');
   const [newCategory, setNewCategory] = useState<string>('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
-  
+
   const toast = useToast();
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -132,12 +132,12 @@ export default function CommunityBoard() {
         .select('society_id')
         .eq('id', uid)
         .single();
-        
+
       if (userData) {
         setSocietyId(userData.society_id);
         fetchCommunityComplaints(userData.society_id);
       }
-      
+
       await fetchPosts(uid);
     } catch (err) {
       console.error(err);
@@ -170,7 +170,7 @@ export default function CommunityBoard() {
           const upvotesArray = p.community_post_upvotes || [];
           const towerName = p.users?.apartments?.towers?.name || 'Unknown';
           const authorName = p.users?.name || 'Resident';
-          
+
           return {
             ...p,
             upvotes: upvotesArray.length,
@@ -179,7 +179,7 @@ export default function CommunityBoard() {
             author_name: authorName
           };
         });
-        
+
         // Feed ordering:
         // 1. Emergency always on top
         // 2. By upvotes desc
@@ -223,7 +223,7 @@ export default function CommunityBoard() {
         .from('community_post_upvotes')
         .delete()
         .match({ post_id: postId, user_id: userId });
-        
+
       // Decrement main upvotes count
       await supabase
         .from('community_posts')
@@ -233,7 +233,7 @@ export default function CommunityBoard() {
       await supabase
         .from('community_post_upvotes')
         .insert({ post_id: postId, user_id: userId });
-        
+
       // Increment main upvotes count
       await supabase
         .from('community_posts')
@@ -244,7 +244,7 @@ export default function CommunityBoard() {
 
   const handleCreatePost = async () => {
     if (!newTitle.trim() || newBody.trim().length < 20 || !userId || !societyId) return;
-    
+
     setIsSubmitting(true);
     try {
       const { error } = await supabase.from('community_posts').insert({
@@ -254,9 +254,9 @@ export default function CommunityBoard() {
         body: newBody.trim(),
         category: newCategory
       });
-      
+
       if (error) throw error;
-      
+
       setShowNewPost(false);
       setNewTitle('');
       setNewBody('');
@@ -271,7 +271,7 @@ export default function CommunityBoard() {
 
   const handleDeletePost = async () => {
     if (!postToDelete || !userId) return;
-    
+
     setIsDeleting(true);
     try {
       const { error } = await supabase
@@ -303,7 +303,7 @@ export default function CommunityBoard() {
   };
 
   const getCategoryColor = (category: string) => {
-    switch(category) {
+    switch (category) {
       case 'general': return 'bg-[#F5F3F0] text-[#6B6560] border border-[#E0DDD9]';
       case 'complaint': return 'bg-orange-50 text-orange-700 border border-orange-200';
       case 'event': return 'bg-purple-50 text-purple-700 border border-purple-200';
@@ -317,14 +317,15 @@ export default function CommunityBoard() {
   return (
     <div className="min-h-full bg-[#F5F3F0] pb-24 relative">
       <header className="bg-white px-4 py-4 border-b border-[#E0DDD9] sticky top-0 z-10">
-        <h1 className="text-xl font-display font-bold text-[#1C1917]">Community</h1>
+        <h1 className="text-2xl font-display font-bold text-[#1C1917]">Community</h1>
+        <p className="text-sm font-sans text-[#6B6560] mt-0.5">Your neighbourhood feed</p>
       </header>
 
       {/* Community Issues Section */}
       <div className="px-4 mt-4 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-display font-bold text-[#1C1917]">Community Issues</h2>
-          <button 
+          <button
             onClick={() => setShowReportIssue(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D97706] hover:bg-[#B45309] text-white rounded-[10px] text-sm font-sans font-semibold transition active:scale-95"
           >
@@ -335,9 +336,9 @@ export default function CommunityBoard() {
 
         {loadingComplaints ? (
           <div className="flex justify-center py-6">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" style={{animation:'spin 1s linear infinite'}}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
               <style>{`@keyframes spin{from{transform:rotate(0deg)} to{transform:rotate(360deg)}}`}</style>
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
             </svg>
           </div>
         ) : communityComplaints.length === 0 ? (
@@ -360,7 +361,7 @@ export default function CommunityBoard() {
 
       <div className="px-4 mb-4 flex justify-between items-center">
         <h2 className="text-lg font-display font-bold text-[#1C1917]">Community Posts</h2>
-        <button 
+        <button
           onClick={() => setShowNewPost(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D97706] hover:bg-[#B45309] text-white rounded-[10px] text-sm font-sans font-semibold transition active:scale-95"
         >
@@ -383,13 +384,12 @@ export default function CommunityBoard() {
           posts.map(post => {
             const isEmergency = post.category === 'emergency';
             const isExpanded = expandedPosts.has(post.id);
-            
+
             return (
-              <div 
-                key={post.id} 
-                className={`bg-white rounded-card p-5 shadow-sm border ${
-                  isEmergency ? 'border-2 border-red-500' : 'border-[#E0DDD9]'
-                }`}
+              <div
+                key={post.id}
+                className={`bg-white rounded-card p-5 shadow-sm border ${isEmergency ? 'border-2 border-red-500' : 'border-[#E0DDD9]'
+                  }`}
               >
                 {/* Author Info */}
                 <div className="flex justify-between items-center mb-4">
@@ -403,7 +403,7 @@ export default function CommunityBoard() {
                     </div>
                   </div>
                   {post.posted_by === userId && (
-                    <button 
+                    <button
                       onClick={() => setPostToDelete(post.id)}
                       className="text-[#9C9894] hover:text-red-500 transition p-1"
                     >
@@ -427,13 +427,13 @@ export default function CommunityBoard() {
                   </div>
                   <h3 className="font-display font-bold text-lg text-[#1C1917] mb-1">{post.title}</h3>
                 </div>
-                
+
                 <div className="mb-4">
                   <p className={`text-sm font-sans text-[#6B6560] whitespace-pre-wrap leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
                     {post.body}
                   </p>
                   {post.body.length > 150 && !isExpanded && (
-                    <button 
+                    <button
                       onClick={() => toggleExpand(post.id)}
                       className="text-[#D97706] text-sm font-sans font-semibold mt-1 hover:underline"
                     >
@@ -441,7 +441,7 @@ export default function CommunityBoard() {
                     </button>
                   )}
                   {isExpanded && (
-                    <button 
+                    <button
                       onClick={() => toggleExpand(post.id)}
                       className="text-[#9C9894] text-sm font-sans font-semibold mt-1 hover:underline"
                     >
@@ -449,16 +449,15 @@ export default function CommunityBoard() {
                     </button>
                   )}
                 </div>
-                
+
                 {/* Actions */}
                 <div className="flex items-center justify-between border-t border-[#E0DDD9] pt-3">
-                  <button 
+                  <button
                     onClick={() => handleUpvote(post.id, !!post.user_upvoted)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-sans font-semibold transition active:scale-95 ${
-                      post.user_upvoted 
-                      ? 'bg-[#1C1917] text-white border border-[#1C1917]' 
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-sans font-semibold transition active:scale-95 ${post.user_upvoted
+                      ? 'bg-[#1C1917] text-white border border-[#1C1917]'
                       : 'bg-[#F5F3F0] text-[#6B6560] border border-[#E0DDD9] hover:bg-[#E0DDD9]'
-                    }`}
+                      }`}
                   >
                     <ThumbsUp className={`w-4 h-4 ${post.user_upvoted ? 'fill-white' : ''}`} />
                     {post.upvotes}
@@ -476,29 +475,29 @@ export default function CommunityBoard() {
           <div className="bg-white w-full max-w-[480px] rounded-t-[24px] sm:rounded-[24px] p-6 shadow-xl animate-[slideUp_0.3s_ease-out]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-display font-bold text-[#1C1917]">Create Post</h2>
-              <button 
+              <button
                 onClick={() => setShowNewPost(false)}
                 className="p-2 bg-[#F5F3F0] rounded-full hover:bg-[#E0DDD9] transition"
               >
                 <X className="w-5 h-5 text-[#6B6560]" />
               </button>
             </div>
-            
+
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">Title</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="What's this about?"
                   className="w-full border border-[#E0DDD9] bg-[#F5F3F0] rounded-button px-4 py-3.5 text-[#1C1917] font-sans placeholder:text-[#9C9894] focus:outline-none focus:ring-2 focus:ring-[#1C1917] focus:bg-white transition"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-1.5">Details</label>
-                <textarea 
+                <textarea
                   value={newBody}
                   onChange={(e) => setNewBody(e.target.value)}
                   placeholder="Share the details... (min 20 characters)"
@@ -511,7 +510,7 @@ export default function CommunityBoard() {
                   </span>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-sans font-semibold text-[#1C1917] mb-2">Category</label>
                 <div className="flex flex-wrap gap-2">
@@ -519,18 +518,17 @@ export default function CommunityBoard() {
                     <button
                       key={cat.id}
                       onClick={() => setNewCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-sans font-semibold transition border ${
-                        newCategory === cat.id 
-                          ? 'border-[#1C1917] bg-[#1C1917] text-white' 
-                          : 'border-[#E0DDD9] bg-white text-[#6B6560] hover:bg-[#F5F3F0]'
-                      }`}
+                      className={`px-3 py-1.5 rounded-full text-sm font-sans font-semibold transition border ${newCategory === cat.id
+                        ? 'border-[#1C1917] bg-[#1C1917] text-white'
+                        : 'border-[#E0DDD9] bg-white text-[#6B6560] hover:bg-[#F5F3F0]'
+                        }`}
                     >
                       {cat.label}
                     </button>
                   ))}
                 </div>
               </div>
-              
+
               <button
                 onClick={handleCreatePost}
                 disabled={isSubmitting || !newTitle.trim() || newBody.trim().length < 20}
@@ -551,13 +549,13 @@ export default function CommunityBoard() {
             <h2 className="text-xl font-display font-bold text-[#1C1917] mb-2">Delete this post?</h2>
             <p className="text-sm font-sans text-[#6B6560] mb-6">This cannot be undone.</p>
             <div className="flex justify-end gap-3">
-              <button 
+              <button
                 onClick={() => setPostToDelete(null)}
                 className="px-5 py-2.5 rounded-button text-sm font-sans font-semibold text-[#1C1917] bg-[#F5F3F0] hover:bg-[#E0DDD9] transition"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleDeletePost}
                 disabled={isDeleting}
                 className="px-5 py-2.5 rounded-button text-sm font-sans font-semibold text-white bg-red-600 hover:bg-red-700 transition flex items-center gap-2"

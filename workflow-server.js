@@ -2022,6 +2022,40 @@ app.post('/import/vendors/confirm', async (req, res) => {
   }
 })
 
+// ─── Audit Flow Endpoints ─────────────────────────────────────────────────────
+async function validateAuditStep(i, p, r) { try { return JSON.parse((await groq.chat.completions.create({ messages: [{ role: 'user', content: `Inst: ${i}\nPass: ${p}\nResp: ${r}\nRespond JSON: {"status": "pass" | "concern" | "fail", "notes": "..."}` }], model: 'llama3-8b-8192', temperature: 0, response_format: { type: 'json_object' } })).choices[0]?.message?.content || '{"status":"concern","notes":"Parse error"}'); } catch (e) { return { status: 'concern', notes: 'AI error' }; } }
+async function generateAuditSummary(s) { try { return (await groq.chat.completions.create({ messages: [{ role: 'user', content: `Summarize in 2 short sentences.\n\n${s.map(x => `Step ${x.step_number}: ${x.status}`).join('\n')}` }], model: 'llama3-8b-8192', temperature: 0 })).choices[0]?.message?.content || 'Audit completed.'; } catch (e) { return 'Audit completed.'; } }
+app.get('/audit/templates/:societyId', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('sop_templates').select('id, name, equipment_type').eq('society_id', req.params.societyId);
+    if (error) throw error;
+    res.json({ templates: data });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+app.post('/audit/start', async (req, res) => {
+  try {
+    const { data: run, error: runErr } = await supabase.from('audit_runs').insert({ technician_id: req.body.technician_id, society_id: req.body.society_id, sop_template_id: req.body.sop_template_id, status: 'in_progress' }).select('id').single();
+    if (runErr) throw runErr;
+    const { data: template, error: templateErr } = await supabase.from('sop_templates').select('*').eq('id', req.body.sop_template_id).single();
+    if (templateErr) throw templateErr;
+    res.json({ audit_run_id: run.id, template: { steps: template.steps } });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+app.post('/audit/validate-step', async (req, res) => {
+  try {
+    let result = { status: 'concern', notes: 'Manual skip' };
+    if (req.body.spoken_response !== 'SKIPPED') result = await validateAuditStep(req.body.instruction, req.body.pass_criteria, req.body.spoken_response);
+    await supabase.from('audit_run_steps').insert({ audit_run_id: req.body.audit_run_id, step_number: req.body.step_number, spoken_response: req.body.spoken_response, status: result.status, notes: result.notes });
+    const is_complete = req.body.step_number >= req.body.total_steps;
+    if (is_complete) {
+      const { data: allSteps } = await supabase.from('audit_run_steps').select('*').eq('audit_run_id', req.body.audit_run_id).order('step_number', { ascending: true });
+      const summary = await generateAuditSummary(allSteps || []);
+      await supabase.from('audit_runs').update({ status: 'completed', summary, completed_at: new Date().toISOString() }).eq('id', req.body.audit_run_id);
+      res.json({ ...result, is_complete, summary, allSteps });
+    } else { res.json({ ...result, is_complete }); }
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 // ─── Start Server ─────────────────────────────────────────────────────────────
 
 module.exports = { runDNAPipeline, sendWhatsAppNotification }

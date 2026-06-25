@@ -235,7 +235,8 @@ export default function EstateManagerAgent() {
         .replace(/→ Next action:/g, 'Next action:')
         .trim()
       
-      const audioBase64 = await textToSpeech(cleanText, responseLanguage, 'meera')
+      const finalText = cleanText.slice(0, 480)
+      const audioBase64 = await textToSpeech(finalText, responseLanguage, 'anushka')
       const audio = playBase64Audio(audioBase64)
       setCurrentAudio(audio)
 

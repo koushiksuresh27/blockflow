@@ -6,6 +6,8 @@ import { useTechProfile } from './TechnicianLayout';
 import { useToast } from '../../components/Toast';
 import CompleteJobModal from './CompleteJobModal';
 import RejectBottomSheet from './RejectBottomSheet';
+import AuditFlow from '../../components/technician/AuditFlow';
+import { Mic } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,6 +20,9 @@ type Status =
 interface Task {
   id: string;
   title: string;
+  title_en: string | null;
+  description: string;
+  description_en: string | null;
   category: string;
   priority: Priority;
   status: Status;
@@ -37,24 +42,24 @@ const PRIORITY_ORDER: Record<Priority, number> = { critical: 0, high: 1, medium:
 
 const PRIORITY_BAR: Record<Priority, string> = {
   critical: 'bg-red-500',
-  high:     'bg-orange-500',
-  medium:   'bg-amber-400',
-  low:      'bg-gray-300',
+  high: 'bg-orange-500',
+  medium: 'bg-amber-400',
+  low: 'bg-gray-300',
 };
 
 const PRIORITY_LABEL: Record<Priority, { text: string; bg: string; textColor: string }> = {
-  critical: { text: 'Critical', bg: 'bg-red-100',    textColor: 'text-red-700'    },
-  high:     { text: 'High',     bg: 'bg-orange-100', textColor: 'text-orange-700' },
-  medium:   { text: 'Medium',   bg: 'bg-amber-100',  textColor: 'text-amber-700'  },
-  low:      { text: 'Low',      bg: 'bg-gray-100',   textColor: 'text-gray-600'   },
+  critical: { text: 'Critical', bg: 'bg-red-100', textColor: 'text-red-700' },
+  high: { text: 'High', bg: 'bg-orange-100', textColor: 'text-orange-700' },
+  medium: { text: 'Medium', bg: 'bg-amber-100', textColor: 'text-amber-700' },
+  low: { text: 'Low', bg: 'bg-gray-100', textColor: 'text-gray-600' },
 };
 
 const STATUS_PILL: Partial<Record<Status, string>> = {
-  assigned:    'bg-indigo-100 text-indigo-700',
-  accepted:    'bg-cyan-100 text-cyan-700',
+  assigned: 'bg-indigo-100 text-indigo-700',
+  accepted: 'bg-cyan-100 text-cyan-700',
   in_progress: 'bg-amber-100 text-amber-700',
-  on_hold:     'bg-gray-100 text-gray-500',
-  escalated:   'bg-rose-100 text-rose-700',
+  on_hold: 'bg-gray-100 text-gray-500',
+  escalated: 'bg-rose-100 text-rose-700',
 };
 
 function formatStatus(s: string) {
@@ -100,7 +105,7 @@ function useSlaCountdown(deadline: string) {
 function SlaChip({ deadline }: { deadline: string }) {
   const { label, level } = useSlaCountdown(deadline);
   const styles = {
-    red:   'bg-red-100 text-red-700 border border-red-200',
+    red: 'bg-red-100 text-red-700 border border-red-200',
     amber: 'bg-amber-100 text-amber-700 border border-amber-200',
     green: 'bg-green-100 text-green-700 border border-green-200',
   }[level];
@@ -161,8 +166,11 @@ function TaskCard({
       <div className="flex-1 p-4 space-y-3">
         {/* Title + category */}
         <div>
-          <h3 className="text-sm font-semibold text-[#1C1917] leading-snug font-inter">{task.title}</h3>
-          <div className="flex items-center gap-2 mt-1">
+          <h3 className="text-sm font-semibold text-[#1C1917] leading-snug font-inter">{task.title_en || task.title}</h3>
+          <p className="text-xs text-[#6B6560] mt-1 line-clamp-2 leading-relaxed">
+            {task.description_en || task.description}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>
               {p.text}
             </span>
@@ -273,7 +281,7 @@ async function loadHomeData(techId: string): Promise<{ tasks: Task[]; stats: Sta
   const { data: taskData, error: taskErr } = await supabase
     .from('complaints')
     .select(`
-      id, title, category, priority, status, sla_deadline,
+      id, title, title_en, description, description_en, category, priority, status, sla_deadline,
       location_apt:apartments!location_apt_id (
         flat_number, floor_number,
         tower:towers!tower_id ( name )
@@ -289,11 +297,14 @@ async function loadHomeData(techId: string): Promise<{ tasks: Task[]; stats: Sta
   const tasks: Task[] = (taskData ?? []).map((row: any) => {
     const apt = row.location_apt;
     return {
-      id:           row.id,
-      title:        row.title,
-      category:     row.category,
-      priority:     row.priority,
-      status:       row.status,
+      id: row.id,
+      title: row.title,
+      title_en: row.title_en,
+      description: row.description,
+      description_en: row.description_en,
+      category: row.category,
+      priority: row.priority,
+      status: row.status,
       sla_deadline: row.sla_deadline,
       location_apt: apt
         ? `${apt.tower?.name ?? ''} · F${apt.floor_number} · ${apt.flat_number}`.trim()
@@ -325,9 +336,9 @@ async function loadHomeData(techId: string): Promise<{ tasks: Task[]; stats: Sta
   ]);
 
   const stats: Stats = {
-    todayTasks:     tasks.length,
+    todayTasks: tasks.length,
     completedToday: completedCount ?? 0,
-    slaRisk:        slaCount ?? 0,
+    slaRisk: slaCount ?? 0,
   };
 
   return { tasks, stats };
@@ -340,10 +351,10 @@ export default function HomeTab() {
   const toast = useToast();
   const navigate = useNavigate();
 
-  const [tasks, setTasks]       = useState<Task[]>([]);
-  const [stats, setStats]       = useState<Stats>({ todayTasks: 0, completedToday: 0, slaRisk: 0 });
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [stats, setStats] = useState<Stats>({ todayTasks: 0, completedToday: 0, slaRisk: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [transitioning, setTrans] = useState<Record<string, boolean>>({});
 
   const [unreadCount, setUnreadCount] = useState(0);
@@ -353,8 +364,9 @@ export default function HomeTab() {
   const notifRef = useRef<HTMLDivElement>(null);
 
   // Modals
-  const [rejectTarget, setRejectTarget]   = useState<Task | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Task | null>(null);
   const [completeTarget, setCompleteTarget] = useState<string | null>(null);
+  const [showAuditFlow, setShowAuditFlow] = useState(false);
 
   const techIdRef = useRef<string | null>(null);
   if (profile?.techId) techIdRef.current = profile.techId;
@@ -389,7 +401,7 @@ export default function HomeTab() {
       .eq('user_id', profile.userId)
       .eq('is_read', false)
       .order('created_at', { ascending: false });
-    
+
     if (data) {
       setNotifications(data);
       setUnreadCount(data.length);
@@ -445,10 +457,10 @@ export default function HomeTab() {
 
       await supabase.from('complaint_logs').insert({
         complaint_id: complaintId,
-        actor_id:     profile.userId,
-        action:       newStatus,
-        old_status:   oldStatus,
-        new_status:   newStatus,
+        actor_id: profile.userId,
+        action: newStatus,
+        old_status: oldStatus,
+        new_status: newStatus,
         note,
       });
 
@@ -481,8 +493,23 @@ export default function HomeTab() {
   return (
     <div className="min-h-full bg-[#F5F3F0] font-inter flex flex-col pb-24">
       {/* ── Header ── */}
-      <header className="bg-white px-6 pt-12 pb-6 border-b border-[#E0DDD9] relative">
-
+      <header className="bg-white px-6 pt-6 pb-6 border-b border-[#E0DDD9] relative">
+        <div className="flex items-center gap-2 mb-4">
+          <img
+            src="/logo.png"
+            alt="BlockFlow"
+            style={{ height: 24, width: 'auto', objectFit: 'contain' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span style={{
+            fontFamily: 'Space Grotesk',
+            fontWeight: 700,
+            fontSize: 18,
+            color: '#1C1917',
+            letterSpacing: '-0.3px',
+          }}>BlockFlow</span>
+        </div>
+        <div className="w-full h-[2px] bg-[#1C1917] mb-4" />
 
         <div className="relative flex items-start justify-between">
           <div className="flex flex-col">
@@ -515,9 +542,9 @@ export default function HomeTab() {
                   )}
                 </div>
               </button>
-              
+
               {showNotifications && (
-                <div 
+                <div
                   className="absolute right-0 w-[280px] bg-[#FFFFFF] border border-[#E0DDD9] rounded-[12px] z-50 text-left p-4"
                   style={{ top: 'calc(100% + 8px)', boxShadow: '0 8px 24px rgba(28,25,23,0.12)' }}
                 >
@@ -529,8 +556,8 @@ export default function HomeTab() {
                       <div className="text-center py-2 text-[13px] font-normal font-inter text-[#9C9894]">No new notifications</div>
                     ) : (
                       notifications.map(n => (
-                        <div 
-                          key={n.id} 
+                        <div
+                          key={n.id}
                           onClick={async () => {
                             await supabase.from('notifications').update({ is_read: true }).eq('id', n.id);
                             loadNotifications();
@@ -548,7 +575,7 @@ export default function HomeTab() {
                 </div>
               )}
             </div>
-            <div 
+            <div
               onClick={() => navigate('/technician/profile')}
               className="w-9 h-9 rounded-full bg-[#1A56DB] flex items-center justify-center cursor-pointer"
             >
@@ -579,6 +606,20 @@ export default function HomeTab() {
             icon={AlertTriangle}
           />
         </div>
+
+        {/* Audit Entry Point */}
+        <button
+          onClick={() => setShowAuditFlow(true)}
+          className="w-full mt-4 bg-white border border-[#E0DDD9] hover:border-[#1A56DB] rounded-[16px] p-4 flex items-center gap-4 transition-colors shadow-sm group"
+        >
+          <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-[#1A56DB] transition-colors">
+            <Mic className="w-6 h-6 text-[#1A56DB] group-hover:text-white transition-colors" />
+          </div>
+          <div className="text-left">
+            <h3 className="text-base font-display font-bold text-[#1C1917]">Start Equipment Audit</h3>
+            <p className="text-xs text-[#6B6560] mt-0.5">Voice-guided SOP checks</p>
+          </div>
+        </button>
       </div>
 
       <div className="px-4 mt-5 pb-4">
@@ -652,13 +693,22 @@ export default function HomeTab() {
       {completeTarget && completionTask && (
         <CompleteJobModal
           complaintId={completeTarget}
-          complaintTitle={completionTask.title}
+          complaintTitle={completionTask.title_en || completionTask.title}
           onClose={() => setCompleteTarget(null)}
           onResolved={() => {
             setTasks((prev) => prev.filter((t) => t.id !== completeTarget));
             load();
           }}
           onError={(msg) => toast('error', 'Submission failed', msg)}
+        />
+      )}
+
+      {/* ── Full Screen Audit Flow ── */}
+      {showAuditFlow && profile.societyId && profile.userId && (
+        <AuditFlow
+          societyId={profile.societyId}
+          technicianId={profile.userId}
+          onClose={() => setShowAuditFlow(false)}
         />
       )}
     </div>

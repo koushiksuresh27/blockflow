@@ -26,12 +26,12 @@ export default function ResidentLayout() {
 
   return (
     <div className="bg-[#EDEBE6] min-h-screen font-sans flex justify-center">
-      <div className="w-full max-w-[480px] bg-white min-h-screen flex flex-col relative overflow-hidden border-x border-[#E0DDD9] shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]">
-        <main className="flex-1 overflow-y-auto pb-[64px]">
+      <div className="w-full max-w-[480px] bg-white min-h-screen flex flex-col relative overflow-hidden border-x border-[#E0DDD9] shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)] pb-[64px]">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
         
-        <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#E0DDD9] flex justify-around items-center h-[64px] z-10 px-2 pb-safe rounded-b-[16px]">
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#FFFFFF] border-t border-[#E0DDD9] flex justify-around items-center h-[64px] z-[40] px-2 pb-safe rounded-b-[16px]">
           <NavItem path="/resident" icon={Home} label="Home" />
           <NavItem path="/resident/community" icon={Community} label="Community" />
           <NavItem path="/resident/bookings" icon={Calendar} label="Bookings" />

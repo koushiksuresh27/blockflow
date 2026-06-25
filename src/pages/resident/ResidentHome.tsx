@@ -146,7 +146,23 @@ export default function ResidentHome() {
 
   return (
     <div className="relative min-h-full pb-24 bg-[#F5F3F0]">
-      <header className="bg-white px-6 pt-12 pb-6 border-b border-[#E0DDD9] sticky top-0 z-10">
+      <header className="bg-white px-6 pt-6 pb-6 border-b border-[#E0DDD9] sticky top-0 z-10">
+        <div className="flex items-center gap-2 mb-4">
+          <img
+            src="/logo.png"
+            alt="BlockFlow"
+            style={{ height: 24, width: 'auto', objectFit: 'contain' }}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span style={{
+            fontFamily: 'Space Grotesk',
+            fontWeight: 700,
+            fontSize: 18,
+            color: '#1C1917',
+            letterSpacing: '-0.3px',
+          }}>BlockFlow</span>
+        </div>
+        <div className="w-full h-[2px] bg-[#1C1917] mb-4" />
         <h1 className="text-2xl font-display font-bold text-[#1C1917] mb-1">My Complaints</h1>
         <p className="text-[#6B6560] text-sm font-sans">Track and manage your requests</p>
       </header>

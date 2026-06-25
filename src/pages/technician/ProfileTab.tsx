@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Star, LogOut, ToggleLeft, ToggleRight, AlertCircle, Award, CheckCircle2, TrendingUp, Calendar } from 'lucide-react';
+import { Loader2, Star, LogOut, ToggleLeft, ToggleRight, AlertCircle, Award, CheckCircle2, TrendingUp, Calendar, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useTechProfile } from './TechnicianLayout';
 import { useToast } from '../../components/Toast';
+import { LANGUAGES } from '../../lib/sarvam';
+import { TTS_SPEAKERS } from '../../lib/sarvamTTS';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -137,6 +139,8 @@ export default function ProfileTab() {
   const [error, setError]     = useState('');
   const [isAvailable, setIsAvailable] = useState(false);
   const [technicianId, setTechnicianId] = useState<string | null>(null);
+  const [preferredLanguage, setPreferredLanguage] = useState('en-IN');
+  const [preferredVoice, setPreferredVoice] = useState('anushka');
 
   const load = useCallback(async () => {
     if (!profile?.techId) return;
@@ -160,17 +164,38 @@ export default function ProfileTab() {
       if (!user) return;
       const { data: techData } = await supabase
         .from('technicians')
-        .select('is_available, id')
+        .select('is_available, id, preferred_language, preferred_voice')
         .eq('user_id', user.id)
         .single();
       
       if (techData) {
         setIsAvailable(techData.is_available);
         setTechnicianId(techData.id);
+        setPreferredLanguage(techData.preferred_language || 'en-IN');
+        setPreferredVoice(techData.preferred_voice || 'anushka');
       }
     }
     fetchAvailability();
   }, []);
+
+  const handleUpdateVoiceSettings = async (field: 'preferred_language' | 'preferred_voice', value: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    if (field === 'preferred_language') setPreferredLanguage(value);
+    if (field === 'preferred_voice') setPreferredVoice(value);
+
+    const { error: upErr } = await supabase
+      .from('technicians')
+      .update({ [field]: value })
+      .eq('user_id', user.id);
+
+    if (upErr) {
+      toast('error', 'Failed to save settings', upErr.message);
+    } else {
+      toast('success', 'Settings saved', '');
+    }
+  };
 
   const handleToggleAvailability = async () => {
     if (!technicianId) return;
@@ -339,6 +364,39 @@ export default function ProfileTab() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Voice Settings */}
+            <div>
+              <h2 className="text-sm font-bold text-[#1C1917] font-['Space_Grotesk'] mb-3 flex items-center gap-2">
+                <Mic className="w-4 h-4" /> Voice Settings
+              </h2>
+              <div className="bg-[#FFFFFF] rounded-[16px] border border-[#E0DDD9] p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#1C1917] mb-1.5">Language</label>
+                  <select 
+                    value={preferredLanguage}
+                    onChange={(e) => handleUpdateVoiceSettings('preferred_language', e.target.value)}
+                    className="w-full text-sm font-inter bg-[#F5F3F0] border border-[#E0DDD9] rounded-[10px] py-2.5 px-3 focus:ring-2 focus:ring-[#1C1917] outline-none"
+                  >
+                    {LANGUAGES.map(l => (
+                      <option key={l.code} value={l.code}>{l.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#1C1917] mb-1.5">Voice</label>
+                  <select 
+                    value={preferredVoice}
+                    onChange={(e) => handleUpdateVoiceSettings('preferred_voice', e.target.value)}
+                    className="w-full text-sm font-inter bg-[#F5F3F0] border border-[#E0DDD9] rounded-[10px] py-2.5 px-3 focus:ring-2 focus:ring-[#1C1917] outline-none"
+                  >
+                    {TTS_SPEAKERS.map(s => (
+                      <option key={s.code} value={s.code}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {/* Completed jobs quick stat */}

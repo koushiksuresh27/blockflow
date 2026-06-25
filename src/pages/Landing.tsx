@@ -22,7 +22,7 @@ export default function Landing() {
         <div className="flex justify-between items-center px-6 py-4 max-w-[1440px] mx-auto">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-1 text-[#1C1917]">
-              <img src="/logo.png" alt="BlockFlow" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />              <span className="get-started-brand">BlockFlow</span>            </Link>
+              <img src="/logo.png" alt="BlockFlow" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />  <span className="get-started-brand">BlockFlow</span>  </Link>
             <nav className="hidden md:flex items-center gap-6 font-code-sm text-[12px] uppercase tracking-wider">
               <a className="text-[#1C1917] hover:opacity-70 transition-opacity" href="#product">[ Solution ]</a>
               <a className="text-[#1C1917] hover:opacity-70 transition-opacity" href="#solutions">[ Features ]</a>

@@ -1,7 +1,7 @@
 export async function textToSpeech(
   text: string,
   languageCode: string = 'hi-IN',
-  speaker: string = 'meera'
+  speaker: string = 'anushka'
 ): Promise<string> {
 
   // Sarvam TTS has a character limit per request
@@ -29,7 +29,7 @@ export async function textToSpeech(
         loudness: 1.0,
         speech_sample_rate: 22050,
         enable_preprocessing: true,
-        model: 'bulbul:v1'
+        model: 'bulbul:v2'
       })
     }
   )
@@ -58,6 +58,6 @@ export function playBase64Audio(
 }
 
 export const TTS_SPEAKERS = [
-  { code: 'meera', label: 'Meera (Female)' },
-  { code: 'arjun', label: 'Arjun (Male)' }
+  { code: 'anushka', label: 'Anushka (Female)' },
+  { code: 'abhilash', label: 'Abhilash (Male)' }
 ]

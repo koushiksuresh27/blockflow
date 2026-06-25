@@ -209,6 +209,8 @@ export default function SubmitComplaint() {
           status: 'open',
           title: title.trim() || description.slice(0, 60) || 'Complaint',
           description: description.trim(),
+          title_en: suggestion?.title_en || null,
+          description_en: suggestion?.description_en || null,
           preferred_slot: preferredSlot || null,
           sla_deadline: slaDeadline,
         })

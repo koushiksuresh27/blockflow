@@ -11,6 +11,7 @@ export interface TechProfile {
   name: string;
   specializations: string[];
   isAvailable: boolean;
+  societyId: string;
 }
 
 interface TechContextValue {
@@ -92,7 +93,7 @@ export default function TechnicianLayout() {
     if (!user) { navigate('/login'); return; }
 
     const [{ data: userRow }, { data: techRow }] = await Promise.all([
-      supabase.from('users').select('name').eq('id', user.id).single(),
+      supabase.from('users').select('name, society_id').eq('id', user.id).single(),
       supabase.from('technicians')
         .select('id, specializations, is_available')
         .eq('user_id', user.id)
@@ -107,6 +108,7 @@ export default function TechnicianLayout() {
       name:            userRow?.name ?? 'Technician',
       specializations: techRow.specializations ?? [],
       isAvailable:     techRow.is_available,
+      societyId:       userRow?.society_id ?? '',
     });
   }, [navigate]);
 
