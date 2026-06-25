@@ -1,17 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Timer, Clock, Community, CheckCircle, WarningCircle } from 'iconoir-react';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardCheck, Timer, Clock, Community, CheckCircle } from 'iconoir-react';
 import { supabase } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
 import AIDailyBriefing from '../components/admin/AIDailyBriefing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type Priority = 'low' | 'medium' | 'high' | 'critical';
-type Status =
-  | 'open' | 'triaged' | 'assigned' | 'accepted'
-  | 'in_progress' | 'on_hold' | 'resolved'
-  | 'verified' | 'closed' | 'escalated' | 'reopened';
 
 interface BreachComplaint {
   id: string;
@@ -23,43 +17,12 @@ interface DashMetrics {
   totalComplaints: number;
   openComplaints: number;
   solvedComplaints: number;
-  overdueSlа: number;
+  overdueSla: number;
   avgResolutionHours: number;
   pendingResidents: number;
   communityIssues: number;
   chronicIssuesCount: number;
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function fmt(s: string) {
-  return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
-
-const PRIORITY_DOT: Record<Priority, string> = {
-  critical: '#DC2626',
-  high: '#D97706',
-  medium: '#2563EB',
-  low: '#9C9894',
-};
-
-const STATUS_BADGE: Partial<Record<Status, { bg: string; text: string }>> = {
-  open:        { bg: '#FEF3C7', text: '#92400E' },
-  in_progress: { bg: '#EFF6FF', text: '#1D4ED8' },
-  resolved:    { bg: '#F0FDF4', text: '#15803D' },
-  escalated:   { bg: '#FFF1F2', text: '#BE123C' },
-  closed:      { bg: '#F5F3F0', text: '#6B6560' },
-};
 
 // ─── Data Fetch ──────────────────────────────────────────────────────────────
 
@@ -106,6 +69,7 @@ async function fetchDashboard(societyId: string | null) {
 
     supabase.from('users')
       .select('id', { count: 'exact', head: true })
+      .eq('society_id', societyId ?? '')
       .eq('status', 'pending'),
 
     supabase.from('complaints').select('id, title, sla_deadline')
@@ -139,7 +103,7 @@ async function fetchDashboard(societyId: string | null) {
     totalComplaints: totalComplaints ?? 0,
     openComplaints: openComplaints ?? 0,
     solvedComplaints: solvedComplaints ?? 0,
-    overdueSlа: overdueCount ?? 0,
+    overdueSla: overdueCount ?? 0,
     avgResolutionHours,
     pendingResidents: pendingResidents ?? 0,
     communityIssues: communityIssuesCount ?? 0,
@@ -216,7 +180,7 @@ function MetricCard({
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashMetrics>({
-    totalComplaints: 0, openComplaints: 0, solvedComplaints: 0, overdueSlа: 0, avgResolutionHours: 0, pendingResidents: 0, communityIssues: 0, chronicIssuesCount: 0,
+    totalComplaints: 0, openComplaints: 0, solvedComplaints: 0, overdueSla: 0, avgResolutionHours: 0, pendingResidents: 0, communityIssues: 0, chronicIssuesCount: 0,
   });
   const [breachList, setBreachList] = useState<BreachComplaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -339,11 +303,11 @@ export default function AdminDashboard() {
         />
         <MetricCard
           label="Overdue SLA"
-          value={metrics.overdueSlа}
+          value={metrics.overdueSla}
           icon={Timer}
           sub="Past deadline"
           loading={loading}
-          accentValue={metrics.overdueSlа > 0}
+          accentValue={metrics.overdueSla > 0}
         />
         <MetricCard
           label="Avg Resolution"

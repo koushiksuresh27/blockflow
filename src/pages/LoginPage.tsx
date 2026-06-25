@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 
 function GoogleSignInButton() {
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -68,11 +68,11 @@ function OrDivider() {
 
 function EmailPasswordForm() {
   const navigate = useNavigate();
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [open, setOpen]         = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -187,37 +187,36 @@ function EmailPasswordForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#EDEBE6] flex items-center justify-center px-4">      <div className="w-full max-w-sm">
 
-        {/* Brand */}
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="BlockFlow Logo" className="h-14 mx-auto mb-4 object-contain" />
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">BlockFlow</h1>
-          <p className="mt-1.5 text-sm text-gray-500">Apartment maintenance, simplified</p>
-        </div>
-
-        {/* Card */}
-        <div className="bg-white/80 backdrop-blur-sm border border-white shadow-xl shadow-black/5 rounded-3xl p-6 space-y-3">
-          <p className="text-xs font-semibold text-gray-400 text-center uppercase tracking-widest mb-4">
-            Sign in to continue
-          </p>
-
-          {/* Google — primary */}
-          <GoogleSignInButton />
-
-          {/* Divider */}
-          <OrDivider />
-
-          {/* Email — secondary (collapsed by default) */}
-          <EmailPasswordForm />
-        </div>
-
-        {/* Footer */}
-        <p className="text-center mt-6 text-xs text-gray-400">
-          © {new Date().getFullYear()} BlockFlow. All rights reserved.
-        </p>
+      {/* Brand */}
+      <div className="text-center mb-8">
+        <img src="/logo.png" alt="BlockFlow Logo" className="h-14 mx-auto mb-4 object-contain" />
+        <h1 className="text-2xl font-black text-gray-900 tracking-tight">BlockFlow</h1>
+        <p className="mt-1.5 text-sm text-gray-500">Apartment maintenance, simplified</p>
       </div>
+
+      {/* Card */}
+      <div className="bg-white/80 backdrop-blur-sm border border-white shadow-xl shadow-black/5 rounded-3xl p-6 space-y-3">
+        <p className="text-xs font-semibold text-gray-400 text-center uppercase tracking-widest mb-4">
+          Sign in to continue
+        </p>
+
+        {/* Google — primary */}
+        <GoogleSignInButton />
+
+        {/* Divider */}
+        <OrDivider />
+
+        {/* Email — secondary (collapsed by default) */}
+        <EmailPasswordForm />
+      </div>
+
+      {/* Footer */}
+      <p className="text-center mt-6 text-xs text-gray-400">
+        © {new Date().getFullYear()} BlockFlow. All rights reserved.
+      </p>
+    </div>
     </div>
   );
 }

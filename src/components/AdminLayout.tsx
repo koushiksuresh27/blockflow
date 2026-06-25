@@ -162,7 +162,7 @@ function AdminAvatarDropdown({ adminName, initials, onLogout }: { adminName: str
 
   return (
     <div className="relative" ref={ref}>
-      <div 
+      <div
         onClick={() => setOpen(o => !o)}
         style={{
           width: 32, height: 32,
@@ -279,19 +279,14 @@ export default function AdminLayout({
       }}>
         {/* Logo */}
         <div style={{ position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 1, padding: '24px 20px 0', overflow: 'hidden', width: 240 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src="/logo.png" height={28} alt="BlockFlow logo" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <img src="/logo.png" style={{ height: 40, width: 40, objectFit: 'contain' }} alt="BlockFlow logo" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <span style={{
               fontFamily: 'Space Grotesk',
               fontWeight: 700,
-              fontSize: 18,
+              fontSize: 14,
               color: '#1C1917',
               letterSpacing: '-0.3px',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
-              maxWidth: 140,
-              display: 'inline-block'
             }}>BlockFlow</span>
           </div>
           <div style={{ height: 1, background: '#E0DDD9', margin: '16px 0 8px' }} />
