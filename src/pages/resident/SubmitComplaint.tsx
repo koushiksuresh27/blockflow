@@ -173,10 +173,14 @@ export default function SubmitComplaint() {
       // Fetch the user's profile to get society_id & sla defaults
       const { data: profile, error: profileErr } = await supabase
         .from('users')
-        .select('society_id')
+        .select('society_id, flat_number')
         .eq('id', user.id)
         .single();
       if (profileErr || !profile) throw new Error('Could not load your profile. Please try again.');
+
+      if (!profile.flat_number || profile.flat_number.trim() === '') {
+        throw new Error('FLAT_NUMBER_MISSING');
+      }
 
       // 2. Upload attachments to Supabase Storage
       const attachmentUrls: { url: string; type: 'before' | 'after' | 'general' }[] = [];
@@ -202,6 +206,7 @@ export default function SubmitComplaint() {
         .from('complaints')
         .insert({
           society_id: profile.society_id,
+          flat_number: profile.flat_number,
           submitted_by: user.id,
           type: 'personal',
           category,
@@ -685,10 +690,22 @@ export default function SubmitComplaint() {
             </div>
 
             {/* ── Submit error ── */}
-            {errors.submit && (
+            {errors.submit && errors.submit !== 'FLAT_NUMBER_MISSING' && (
               <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-xl">
                 <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                 <p className="text-sm font-sans font-medium text-red-700">{errors.submit}</p>
+              </div>
+            )}
+
+            {errors.submit === 'FLAT_NUMBER_MISSING' && (
+              <div className="flex flex-col items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm font-sans font-medium text-amber-800">Please set your flat number before submitting a complaint.</p>
+                </div>
+                <Link to="/resident/profile" className="ml-[26px] text-sm font-bold text-amber-600 hover:text-amber-700 hover:underline">
+                  Go to Profile →
+                </Link>
               </div>
             )}
 

@@ -28,6 +28,7 @@ import ResidentLayout from './components/ResidentLayout';
 import ResidentHome from './pages/resident/ResidentHome';
 import ResidentSubmitComplaint from './pages/resident/SubmitComplaint';
 import ComplaintDetail from './pages/resident/ComplaintDetail';
+import ResidentProfile from './pages/resident/ResidentProfile';
 import CommunityBoard from './pages/resident/CommunityBoard';
 import Notifications from './pages/resident/Notifications';
 import BookingsTab from './pages/resident/BookingsTab';
@@ -95,6 +96,7 @@ export default function App() {
             <Route path="bookings" element={<BookingsTab />} />
             <Route path="gatepass" element={<GatePassTab />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="profile" element={<ResidentProfile />} />
           </Route>
         </Route>
 

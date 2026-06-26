@@ -22,6 +22,7 @@ interface ActiveTask {
   status: Status;
   sla_deadline: string;
   location_apt: string | null;
+  flat_number: string | null;
 }
 
 interface CompletedTask {
@@ -140,7 +141,10 @@ function ActiveTaskCard({
       <div className={`w-1.5 shrink-0 ${bar}`} />
       <div className="flex-1 p-4 space-y-3">
         <div>
-          <h3 className="text-sm font-semibold text-[#1C1917] font-inter">{task.title}</h3>
+          <h3 className="text-sm font-semibold text-[#1C1917] font-inter">
+            {task.title}
+            {task.flat_number ? <span className="text-[#6B6560] font-normal"> · {task.flat_number}</span> : null}
+          </h3>
           <div className="flex items-center gap-2 mt-1">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>{p.text}</span>
             <span className="text-xs text-[#9C9894]">{task.category}</span>
@@ -221,7 +225,7 @@ async function loadActive(techId: string): Promise<ActiveTask[]> {
   const { data, error } = await supabase
     .from('complaints')
     .select(`
-      id, title, category, priority, status, sla_deadline,
+      id, title, category, priority, status, sla_deadline, flat_number,
       location_apt:apartments!location_apt_id (
         flat_number, floor_number, tower:towers!tower_id ( name )
       )
@@ -238,6 +242,7 @@ async function loadActive(techId: string): Promise<ActiveTask[]> {
     return {
       id: row.id, title: row.title, category: row.category,
       priority: row.priority, status: row.status, sla_deadline: row.sla_deadline,
+      flat_number: row.flat_number,
       location_apt: apt
         ? `${apt.tower?.name ?? ''} · F${apt.floor_number} · ${apt.flat_number}`.trim()
         : null,

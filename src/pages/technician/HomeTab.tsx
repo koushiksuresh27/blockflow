@@ -28,6 +28,7 @@ interface Task {
   status: Status;
   sla_deadline: string;
   location_apt: string | null;
+  flat_number: string | null;
 }
 
 interface Stats {
@@ -166,7 +167,10 @@ function TaskCard({
       <div className="flex-1 p-4 space-y-3">
         {/* Title + category */}
         <div>
-          <h3 className="text-sm font-semibold text-[#1C1917] leading-snug font-inter">{task.title_en || task.title}</h3>
+          <h3 className="text-sm font-semibold text-[#1C1917] leading-snug font-inter">
+            {task.title_en || task.title}
+            {task.flat_number ? <span className="text-[#6B6560] font-normal"> · {task.flat_number}</span> : null}
+          </h3>
           <p className="text-xs text-[#6B6560] mt-1 line-clamp-2 leading-relaxed">
             {task.description_en || task.description}
           </p>
@@ -281,7 +285,7 @@ async function loadHomeData(techId: string): Promise<{ tasks: Task[]; stats: Sta
   const { data: taskData, error: taskErr } = await supabase
     .from('complaints')
     .select(`
-      id, title, title_en, description, description_en, category, priority, status, sla_deadline,
+      id, title, title_en, description, description_en, category, priority, status, sla_deadline, flat_number,
       location_apt:apartments!location_apt_id (
         flat_number, floor_number,
         tower:towers!tower_id ( name )
@@ -306,6 +310,7 @@ async function loadHomeData(techId: string): Promise<{ tasks: Task[]; stats: Sta
       priority: row.priority,
       status: row.status,
       sla_deadline: row.sla_deadline,
+      flat_number: row.flat_number,
       location_apt: apt
         ? `${apt.tower?.name ?? ''} · F${apt.floor_number} · ${apt.flat_number}`.trim()
         : null,
