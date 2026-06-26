@@ -1,8 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { transcribeAudio, LANGUAGES } from '../../lib/sarvam'
-import { textToSpeech, playBase64Audio } from '../../lib/sarvamTTS'
-import { Microphone, SoundHigh, SoundOff, SendDiagonal } from 'iconoir-react'
 
 const WORKFLOW_URL = import.meta.env.VITE_WORKFLOW_URL || 'http://localhost:3001'
 const SOCIETY_ID = import.meta.env.VITE_SOCIETY_ID || 'eafc59c7-4148-44ee-b66b-256a5338718b'
@@ -20,14 +17,14 @@ interface Message {
   actions_taken?: ActionTaken[]
 }
 
-// ─── Markdown-like message formatter ─────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Markdown-like message formatter ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function formatMessage(content: string) {
   return content.split('\n').map((line, i) => {
-    if (line.startsWith('* ') || line.startsWith('• ')) {
+    if (line.startsWith('* ') || line.startsWith('ΓÇó ')) {
       return (
         <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4px', paddingLeft: '8px' }}>
-          <span style={{ color: '#D97706', flexShrink: 0, marginTop: '2px' }}>•</span>
+          <span style={{ color: '#D97706', flexShrink: 0, marginTop: '2px' }}>ΓÇó</span>
           <span>{line.slice(2)}</span>
         </div>
       )
@@ -50,7 +47,7 @@ function formatMessage(content: string) {
   })
 }
 
-// ─── Typing dots ──────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Typing dots ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function TypingDots() {
   return (
@@ -66,7 +63,7 @@ function TypingDots() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, fontSize: '12px',
       }}>
-        🤖
+        ≡ƒñû
       </div>
       <div style={{
         background: '#FFFFFF',
@@ -90,7 +87,7 @@ function TypingDots() {
   )
 }
 
-// ─── Quick actions ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Quick actions ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 const QUICK_ACTIONS = [
   "What's most urgent right now?",
@@ -100,21 +97,7 @@ const QUICK_ACTIONS = [
   "Cost savings this month",
 ]
 
-const LANGUAGE_NAMES: Record<string, string> = {
-  'en-IN': 'English',
-  'hi-IN': 'Hindi',
-  'kn-IN': 'Kannada',
-  'ta-IN': 'Tamil',
-  'te-IN': 'Telugu',
-  'ml-IN': 'Malayalam',
-  'mr-IN': 'Marathi',
-  'gu-IN': 'Gujarati',
-  'bn-IN': 'Bengali',
-  'pa-IN': 'Punjabi',
-  'od-IN': 'Odia',
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Main component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export default function EstateManagerAgent() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -123,156 +106,26 @@ export default function EstateManagerAgent() {
   const [isOpen, setIsOpen] = useState(false)
   const [conversationHistory, setConversationHistory] = useState<object[]>([])
   const [isBriefingLoading, setIsBriefingLoading] = useState(false)
-  
   const [mode, setMode] = useState<'assistant' | 'agent'>('assistant')
-  const [adminId, setAdminId] = useState<string | null>(null)
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setAdminId(user.id)
-    })
-  }, [])
-
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [plan, setPlan] = useState('free')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const [isRecording, setIsRecording] = useState(false)
-  const [isProcessingVoice, setIsProcessingVoice] = useState(false)
-  const [voiceLanguage, setVoiceLanguage] = useState('hi-IN')
-  const [responseLanguage, setResponseLanguage] = useState('en-IN')
-  const [ttsEnabled, setTtsEnabled] = useState(true)
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
+  const isAgentUnlocked = plan === 'growth'
 
-  const startVoiceRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
-      mediaRecorderRef.current = mediaRecorder
-      chunksRef.current = []
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data)
-        }
-      }
-
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
-        stream.getTracks().forEach(t => t.stop())
-        await processVoiceInput(blob)
-      }
-
-      mediaRecorder.start()
-      setIsRecording(true)
-    } catch (err) {
-      console.error('Mic error:', err)
+  // Fetch society plan
+  useEffect(() => {
+    const fetchPlan = async () => {
+      const { data } = await supabase
+        .from('societies')
+        .select('plan')
+        .eq('id', SOCIETY_ID)
+        .single()
+      if (data?.plan) setPlan(data.plan)
     }
-  }
-
-  const stopVoiceRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
-      setIsProcessingVoice(true)
-    }
-  }
-
-  const processVoiceInput = async (blob: Blob) => {
-    try {
-      // Step 1: Sarvam STT
-      const result = await transcribeAudio(blob, voiceLanguage)
-      const transcript = result
-      if (!transcript || typeof transcript !== 'string' || transcript.trim() === '') {
-        setIsProcessingVoice(false)
-        return
-      }
-
-      // Add user message immediately
-      setMessages(prev => [...prev, {
-        role: 'user',
-        content: transcript,
-        timestamp: new Date()
-      }])
-
-      setIsLoading(true)
-      setIsProcessingVoice(false)
-
-      // Step 2: Send to Aria
-      const res = await fetch(`${WORKFLOW_URL}/agent/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: transcript,
-          society_id: SOCIETY_ID,
-          admin_id: adminId,
-          conversation_history: conversationHistory,
-          plan: mode === 'agent' ? 'growth' : 'free',
-          response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
-        })
-      })
-
-      const data = await res.json()
-
-      if (data.response) {
-        setMessages(prev => [...prev, {
-          role: 'agent',
-          content: data.response,
-          timestamp: new Date(),
-          tool_calls: data.tool_calls_made,
-          actions_taken: data.actions_taken || [],
-        }])
-        setConversationHistory(data.conversation_history || [])
-
-        // Step 3: Sarvam TTS — speak response
-        if (ttsEnabled) {
-          await speakResponse(data.response)
-        }
-      }
-    } catch (err) {
-      console.error('Voice processing error:', err)
-    } finally {
-      setIsLoading(false)
-      setIsProcessingVoice(false)
-    }
-  }
-
-  const speakResponse = async (text: string) => {
-    try {
-      // Strip emojis and markdown for cleaner speech
-      const cleanText = text
-        .replace(/[🚨⚠️📋✅🔒🤖]/g, '')
-        .replace(/\*\*/g, '')
-        .replace(/→ Next action:/g, 'Next action:')
-        .trim()
-      
-      const finalText = cleanText.slice(0, 480)
-      const audioBase64 = await textToSpeech(finalText, responseLanguage, 'anushka')
-      const audio = playBase64Audio(audioBase64)
-      setCurrentAudio(audio)
-
-      audio.onended = () => setCurrentAudio(null)
-    } catch (err) {
-      console.error('TTS error:', err)
-    }
-  }
-
-  const stopSpeaking = () => {
-    if (currentAudio) {
-      currentAudio.pause()
-      setCurrentAudio(null)
-    }
-  }
-
-  const handleMicClick = () => {
-    if (isRecording) {
-      stopVoiceRecording()
-    } else {
-      startVoiceRecording()
-    }
-  }
-
+    fetchPlan()
+  }, [])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -292,11 +145,7 @@ export default function EstateManagerAgent() {
       const res = await fetch(`${WORKFLOW_URL}/agent/briefing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          society_id: SOCIETY_ID,
-          admin_id: adminId,
-          response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
-        }),
+        body: JSON.stringify({ society_id: SOCIETY_ID }),
       })
       const data = await res.json()
       if (data.briefing) {
@@ -305,9 +154,6 @@ export default function EstateManagerAgent() {
           content: data.briefing,
           timestamp: new Date(),
         }])
-        if (ttsEnabled && data.briefing) {
-          await speakResponse(data.briefing)
-        }
       }
     } catch {
       setMessages([{
@@ -341,10 +187,8 @@ export default function EstateManagerAgent() {
         body: JSON.stringify({
           message: userMessage,
           society_id: SOCIETY_ID,
-          admin_id: adminId,
           conversation_history: conversationHistory,
-          plan: mode === 'agent' ? 'growth' : 'free',
-          response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
+          plan: isAgentUnlocked && mode === 'agent' ? 'growth' : 'free',
         }),
       })
 
@@ -387,7 +231,7 @@ export default function EstateManagerAgent() {
 
   return (
     <>
-      {/* ── Floating toggle button ── */}
+      {/* ΓöÇΓöÇ Floating toggle button ΓöÇΓöÇ */}
       <button
         onClick={() => setIsOpen(o => !o)}
         title="Estate Manager Agent"
@@ -405,7 +249,7 @@ export default function EstateManagerAgent() {
           alignItems: 'center',
           justifyContent: 'center',
           boxShadow: '0 4px 20px rgba(28,25,23,0.3)',
-          zIndex: 9999,
+          zIndex: 1000,
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)' }}
@@ -438,7 +282,7 @@ export default function EstateManagerAgent() {
         )}
       </button>
 
-      {/* ── Chat panel ── */}
+      {/* ΓöÇΓöÇ Chat panel ΓöÇΓöÇ */}
       {isOpen && (
         <div style={{
           position: 'fixed',
@@ -454,7 +298,7 @@ export default function EstateManagerAgent() {
           borderRadius: '16px',
           border: '1px solid #E0DDD9',
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-          zIndex: 9999,
+          zIndex: 1000,
           overflow: 'hidden',
           animation: 'ema-slideUp 0.2s ease-out',
         }}>
@@ -466,93 +310,41 @@ export default function EstateManagerAgent() {
             background: '#1C1917',
             borderRadius: '16px 16px 0 0',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
+            alignItems: 'center',
+            gap: '10px',
           }}>
-            {/* Row 1: Title and Controls */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-            }}>
-              <img
-                src="/chatbot.png"
-                alt="Aria"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  objectFit: 'cover',
-                  borderRadius: '50%',
-                }}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{
-                  fontFamily: 'Space Grotesk', 
-                  fontWeight: 600, 
-                  fontSize: '14px',
-                  color: '#FFFFFF', 
-                  margin: 0,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}>
-                  Estate Manager Agent
-                </p>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
+            <img
+              src="/chatbot.png"
+              alt="Aria"
+              style={{
+                width: '32px',
+                height: '32px',
+                objectFit: 'cover',
+                borderRadius: '50%',
+              }}
+            />
+            <div style={{ flex: 1 }}>
+              <p style={{
+                fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: '14px',
+                color: '#FFFFFF', margin: 0,
               }}>
-                {/* TTS toggle */}
-                <button
-                  onClick={() => {
-                    setTtsEnabled(!ttsEnabled);
-                    if (ttsEnabled) stopSpeaking();
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'rgba(215,218,220,0.7)',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                  title={ttsEnabled ? 'Voice responses ON' : 'Voice responses OFF'}
-                >
-                  {ttsEnabled ? (
-                    <SoundHigh width={16} height={16} strokeWidth={1.5} />
-                  ) : (
-                    <SoundOff width={16} height={16} strokeWidth={1.5} />
-                  )}
-                </button>
-                <button
-                  onClick={clearChat}
-                  title="New conversation"
-                  style={{
-                    background: 'none', border: 'none',
-                    color: 'rgba(215,218,220,0.6)',
-                    cursor: 'pointer', fontSize: '11px',
-                    fontFamily: 'Inter', padding: '4px 8px', borderRadius: '6px',
-                    transition: 'color 0.15s',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#EDEBE6' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(215,218,220,0.6)' }}
-                >
-                  New chat
-                </button>
-              </div>
+                Estate Manager Agent
+              </p>
+              <p style={{
+                fontFamily: 'Inter', fontSize: '11px',
+                color: 'rgba(215,218,220,0.6)', margin: 0,
+              }}>
+                AI Operations Co-pilot
+              </p>
             </div>
 
-            {/* Row 2: Mode toggle */}
+            {/* Mode toggle */}
             <div style={{
               display: 'flex',
               gap: '4px',
               background: 'rgba(255,255,255,0.1)',
               borderRadius: '8px',
               padding: '3px',
-              alignSelf: 'flex-start',
             }}>
               <button
                 onClick={() => setMode('assistant')}
@@ -572,7 +364,13 @@ export default function EstateManagerAgent() {
                 Assistant
               </button>
               <button
-                onClick={() => setMode('agent')}
+                onClick={() => {
+                  if (!isAgentUnlocked) {
+                    setShowUpgradeModal(true)
+                  } else {
+                    setMode('agent')
+                  }
+                }}
                 style={{
                   padding: '4px 10px',
                   borderRadius: '6px',
@@ -589,13 +387,34 @@ export default function EstateManagerAgent() {
                   transition: 'all 0.15s',
                 }}
               >
+                {!isAgentUnlocked && (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                  </svg>
+                )}
                 Agent
               </button>
             </div>
+
+            <button
+              onClick={clearChat}
+              title="New conversation"
+              style={{
+                background: 'none', border: 'none',
+                color: 'rgba(215,218,220,0.6)',
+                cursor: 'pointer', fontSize: '11px',
+                fontFamily: 'Inter', padding: '4px 8px', borderRadius: '6px',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#EDEBE6' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(215,218,220,0.6)' }}
+            >
+              New chat
+            </button>
           </div>
 
           {/* Agent mode indicator */}
-          {mode === 'agent' && (
+          {mode === 'agent' && isAgentUnlocked && (
             <div style={{
               background: '#FEF3C7',
               borderBottom: '1px solid #FDE68A',
@@ -608,7 +427,7 @@ export default function EstateManagerAgent() {
                 width: '6px', height: '6px',
                 borderRadius: '50%',
                 background: '#D97706',
-                animation: 'pulse 1.5s infinite',
+                animation: 'ema-pulse 1.5s infinite',
               }} />
               <span style={{
                 fontSize: '11px',
@@ -616,7 +435,7 @@ export default function EstateManagerAgent() {
                 color: '#92400E',
                 fontWeight: '500',
               }}>
-                Agent Mode Active — Aria can take actions on your behalf
+                Agent Mode Active ΓÇö Aria can take actions on your behalf
               </span>
             </div>
           )}
@@ -689,7 +508,7 @@ export default function EstateManagerAgent() {
                       fontSize: '10px', color: '#9C9894',
                       margin: '6px 0 0', fontFamily: 'Inter',
                     }}>
-                      ⚡ {msg.tool_calls} data {msg.tool_calls === 1 ? 'query' : 'queries'} made
+                      ΓÜí {msg.tool_calls} data {msg.tool_calls === 1 ? 'query' : 'queries'} made
                     </p>
                   )}
 
@@ -722,7 +541,7 @@ export default function EstateManagerAgent() {
                             alignItems: 'center',
                             gap: '5px',
                           }}>
-                            ✅ {label}
+                            Γ£à {label}
                           </div>
                         )
                       })}
@@ -785,197 +604,195 @@ export default function EstateManagerAgent() {
             padding: '12px 16px',
             borderTop: '1px solid #E0DDD9',
             background: '#FFFFFF',
-            borderRadius: '0 0 16px 16px'
+            borderRadius: '0 0 16px 16px',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'flex-end',
           }}>
-            {/* Language selector for voice */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              marginBottom: '8px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{
-                  fontSize: '11px',
-                  color: '#9C9894',
-                  fontFamily: 'Inter'
-                }}>
-                  Voice language:
-                </span>
-                <select
-                  value={voiceLanguage}
-                  onChange={(e) => setVoiceLanguage(e.target.value)}
-                  disabled={isRecording}
-                  style={{
-                    fontSize: '11px',
-                    color: '#1C1917',
-                    background: '#F5F3F0',
-                    border: '1px solid #E0DDD9',
-                    borderRadius: '6px',
-                    padding: '3px 6px',
-                    fontFamily: 'Inter',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {LANGUAGES.map(l => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginLeft: '4px'
-              }}>
-                <span style={{
-                  fontSize: '11px',
-                  color: '#9C9894',
-                  fontFamily: 'Inter'
-                }}>
-                  Reply in:
-                </span>
-                <select
-                  value={responseLanguage}
-                  onChange={(e) => setResponseLanguage(e.target.value)}
-                  style={{
-                    fontSize: '11px',
-                    color: '#1C1917',
-                    background: '#F5F3F0',
-                    border: '1px solid #E0DDD9',
-                    borderRadius: '6px',
-                    padding: '3px 6px',
-                    fontFamily: 'Inter',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {LANGUAGES.map(l => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {currentAudio && (
-                <button
-                  onClick={stopSpeaking}
-                  style={{
-                    fontSize: '11px',
-                    color: '#DC2626',
-                    background: '#FEE2E2',
-                    border: '1px solid #FCA5A5',
-                    borderRadius: '6px',
-                    padding: '3px 8px',
-                    cursor: 'pointer',
-                    fontFamily: 'Inter',
-                    marginLeft: 'auto'
-                  }}
-                >
-                  ⏸ Stop speaking
-                </button>
-              )}
-            </div>
-
-            {/* Input row */}
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'flex-end'
-            }}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isRecording ? "Listening..." : "Type or tap mic to speak..."}
-                disabled={isRecording || isProcessingVoice}
-                rows={1}
-                style={{
-                  flex: 1,
-                  border: '1px solid #E0DDD9',
-                  borderRadius: '10px',
-                  padding: '9px 12px',
-                  fontFamily: 'Inter',
-                  fontSize: '13px',
-                  color: '#1C1917',
-                  background: isRecording ? '#FEE2E2' : '#F5F3F0',
-                  resize: 'none',
-                  outline: 'none',
-                  lineHeight: '1.5',
-                  maxHeight: '80px',
-                  transition: 'border-color 0.15s',
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#D97706' }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#E0DDD9' }}
-              />
-
-              {/* Mic button */}
-              <button
-                onClick={handleMicClick}
-                disabled={isProcessingVoice || isLoading}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: isRecording ? '#DC2626' : '#F5F3F0',
-                  border: isRecording ? 'none' : '1px solid #E0DDD9',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all 0.15s',
-                  animation: isRecording ? 'pulse 1.5s infinite' : 'none'
-                }}
-              >
-                <Microphone 
-                  width={16} height={16} 
-                  strokeWidth={1.5}
-                  color={isRecording ? '#FFFFFF' : '#6B6560'} 
-                />
-              </button>
-
-              {/* Send button */}
-              <button
-                onClick={() => sendMessage()}
-                disabled={!input.trim() || isLoading || isRecording}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: input.trim() && !isLoading ? '#1C1917' : '#E0DDD9',
-                  border: 'none',
-                  cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <SendDiagonal width={16} height={16}
-                  strokeWidth={2}
-                  color={input.trim() && !isLoading ? '#FFFFFF' : '#9C9894'} />
-              </button>
-            </div>
-            
-            {isProcessingVoice && (
-              <p style={{
-                fontSize: '11px',
-                color: '#D97706',
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything about your society..."
+              rows={1}
+              style={{
+                flex: 1,
+                border: '1px solid #E0DDD9',
+                borderRadius: '10px',
+                padding: '9px 12px',
                 fontFamily: 'Inter',
-                margin: '6px 0 0',
-                textAlign: 'center'
-              }}>
-                Transcribing your voice...
-              </p>
-            )}
+                fontSize: '13px',
+                color: '#1C1917',
+                background: '#F5F3F0',
+                resize: 'none',
+                outline: 'none',
+                lineHeight: '1.5',
+                maxHeight: '80px',
+                overflowY: 'auto',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#D97706' }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#E0DDD9' }}
+            />
+            <button
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || isLoading}
+              style={{
+                width: '36px', height: '36px',
+                borderRadius: '10px',
+                background: input.trim() && !isLoading ? '#1C1917' : '#E0DDD9',
+                border: 'none',
+                cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'all 0.15s',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke={input.trim() && !isLoading ? '#FFFFFF' : '#9C9894'}
+                strokeWidth="2">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
           </div>
 
+          {/* Upgrade modal */}
+          {showUpgradeModal && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(28,25,23,0.5)',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+              padding: '24px',
+            }}>
+              <div style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '28px 24px',
+                width: '100%',
+              }}>
+                <div style={{ fontSize: '28px', textAlign: 'center', marginBottom: '12px' }}>≡ƒñû</div>
+
+                <p style={{
+                  fontFamily: 'Space Grotesk',
+                  fontWeight: '700',
+                  fontSize: '18px',
+                  color: '#1C1917',
+                  textAlign: 'center',
+                  margin: '0 0 8px',
+                }}>
+                  Unlock Agent Mode
+                </p>
+
+                <p style={{
+                  fontFamily: 'Inter',
+                  fontSize: '13px',
+                  color: '#6B6560',
+                  textAlign: 'center',
+                  margin: '0 0 20px',
+                  lineHeight: '1.6',
+                }}>
+                  Let Aria take actions on your behalf ΓÇö assign complaints, send WhatsApp alerts, schedule maintenance, and more.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  marginBottom: '20px',
+                }}>
+                  {[
+                    'Assign complaints automatically',
+                    'Send WhatsApp to technicians',
+                    'Create maintenance schedules',
+                    'Update root cause tickets',
+                    'Generate committee reports',
+                  ].map((f, i) => (
+                    <div key={i} style={{
+                      display: 'flex',
+                      gap: '8px',
+                      alignItems: 'center',
+                      fontSize: '13px',
+                      fontFamily: 'Inter',
+                      color: '#1C1917',
+                    }}>
+                      <span style={{ color: '#D97706' }}>Γ£ô</span>
+                      {f}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{
+                  background: '#F5F3F0',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  textAlign: 'center',
+                  marginBottom: '16px',
+                }}>
+                  <p style={{
+                    fontFamily: 'Space Grotesk',
+                    fontWeight: '700',
+                    fontSize: '24px',
+                    color: '#1C1917',
+                    margin: '0 0 2px',
+                  }}>
+                    Γé╣12
+                    <span style={{ fontSize: '13px', fontWeight: '400', color: '#6B6560' }}>/flat/month</span>
+                  </p>
+                  <p style={{
+                    fontFamily: 'Inter',
+                    fontSize: '11px',
+                    color: '#9C9894',
+                    margin: 0,
+                  }}>
+                    Free trial ┬╖ No bank details needed
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: '#1C1917',
+                    color: '#FFFFFF',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontFamily: 'Space Grotesk',
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Upgrade to Growth Plan
+                </button>
+
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    background: 'transparent',
+                    color: '#9C9894',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontFamily: 'Inter',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Maybe later
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -991,10 +808,6 @@ export default function EstateManagerAgent() {
         @keyframes ema-pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.4; }
-        }
-        @keyframes pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
-          50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
         }
       `}</style>
     </>

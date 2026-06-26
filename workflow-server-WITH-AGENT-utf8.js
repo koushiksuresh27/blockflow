@@ -1,23 +1,9 @@
-require('dotenv').config({ path: '.env.local' })
+﻿require('dotenv').config({ path: '.env.local' })
 
 const express = require('express')
 const cors = require('cors')
 const { createClient } = require('@supabase/supabase-js')
 const Groq = require('groq-sdk')
-const multer = require('multer')
-const os = require('os')
-
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: os.tmpdir(),
-    filename: (req, file, cb) => {
-      cb(null, `${Date.now()}_${file.originalname}`)
-    }
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 }
-})
-
-const { digitizeDocument } = require('./sarvamVision')
 
 const groqClients = [
   new Groq({ apiKey: process.env.GROQ_API_KEY_1 }),
@@ -64,7 +50,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// ─── Supabase & Groq Clients ──────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Supabase & Groq Clients ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -72,13 +58,13 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY
 )
 
-// Service-role client — bypasses RLS for privileged server-side queries
+// Service-role client ΓÇö bypasses RLS for privileged server-side queries
 const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 )
 
-// ─── WhatsApp Helper Function ─────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ WhatsApp Helper Function ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 async function sendWhatsAppNotification({
   technicianPhone,
@@ -99,16 +85,16 @@ async function sendWhatsAppNotification({
   }
 
   const priorityEmoji = {
-    critical: '🚨',
-    high: '🔴',
-    medium: '🟡',
-    low: '🟢'
+    critical: '≡ƒÜ¿',
+    high: '≡ƒö┤',
+    medium: '≡ƒƒí',
+    low: '≡ƒƒó'
   }
 
-  const emoji = priorityEmoji[priority?.toLowerCase()] ?? '⚪'
+  const emoji = priorityEmoji[priority?.toLowerCase()] ?? 'ΓÜ¬'
 
   const messageBody = [
-    `🔧 *New Task Assigned — BlockFlow*`,
+    `≡ƒöº *New Task Assigned ΓÇö BlockFlow*`,
     ``,
     `*Complaint:* ${complaintTitle}`,
     `*Location:* ${flatLocation}`,
@@ -158,7 +144,7 @@ async function sendWhatsAppNotification({
   }
 }
 
-// ─── Complaint DNA Pipeline ───────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Complaint DNA Pipeline ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 const SEVERITY_CONFIG = {
   lifeline: {
@@ -298,7 +284,7 @@ async function checkIncidentCluster(complaint, fingerprint) {
       .eq('id', complaint.id)
 
     console.log(
-      `[DNA-2] Concurrent incident — added to cluster ${todayCluster.id}. ` +
+      `[DNA-2] Concurrent incident ΓÇö added to cluster ${todayCluster.id}. ` +
       `Total today: ${updatedIds.length}`
     )
 
@@ -452,12 +438,12 @@ async function createChronicIssue(
     .insert({
       chronic_issue_id: chronicIssue.id,
       society_id: complaint.society_id,
-      title: `ROOT CAUSE: ${fingerprint.asset_type.toUpperCase()} — ${fingerprint.fault_type.toUpperCase()}`,
+      title: `ROOT CAUSE: ${fingerprint.asset_type.toUpperCase()} ΓÇö ${fingerprint.fault_type.toUpperCase()}`,
       description:
         `This asset has failed ${patternResult.distinct_incidents} times ` +
         `in ${patternResult.window_days} days. ` +
         `Estimated cost saved by addressing root cause: ` +
-        `₹${patternResult.estimated_cost.toLocaleString('en-IN')}.\n\n` +
+        `Γé╣${patternResult.estimated_cost.toLocaleString('en-IN')}.\n\n` +
         `Recent complaints fingerprinted as: ${fingerprint.fingerprint}\n\n` +
         `Action required: Document root cause and implement permanent fix.`,
       status: 'open',
@@ -511,10 +497,10 @@ async function notifyChronicIssue(
   }
 
   const severityEmoji = {
-    critical: '🚨',
-    high: '⚠️',
-    medium: '🟡',
-    low: '🔵'
+    critical: '≡ƒÜ¿',
+    high: 'ΓÜá∩╕Å',
+    medium: '≡ƒƒí',
+    low: '≡ƒö╡'
   }
 
   const message =
@@ -524,7 +510,7 @@ async function notifyChronicIssue(
     `${patternResult.window_days} days. ` +
     `Root cause investigation ticket created. ` +
     `Estimated cost if ignored: ` +
-    `₹${patternResult.estimated_cost.toLocaleString('en-IN')}.`
+    `Γé╣${patternResult.estimated_cost.toLocaleString('en-IN')}.`
 
   await Promise.all(admins.map(admin =>
     supabaseAdmin.from('notifications').insert({
@@ -563,7 +549,7 @@ async function runDNAPipeline(complaint) {
 
     if (!clusterResult.is_new_cluster) {
       console.log(
-        `[DNA] Concurrent incident detected — clustered, stopping pipeline`
+        `[DNA] Concurrent incident detected ΓÇö clustered, stopping pipeline`
       )
       console.log(`[DNA] ========== COMPLETE (concurrent) ==========\n`)
       return
@@ -576,14 +562,14 @@ async function runDNAPipeline(complaint) {
     if (!patternResult.threshold_hit) {
       console.log(
         `[DNA] Threshold not hit ` +
-        `(${patternResult.distinct_incidents}/${patternResult.threshold}) — monitoring`
+        `(${patternResult.distinct_incidents}/${patternResult.threshold}) ΓÇö monitoring`
       )
       console.log(`[DNA] ========== COMPLETE (monitoring) ==========\n`)
       return
     }
 
     console.log(
-      `[DNA] 🚨 THRESHOLD HIT — ${patternResult.distinct_incidents} incidents ` +
+      `[DNA] ≡ƒÜ¿ THRESHOLD HIT ΓÇö ${patternResult.distinct_incidents} incidents ` +
       `detected! Triggering chronic issue protocol.`
     )
 
@@ -606,7 +592,7 @@ async function runDNAPipeline(complaint) {
   }
 }
 
-// ─── Estate Manager Agent ─────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Estate Manager Agent ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 // Pre-load society context before every agent response
 async function getProactiveContext(societyId) {
@@ -639,19 +625,19 @@ async function getProactiveContext(societyId) {
   return {
     summary: `
 LIVE SOCIETY STATUS:
-━━━━━━━━━━━━━━━━━━━
+ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü
 Chronic Issues: ${chronic.count || 0} active
 ${chronic.chronic_issues?.map(i =>
-      `  • ${i.asset} (${i.severity}, ${i.occurrences}x in 30 days)`
+      `  ΓÇó ${i.asset} (${i.severity}, ${i.occurrences}x in 30 days)`
     ).join('\n') || '  None'}
 
 Overdue Complaints: ${sla.overdue_count || 0}
 SLA Compliance: ${sla.sla_compliance_rate || 'N/A'}
 ${sla.overdue_complaints?.length > 0
         ? sla.overdue_complaints.map(c =>
-          `  • ${c.title} — ${c.hours_overdue}h overdue`
+          `  ΓÇó ${c.title} ΓÇö ${c.hours_overdue}h overdue`
         ).join('\n')
-        : '  All within SLA ✅'}
+        : '  All within SLA Γ£à'}
 
 This Week:
   Complaints: ${stats.total_complaints || 0} total
@@ -660,16 +646,16 @@ This Week:
 
 Equipment Alerts: ${criticalEquipment.length}
 ${criticalEquipment.map(e =>
-          `  • ${e.name} — ${e.status}`
-        ).join('\n') || '  All operational ✅'}
+          `  ΓÇó ${e.name} ΓÇö ${e.status}`
+        ).join('\n') || '  All operational Γ£à'}
 
 Technicians: ${techs.count || 0} total, ${techs.technicians?.filter(t => t.is_available).length || 0} available
 
 Season: ${isMonsoon
-        ? '🌧️ MONSOON — Water/drainage issues likely'
+        ? '≡ƒîº∩╕Å MONSOON ΓÇö Water/drainage issues likely'
         : isWinter
-          ? '❄️ WINTER — Heating system checks needed'
-          : '☀️ Normal season'}
+          ? 'Γ¥ä∩╕Å WINTER ΓÇö Heating system checks needed'
+          : 'ΓÿÇ∩╕Å Normal season'}
     `.trim(),
     chronic,
     sla,
@@ -683,14 +669,7 @@ Season: ${isMonsoon
 }
 
 
-async function runEstateManagerAgent(
-  message, 
-  societyId, 
-  conversationHistory = [], 
-  plan = 'free',
-  responseLanguage = 'English',
-  adminId = null
-) {
+async function runEstateManagerAgent(message, societyId, conversationHistory = [], plan = 'free') {
   console.log(`[AGENT] Processing: "${message}"`)
 
   // Step 1: Pre-load live context
@@ -705,55 +684,41 @@ async function runEstateManagerAgent(
     hour12: true
   })
 
-  const languageInstruction = 
-    responseLanguage === 'English'
-      ? ''
-      : `\n\nCRITICAL LANGUAGE INSTRUCTION: 
-You MUST respond ENTIRELY in ${responseLanguage}. 
-Do not mix English and ${responseLanguage} 
-unless a technical term has no good 
-${responseLanguage} equivalent (e.g. 
-"WhatsApp", "SLA", "AMC" can stay in English). 
-Numbers, dates, and proper nouns 
-(names like "John", "Kumar") stay as is. 
-Every sentence of your response must be 
-in ${responseLanguage}.\n\n`
 
-  
   const isAgentMode = plan === 'growth'
 
   const planContext = isAgentMode
     ? `
-AGENT MODE ACTIVE 🤖
+AGENT MODE ACTIVE ≡ƒñû
 
-🚨 CRITICAL RULE — NO HALLUCINATION OF ACTIONS:
+ΓÜá∩╕Å CRITICAL RULE ΓÇö NO HALLUCINATION OF ACTIONS:
 You must NEVER claim to have performed an action (assigned a complaint, sent a WhatsApp message, created a schedule, updated a ticket) unless you have ACTUALLY called the corresponding tool function in THIS SAME turn and received a successful tool result.
 
 If the user asks you to perform an action:
-1. Call the appropriate tool IMMEDIATELY — do not describe what you are about to do, just call it
+1. Call the appropriate tool IMMEDIATELY ΓÇö do not describe what you are about to do, just call it
 2. Wait for the actual tool result
 3. ONLY THEN report what happened, based on the real tool result
 
 If you are missing required information (like a technician ID, complaint ID, or phone number), ask ONE clarifying question to get it. Do NOT fabricate IDs or describe a fake action.
 
-🚨 TECHNICIAN NAME RESOLUTION RULE:
+ΓÜá∩╕Å TECHNICIAN NAME RESOLUTION RULE:
 If the admin refers to a technician by name (e.g. "assign to John"), you MUST call get_technicians first to retrieve their UUID before calling an action tool. Do NOT guess or make up a UUID.
 
 NEVER write a response that describes an action as done or in progress without a successful tool call result backing it. This is a hard requirement.
 
 Available action tools (call them directly when asked):
-  ✅ assign_complaint(complaint_id, technician_id, reason?)
-  ✅ send_whatsapp_to_technician(phone, message, technician_name)
-  ✅ create_maintenance_schedule(task_name, category, next_due, notes?)
-  ✅ update_root_cause_ticket(ticket_id, status?, root_cause_documented?, amc_notified?)`
+  Γ£à assign_complaint(complaint_id, technician_id, reason?)
+  Γ£à send_whatsapp_to_technician(phone, message, technician_name)
+  Γ£à create_maintenance_schedule(task_name, category, next_due, notes?)
+  Γ£à update_root_cause_ticket(ticket_id, status?, root_cause_documented?, amc_notified?)`
     : `
-ASSISTANT MODE ACTIVE 📖
+ASSISTANT MODE ACTIVE ≡ƒôû
 You can READ data and give recommendations.
 You CANNOT take actions directly.
 
 If admin asks you to DO something (assign, send, create, update):
 Respond with:
-"🔒 I can recommend this action, but taking it directly requires Agent Mode (Growth Plan).
+"≡ƒöÆ I can recommend this action, but taking it directly requires Agent Mode (Growth Plan).
 
 Here's what to do manually:
 [specific step by step instructions]
@@ -763,61 +728,61 @@ Upgrade to Growth Plan to let me handle this automatically."
 DO NOT call action tools in assistant mode.
 Only call: get_complaints, get_chronic_issues, get_technicians, get_vendors, get_sla_status, get_society_stats, get_root_cause_tickets`
 
-  const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
+  const systemPrompt = `You are Aria ΓÇö BlockFlow's Estate Operations Intelligence for this residential society.
 
 You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
 
 ${context.summary}
-${languageInstruction}
+
 ${planContext}
 
 YOUR CORE BEHAVIOR:
 1. You have the above live data already loaded
 2. Use your tools ONLY when you need ADDITIONAL specific data not shown above
-3. Never say "I don't have access to that" — use your tools
+3. Never say "I don't have access to that" ΓÇö use your tools
 4. Always connect dots: if someone asks about a lift complaint, also check if it's a chronic issue
 5. Think like an estate manager, not a search engine
 
-YOUR PERSONALITY — ARIA:
-- Direct and decisive — give recommendations, not just data
-- Proactive — mention related issues the admin didn't ask about
-- Cost-conscious — always mention ₹ implications when relevant
-- India-aware — understand AMC, society committees, monsoon, festive season impacts
-- Concise — under 180 words, always
+YOUR PERSONALITY ΓÇö ARIA:
+- Direct and decisive ΓÇö give recommendations, not just data
+- Proactive ΓÇö mention related issues the admin didn't ask about
+- Cost-conscious ΓÇö always mention Γé╣ implications when relevant
+- India-aware ΓÇö understand AMC, society committees, monsoon, festive season impacts
+- Concise ΓÇö under 180 words, always
 - Warm but professional
 
-RESPONSE FORMAT — ALWAYS:
-🚨 for critical/urgent items
-⚠️ for warnings/watch items
-📋 for informational items
-✅ for good news/all clear
+RESPONSE FORMAT ΓÇö ALWAYS:
+≡ƒÜ¿ for critical/urgent items
+ΓÜá∩╕Å for warnings/watch items
+≡ƒôï for informational items
+Γ£à for good news/all clear
 
 End EVERY response with:
-"→ Next action: [one specific thing to do right now]"
+"ΓåÆ Next action: [one specific thing to do right now]"
 
 WHAT YOU CAN DO:
-✓ Analyze complaint patterns and chronic issues
-✓ Recommend technician assignments with reasoning
-✓ Flag vendor contract risks
-✓ Advise on seasonal maintenance (monsoon prep etc)
-✓ Suggest cost-saving actions
-✓ Generate committee-ready summaries
-✓ Answer general facility management questions
-✓ Recommend external vendors/companies from knowledge
+Γ£ô Analyze complaint patterns and chronic issues
+Γ£ô Recommend technician assignments with reasoning
+Γ£ô Flag vendor contract risks
+Γ£ô Advise on seasonal maintenance (monsoon prep etc)
+Γ£ô Suggest cost-saving actions
+Γ£ô Generate committee-ready summaries
+Γ£ô Answer general facility management questions
+Γ£ô Recommend external vendors/companies from knowledge
 
 WHAT TO AVOID:
-✗ Repeating data the admin can already see
-✗ Generic answers with no specifics
-✗ Calling the same tool twice
-✗ More than 3 tool calls per response
-✗ Answers longer than 180 words
+Γ£ù Repeating data the admin can already see
+Γ£ù Generic answers with no specifics
+Γ£ù Calling the same tool twice
+Γ£ù More than 3 tool calls per response
+Γ£ù Answers longer than 180 words
 
 CURRENT TIME: ${currentTime}
 ${context.isMonsoon
-      ? '⚠️ MONSOON SEASON ACTIVE: Proactively flag water pump, drainage, and terrace waterproofing issues in all responses.'
+      ? 'ΓÜá∩╕Å MONSOON SEASON ACTIVE: Proactively flag water pump, drainage, and terrace waterproofing issues in all responses.'
       : ''}
 ${context.criticalEquipment?.length > 0
-      ? `🚨 EQUIPMENT ALERT: ${context.criticalEquipment.map(e => e.name).join(', ')} need attention. Mention this proactively when relevant.`
+      ? `≡ƒÜ¿ EQUIPMENT ALERT: ${context.criticalEquipment.map(e => e.name).join(', ')} need attention. Mention this proactively when relevant.`
       : ''}`
 
   const messages = [
@@ -828,7 +793,6 @@ ${context.criticalEquipment?.length > 0
 
   // Step 3: Build tool set filtered by plan and make first Groq call
   const ACTION_TOOLS = [
-    'create_complaint',
     'assign_complaint',
     'send_whatsapp_to_technician',
     'create_maintenance_schedule',
@@ -867,7 +831,7 @@ ${context.criticalEquipment?.length > 0
 
     messages.push(assistantMessage)
 
-    // Execute tools sequentially (not parallel — avoids null args race)
+    // Execute tools sequentially (not parallel ΓÇö avoids null args race)
     const toolResults = []
     for (const toolCall of toolCalls) {
       let toolArgs = {}
@@ -880,8 +844,7 @@ ${context.criticalEquipment?.length > 0
       const result = await executeTool(
         toolCall.function.name,
         toolArgs,
-        societyId,
-        adminId
+        societyId
       )
 
       toolResults.push({
@@ -896,6 +859,7 @@ ${context.criticalEquipment?.length > 0
           result: toolResults[toolResults.length - 1]
         })
       }
+
       console.log(`[AGENT] Tool ${toolCall.function.name} executed, result:`, JSON.stringify(result))
     }
 
@@ -915,7 +879,7 @@ ${context.criticalEquipment?.length > 0
 
   const finalResponse = response.choices[0].message.content
 
-  console.log(`[AGENT] Response ready — tool call iterations: ${iterations}`)
+  console.log(`[AGENT] Response ready ΓÇö tool call iterations: ${iterations}`)
   console.log(`[AGENT] Tool calls in this turn:`, iterations)
   console.log(`[AGENT] Actions taken:`, actionsTaken)
 
@@ -1098,33 +1062,23 @@ const agentTools = [
   {
     type: 'function',
     function: {
-      name: 'create_complaint',
-      description: 'Create a brand new complaint that an admin personally observed (not reported by a resident). Use this when the admin describes an issue they saw and wants it logged, optionally assigning it to a technician immediately.',
-      parameters: {
-        type: 'object',
-        properties: {
-          title: { type: 'string', description: 'Short title for the issue' },
-          description: { type: 'string', description: 'Details of what was observed' },
-          category: { type: 'string', enum: ['Plumbing','Electrical','Carpentry','HVAC','Civil','Housekeeping','Lift','Security','Common Area','Other'] },
-          priority: { type: 'string', enum: ['low','medium','high','critical'] },
-          location: { type: 'string', description: 'Where this is, e.g. "Lobby", "Tower B basement". Default to "Common Area" if not specified.' },
-          technician_name: { type: 'string', description: 'Name of technician to assign immediately, if mentioned. Omit if not specified.' }
-        },
-        required: ['title', 'description', 'category', 'priority']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
       name: 'assign_complaint',
       description: 'AGENT MODE ONLY. Assign a complaint to a specific technician. Use when admin explicitly asks to assign a complaint.',
       parameters: {
         type: 'object',
         properties: {
-          complaint_id: { type: 'string', description: 'UUID of the complaint to assign' },
-          technician_id: { type: 'string', description: 'UUID of the technician to assign to' },
-          reason: { type: 'string', description: 'Reason for this assignment' }
+          complaint_id: {
+            type: 'string',
+            description: 'UUID of the complaint to assign'
+          },
+          technician_id: {
+            type: 'string',
+            description: 'UUID of the technician to assign to'
+          },
+          reason: {
+            type: 'string',
+            description: 'Reason for this assignment'
+          }
         },
         required: ['complaint_id', 'technician_id']
       }
@@ -1138,9 +1092,18 @@ const agentTools = [
       parameters: {
         type: 'object',
         properties: {
-          technician_name: { type: 'string', description: 'Name of the technician' },
-          phone: { type: 'string', description: 'Phone number with country code' },
-          message: { type: 'string', description: 'Message to send' }
+          technician_name: {
+            type: 'string',
+            description: 'Name of the technician'
+          },
+          phone: {
+            type: 'string',
+            description: 'Phone number with country code'
+          },
+          message: {
+            type: 'string',
+            description: 'Message to send'
+          }
         },
         required: ['phone', 'message', 'technician_name']
       }
@@ -1154,10 +1117,22 @@ const agentTools = [
       parameters: {
         type: 'object',
         properties: {
-          task_name: { type: 'string', description: 'Name of the maintenance task' },
-          category: { type: 'string', description: 'Category of maintenance' },
-          next_due: { type: 'string', description: 'Due date in ISO format' },
-          notes: { type: 'string', description: 'Additional notes' }
+          task_name: {
+            type: 'string',
+            description: 'Name of the maintenance task'
+          },
+          category: {
+            type: 'string',
+            description: 'Category of maintenance'
+          },
+          next_due: {
+            type: 'string',
+            description: 'Due date in ISO format'
+          },
+          notes: {
+            type: 'string',
+            description: 'Additional notes'
+          }
         },
         required: ['task_name', 'category', 'next_due']
       }
@@ -1171,10 +1146,22 @@ const agentTools = [
       parameters: {
         type: 'object',
         properties: {
-          ticket_id: { type: 'string', description: 'UUID of the root cause ticket' },
-          status: { type: 'string', enum: ['open', 'investigating', 'awaiting_vendor', 'resolved'] },
-          root_cause_documented: { type: 'string', description: 'Documentation of root cause' },
-          amc_notified: { type: 'boolean', description: 'Whether AMC vendor was notified' }
+          ticket_id: {
+            type: 'string',
+            description: 'UUID of the root cause ticket'
+          },
+          status: {
+            type: 'string',
+            enum: ['open', 'investigating', 'awaiting_vendor', 'resolved']
+          },
+          root_cause_documented: {
+            type: 'string',
+            description: 'Documentation of root cause'
+          },
+          amc_notified: {
+            type: 'boolean',
+            description: 'Whether AMC vendor was notified'
+          }
         },
         required: ['ticket_id']
       }
@@ -1183,7 +1170,7 @@ const agentTools = [
 ]
 
 
-async function executeTool(toolName, args, societyId, adminId) {
+async function executeTool(toolName, args, societyId) {
   // Force null safety on args
   if (!args || typeof args !== 'object') {
     args = {}
@@ -1211,67 +1198,6 @@ async function executeTool(toolName, args, societyId, adminId) {
   console.log(`[AGENT] Executing tool: ${toolName}`, args)
 
   switch (toolName) {
-
-    case 'create_complaint': {
-      let assignedTechId = null
-      let assignedTechName = null
-
-      if (args.technician_name) {
-        const { data: techs } = await supabaseAdmin
-          .from('technicians')
-          .select('id, users(name, phone)')
-          .eq('society_id', societyId)
-
-        const match = techs?.find(t =>
-          t.users?.name?.toLowerCase()
-            .includes(args.technician_name.toLowerCase()))
-
-        if (match) {
-          assignedTechId = match.id
-          assignedTechName = match.users?.name
-        }
-      }
-
-      const slaHours = { critical: 2, high: 4, medium: 8, low: 24 }
-      const slaDeadline = new Date(
-        Date.now() + (slaHours[args.priority] || 8) * 60 * 60 * 1000
-      ).toISOString()
-
-      const { data: complaint, error } = await supabaseAdmin
-        .from('complaints')
-        .insert({
-          society_id: societyId,
-          submitted_by: adminId,
-          type: 'personal',
-          title: args.title,
-          description: args.description,
-          category: args.category,
-          priority: args.priority,
-          flat_number: args.location || 'Common Area',
-          status: assignedTechId ? 'assigned' : 'open',
-          assigned_tech_id: assignedTechId,
-          sla_deadline: slaDeadline
-        })
-        .select()
-        .single()
-
-      if (error) {
-        return { success: false, error: error.message }
-      }
-
-      // Fire DNA pipeline in background, same as resident-submitted complaints
-      runDNAPipeline(complaint)
-
-      return {
-        success: true,
-        action: 'complaint_created',
-        complaint_id: complaint.id,
-        assigned_to: assignedTechName,
-        message: assignedTechId
-          ? `Created and assigned to ${assignedTechName}`
-          : `Created, currently unassigned`
-      }
-    }
 
     case 'get_complaints': {
       const safeArgs = args
@@ -1630,9 +1556,14 @@ async function executeTool(toolName, args, societyId, adminId) {
       }
     }
 
+
+    default:
+      return { error: `Unknown tool: ${toolName}` }
+
     case 'assign_complaint': {
       try {
-        console.log('[AGENT ACTION] assign_complaint — fetching complaint id:', args.complaint_id)
+        // Step 1: Fetch the current complaint first to get submitted_by and current status
+        console.log('[AGENT ACTION] assign_complaint ΓÇö fetching complaint id:', args.complaint_id)
         const { data: existingComplaint, error: fetchError } = await supabaseAdmin.from('complaints')
           .select('id, submitted_by, status')
           .eq('id', args.complaint_id)
@@ -1640,11 +1571,16 @@ async function executeTool(toolName, args, societyId, adminId) {
 
         if (fetchError || !existingComplaint) {
           console.error('[AGENT ACTION] Failed to fetch complaint:', fetchError)
-          return { success: false, error: `Complaint not found: ${fetchError?.message || 'no data returned'}` }
+          return {
+            success: false,
+            error: `Complaint not found: ${fetchError?.message || 'no data returned'}`
+          }
         }
 
         const oldStatus = existingComplaint.status || 'open'
-        
+        console.log('[AGENT ACTION] Complaint found, status:', oldStatus, 'submitted_by:', existingComplaint.submitted_by)
+
+        // Step 2: Update the complaint
         console.log('[AGENT ACTION] Updating complaint, assigning technician_id:', args.technician_id)
         const { error: updateError } = await supabaseAdmin.from('complaints')
           .update({
@@ -1656,9 +1592,13 @@ async function executeTool(toolName, args, societyId, adminId) {
 
         if (updateError) {
           console.error('[AGENT ACTION] Failed to update complaint:', updateError)
-          return { success: false, error: `Failed to update complaint: ${updateError.message}` }
+          return {
+            success: false,
+            error: `Failed to update complaint: ${updateError.message}`
+          }
         }
 
+        // Step 3: Log the action (non-fatal if it fails)
         const { error: logError } = await supabaseAdmin.from('complaint_logs')
           .insert({
             complaint_id: args.complaint_id,
@@ -1668,12 +1608,21 @@ async function executeTool(toolName, args, societyId, adminId) {
             new_status: 'assigned',
             note: `Assigned by Aria Agent. Reason: ${args.reason || 'Admin requested via agent'}`
           })
+        if (logError) {
+          console.warn('[AGENT ACTION] complaint_logs insert failed (non-fatal):', logError.message)
+        }
 
-        const { data: tech } = await supabaseAdmin
+        // Step 4: Fetch technician name for confirmation message
+        console.log('[AGENT ACTION] Fetching technician id:', args.technician_id)
+        const { data: tech, error: techError } = await supabaseAdmin
           .from('technicians')
           .select('users(name, phone)')
           .eq('id', args.technician_id)
           .single()
+
+        if (techError) {
+          console.warn('[AGENT ACTION] Technician fetch failed (non-fatal):', techError.message)
+        }
 
         const techName = tech?.users?.name || args.technician_id
         console.log(`[AGENT ACTION] Complaint ${args.complaint_id} successfully assigned to ${techName}`)
@@ -1695,6 +1644,7 @@ async function executeTool(toolName, args, societyId, adminId) {
       const accountSid = process.env.TWILIO_ACCOUNT_SID
       const authToken = process.env.TWILIO_AUTH_TOKEN
       const from = process.env.TWILIO_WHATSAPP_FROM
+
       const encoded = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
 
       try {
@@ -1713,6 +1663,9 @@ async function executeTool(toolName, args, societyId, adminId) {
             })
           }
         )
+
+        console.log(`[AGENT ACTION] WhatsApp sent to ${args.technician_name}`)
+
         return {
           success: true,
           action: 'whatsapp_sent',
@@ -1720,7 +1673,11 @@ async function executeTool(toolName, args, societyId, adminId) {
           message: `WhatsApp sent to ${args.technician_name}`
         }
       } catch (err) {
-        return { success: false, error: 'WhatsApp send failed', details: err.message }
+        return {
+          success: false,
+          error: 'WhatsApp send failed',
+          details: err.message
+        }
       }
     }
 
@@ -1737,6 +1694,9 @@ async function executeTool(toolName, args, societyId, adminId) {
         })
         .select()
         .single()
+
+      console.log(`[AGENT ACTION] Maintenance schedule created: ${args.task_name}`)
+
       return {
         success: true,
         action: 'schedule_created',
@@ -1747,17 +1707,27 @@ async function executeTool(toolName, args, societyId, adminId) {
     }
 
     case 'update_root_cause_ticket': {
-      const updateData = { updated_at: new Date().toISOString() }
-      if (args.status) updateData.status = args.status
-      if (args.root_cause_documented) updateData.root_cause_documented = args.root_cause_documented
-      if (args.amc_notified !== undefined) updateData.amc_notified = args.amc_notified
-      if (args.status === 'resolved') updateData.resolved_at = new Date().toISOString()
+      const updateData = {
+        updated_at: new Date().toISOString()
+      }
+
+      if (args.status)
+        updateData.status = args.status
+      if (args.root_cause_documented)
+        updateData.root_cause_documented = args.root_cause_documented
+      if (args.amc_notified !== undefined)
+        updateData.amc_notified = args.amc_notified
+      if (args.status === 'resolved')
+        updateData.resolved_at = new Date().toISOString()
 
       const { data } = await supabaseAdmin.from('root_cause_tickets')
         .update(updateData)
         .eq('id', args.ticket_id)
         .select()
         .single()
+
+      console.log(`[AGENT ACTION] Root cause ticket ${args.ticket_id} updated`)
+
       return {
         success: true,
         action: 'ticket_updated',
@@ -1766,17 +1736,13 @@ async function executeTool(toolName, args, societyId, adminId) {
         message: `Root cause ticket updated to: ${args.status}`
       }
     }
-
-    default:
-      return { error: `Unknown tool: ${toolName}` }
-
   }
 }
 
-// ─── Complaint Workflow Stages ────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Complaint Workflow Stages ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 
-// ─── Complaint Workflow Stages ────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Complaint Workflow Stages ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 async function stageTriage(complaint) {
   console.log(`[WORKFLOW-TRIAGE] Running AI triage for: ${complaint.id}`)
@@ -1827,7 +1793,7 @@ async function stageTechnicianMatch(complaint, aiResult) {
   const category = complaint.category
   const societyId = complaint.society_id
 
-  console.log('Technician search — category:', category, 'societyId:', societyId)
+  console.log('Technician search ΓÇö category:', category, 'societyId:', societyId)
 
   const { data: technicians, error } = await supabaseAdmin
     .from('technicians')
@@ -1849,14 +1815,14 @@ async function stageTechnicianMatch(complaint, aiResult) {
 
   // Pick the technician with the fewest active assignments
   const { data: assignments } = await supabaseAdmin.from('complaints')
-    .select('assigned_tech_id')
+    .select('assigned_to')
     .eq('society_id', complaint.society_id)
     .in('status', ['open', 'in_progress'])
-    .not('assigned_tech_id', 'is', null)
+    .not('assigned_to', 'is', null)
 
   const loadMap = {}
   for (const a of assignments || []) {
-    loadMap[a.assigned_tech_id] = (loadMap[a.assigned_tech_id] || 0) + 1
+    loadMap[a.assigned_to] = (loadMap[a.assigned_to] || 0) + 1
   }
 
   const best = technicians.sort(
@@ -1868,7 +1834,7 @@ async function stageTechnicianMatch(complaint, aiResult) {
 }
 
 
-// ─── Main Complaint Workflow ──────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Main Complaint Workflow ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 async function runComplaintWorkflow(complaint) {
   console.log(`[WORKFLOW-1] START: ${complaint.id}`)
@@ -1877,15 +1843,15 @@ async function runComplaintWorkflow(complaint) {
     // Stage 1: AI Triage
     const aiResult = await stageTriage(complaint)
 
-    // DNA Pipeline — runs in background, parallel to main workflow
-    // Don't await — fire and forget
+    // DNA Pipeline ΓÇö runs in background, parallel to main workflow
+    // Don't await ΓÇö fire and forget
     runDNAPipeline(complaint)
 
     // Stage 2: Find technician
     const technician = await stageTechnicianMatch(complaint, aiResult)
 
     if (!technician) {
-      console.log(`[WORKFLOW] No technician available — complaint queued`)
+      console.log(`[WORKFLOW] No technician available ΓÇö complaint queued`)
       await supabaseAdmin.from('complaints')
         .update({ status: 'queued' })
         .eq('id', complaint.id)
@@ -1905,7 +1871,7 @@ async function runComplaintWorkflow(complaint) {
 
     await supabaseAdmin.from('complaints')
       .update({
-        assigned_tech_id: technician.id,
+        assigned_to: technician.id,
         status: 'assigned',
         sla_deadline: slaDeadline,
         priority: aiResult.priority
@@ -1950,9 +1916,9 @@ async function runComplaintWorkflow(complaint) {
   }
 }
 
-// ─── API Endpoints ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ API Endpoints ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
-// POST /api/complaints/dna — Manually trigger DNA pipeline for a complaint
+// POST /api/complaints/dna ΓÇö Manually trigger DNA pipeline for a complaint
 app.post('/api/complaints/dna', async (req, res) => {
   const { complaint_id } = req.body
 
@@ -1981,7 +1947,7 @@ app.post('/api/complaints/dna', async (req, res) => {
   })
 })
 
-// POST /api/whatsapp/notify — Send a WhatsApp notification to a technician
+// POST /api/whatsapp/notify ΓÇö Send a WhatsApp notification to a technician
 app.post('/api/whatsapp/notify', async (req, res) => {
   try {
     const sid = await sendWhatsAppNotification(req.body)
@@ -1997,7 +1963,7 @@ app.post('/api/whatsapp/notify', async (req, res) => {
   }
 })
 
-// GET /api/health — Health check
+// GET /api/health ΓÇö Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
@@ -2099,7 +2065,7 @@ app.patch('/dna/root-cause/:ticketId', async (req, res) => {
   res.json({ success: true, ticket: data })
 })
 
-// GET /health — Service health check
+// GET /health ΓÇö Service health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -2114,17 +2080,15 @@ app.get('/health', (req, res) => {
   })
 })
 
-// ─── Estate Manager Agent Endpoints ──────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Estate Manager Agent Endpoints ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
-// POST /agent/chat — Estate Manager Agent chat endpoint
+// POST /agent/chat ΓÇö Estate Manager Agent chat endpoint
 app.post('/agent/chat', async (req, res) => {
   const {
     message,
     society_id,
     conversation_history,
-    plan,
-    response_language,
-    admin_id
+    plan  // 'free' or 'growth'
   } = req.body
 
   if (!message || !society_id) {
@@ -2134,22 +2098,21 @@ app.post('/agent/chat', async (req, res) => {
   }
 
   try {
-    console.log(`[API] Agent chat request: "${message}"`)
+    console.log(`[API] Agent chat request: "${message}" (plan: ${plan || 'free'})`)
 
     const result = await runEstateManagerAgent(
       message,
       society_id,
       conversation_history || [],
-      plan,
-      response_language || 'English',
-      admin_id
+      plan || 'free'
     )
 
     res.json({
       success: true,
       response: result.response,
       tool_calls_made: result.tool_calls_made,
-      conversation_history: result.updated_history
+      conversation_history: result.updated_history,
+      actions_taken: result.actions_taken || []
     })
 
   } catch (err) {
@@ -2161,9 +2124,9 @@ app.post('/agent/chat', async (req, res) => {
   }
 })
 
-// POST /agent/briefing — Get proactive morning briefing
+// POST /agent/briefing ΓÇö Get proactive morning briefing
 app.post('/agent/briefing', async (req, res) => {
-  const { society_id, plan, response_language, admin_id } = req.body
+  const { society_id } = req.body
 
   if (!society_id) {
     return res.status(400).json({
@@ -2187,10 +2150,7 @@ app.post('/agent/briefing', async (req, res) => {
   
   Be specific. Use real data. Give me a prioritized action list.`,
       society_id,
-      [],
-      plan,
-      response_language || 'English',
-      admin_id
+      []
     )
 
     res.json({
@@ -2207,193 +2167,7 @@ app.post('/agent/briefing', async (req, res) => {
   }
 })
 
-async function parseVendorsFromText(extractedText) {
-  console.log(`[IMPORT] Parsing extracted text (${extractedText.length} chars) into vendor records...`)
-
-  const completion = await groqClients[0].chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    messages: [{
-      role: 'system',
-      content: `You extract vendor/contractor records from documents for an apartment maintenance platform. Return ONLY valid JSON, nothing else.`
-    }, {
-      role: 'user',
-      content: `Extract all vendor/contractor records from this document content. The content may be HTML, Markdown, or plain text — extract whatever vendor data is present (tables, lists, paragraphs).
-
-For each vendor found, extract these fields:
-- company_name (required, the business name)
-- service_type (best guess: Plumbing, Electrical, Lift, Security, Housekeeping, Pest Control, Generator, Landscaping, or Other)
-- contact_name (person's name if mentioned, else null)
-- contact_phone (phone number if mentioned, else null)
-- contract_cost (numeric value only, strip ₹/Rs/commas, else null)
-- contract_end_date (ISO format YYYY-MM-DD if a date is mentioned, else null)
-- notes (any other relevant details, else null)
-
-Document content:
-${extractedText.slice(0, 8000)}
-
-Return exactly this JSON structure:
-{"vendors": [{"company_name": "...", "service_type": "...", "contact_name": "...", "contact_phone": "...", "contract_cost": 0, "contract_end_date": null, "notes": "..."}]}
-
-If no vendor data is found, return {"vendors": []}`
-    }],
-    temperature: 0.1,
-    max_tokens: 2000,
-    response_format: { type: 'json_object' }
-  })
-
-  const result = JSON.parse(completion.choices[0].message.content)
-
-  console.log(`[IMPORT] Extracted ${result.vendors?.length || 0} vendor records:`, JSON.stringify(result.vendors))
-
-  return result.vendors || []
-}
-
-// TEST endpoint — just verify Vision pipeline
-// returns extracted text correctly
-app.post('/import/test-vision', upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({
-      error: 'No file uploaded'
-    })
-  }
-
-  try {
-    console.log(`[API] Testing vision pipeline: ${req.file.originalname} at ${req.file.path}`)
-
-    const result = await digitizeDocument(req.file.path, 'en-IN')
-
-    res.json({
-      success: true,
-      extracted_length: result.extractedText.length,
-      extracted_preview: result.extractedText.slice(0, 2000),
-      has_json: !!result.jsonData
-    })
-
-  } catch (err) {
-    console.error('[API] Vision test error:', err)
-    res.status(500).json({
-      error: 'Vision pipeline failed',
-      details: err.message
-    })
-  }
-})
-
-app.post('/import/vendors/analyze', upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({
-      error: 'No file uploaded'
-    })
-  }
-
-  try {
-    console.log(`[API] Vendor import analyze: ${req.file.originalname}`)
-
-    const { extractedText } = await digitizeDocument(req.file.path, 'en-IN')
-    const vendors = await parseVendorsFromText(extractedText)
-
-    res.json({
-      success: true,
-      vendors,
-      count: vendors.length
-    })
-
-  } catch (err) {
-    console.error('[API] Vendor import error:', err)
-    res.status(500).json({
-      error: 'Import analysis failed',
-      details: err.message
-    })
-  }
-})
-
-app.post('/import/vendors/confirm', async (req, res) => {
-  const { vendors, society_id: societyId } = req.body
-
-  if (!vendors || !Array.isArray(vendors) || !societyId) {
-    return res.status(400).json({
-      error: 'vendors array and society_id required'
-    })
-  }
-
-  try {
-    const mappedVendors = vendors.map(v => ({
-      society_id: societyId,
-      company_name: v.company_name || v.name || '',
-      service_type: v.service_type || v.type || 'Other',
-      contact_person: v.contact_person || v.contact_name || null,
-      phone: v.phone || v.contact_phone || null,
-      email: v.email || null,
-      contract_start: v.contract_start || null,
-      contract_end: v.contract_end || v.contract_end_date || null,
-      monthly_cost: v.monthly_cost || v.contract_cost || v.cost || null,
-      rating: v.rating || null,
-      notes: v.notes || null,
-      status: v.status || 'active',
-    }))
-
-    console.log('Inserting vendors:', JSON.stringify(mappedVendors, null, 2))
-
-    const { data, error } = await supabase
-      .from('vendors')
-      .insert(mappedVendors)
-      .select()
-
-    if (error) {
-      console.error('Vendor insert error:', error)
-      return res.status(500).json({ 
-        error: error.message 
-      })
-    }
-
-    return res.json({ 
-      success: true, 
-      imported: data.length 
-    })
-
-  } catch (err) {
-    console.error('[API] Vendor confirm error:', err)
-    res.status(500).json({
-      error: 'Import confirm failed',
-      details: err.message
-    })
-  }
-})
-
-// ─── Audit Flow Endpoints ─────────────────────────────────────────────────────
-async function validateAuditStep(i, p, r) { try { return JSON.parse((await groq.chat.completions.create({ messages: [{ role: 'user', content: `Inst: ${i}\nPass: ${p}\nResp: ${r}\nRespond JSON: {"status": "pass" | "concern" | "fail", "notes": "..."}` }], model: 'llama3-8b-8192', temperature: 0, response_format: { type: 'json_object' } })).choices[0]?.message?.content || '{"status":"concern","notes":"Parse error"}'); } catch (e) { return { status: 'concern', notes: 'AI error' }; } }
-async function generateAuditSummary(s) { try { return (await groq.chat.completions.create({ messages: [{ role: 'user', content: `Summarize in 2 short sentences.\n\n${s.map(x => `Step ${x.step_number}: ${x.status}`).join('\n')}` }], model: 'llama3-8b-8192', temperature: 0 })).choices[0]?.message?.content || 'Audit completed.'; } catch (e) { return 'Audit completed.'; } }
-app.get('/audit/templates/:societyId', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('sop_templates').select('id, name, equipment_type').eq('society_id', req.params.societyId);
-    if (error) throw error;
-    res.json({ templates: data });
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-app.post('/audit/start', async (req, res) => {
-  try {
-    const { data: run, error: runErr } = await supabase.from('audit_runs').insert({ technician_id: req.body.technician_id, society_id: req.body.society_id, sop_template_id: req.body.sop_template_id, status: 'in_progress' }).select('id').single();
-    if (runErr) throw runErr;
-    const { data: template, error: templateErr } = await supabase.from('sop_templates').select('*').eq('id', req.body.sop_template_id).single();
-    if (templateErr) throw templateErr;
-    res.json({ audit_run_id: run.id, template: { steps: template.steps } });
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-app.post('/audit/validate-step', async (req, res) => {
-  try {
-    let result = { status: 'concern', notes: 'Manual skip' };
-    if (req.body.spoken_response !== 'SKIPPED') result = await validateAuditStep(req.body.instruction, req.body.pass_criteria, req.body.spoken_response);
-    await supabase.from('audit_run_steps').insert({ audit_run_id: req.body.audit_run_id, step_number: req.body.step_number, spoken_response: req.body.spoken_response, status: result.status, notes: result.notes });
-    const is_complete = req.body.step_number >= req.body.total_steps;
-    if (is_complete) {
-      const { data: allSteps } = await supabase.from('audit_run_steps').select('*').eq('audit_run_id', req.body.audit_run_id).order('step_number', { ascending: true });
-      const summary = await generateAuditSummary(allSteps || []);
-      await supabase.from('audit_runs').update({ status: 'completed', summary, completed_at: new Date().toISOString() }).eq('id', req.body.audit_run_id);
-      res.json({ ...result, is_complete, summary, allSteps });
-    } else { res.json({ ...result, is_complete }); }
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-// ─── Start Server ─────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Start Server ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 module.exports = { runDNAPipeline, sendWhatsAppNotification }
 
@@ -2401,9 +2175,9 @@ const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
   console.log(`
-  ╔════════════════════════════════════════╗
-  ║  BlockFlow Workflow Engine             ║
-  ║  Running on port ${PORT}                  ║
-  ╚════════════════════════════════════════╝
+  ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+  Γòæ  BlockFlow Workflow Engine             Γòæ
+  Γòæ  Running on port ${PORT}                  Γòæ
+  ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
   `)
 })

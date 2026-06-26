@@ -105,7 +105,7 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
       const audioBase64 = await textToSpeech(finalText, prefLang, prefVoice);
       const audio = playBase64Audio(audioBase64);
       currentAudioRef.current = audio;
-      
+
       audio.onended = () => {
         currentAudioRef.current = null;
       };
@@ -144,7 +144,7 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
       });
       if (!res.ok) throw new Error('Failed to start audit');
       const data = await res.json();
-      
+
       setAuditRunId(data.audit_run_id);
       setSteps(data.template.steps || []);
       setCurrentStepIndex(0);
@@ -276,7 +276,7 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
   const currentStep = steps[currentStepIndex];
 
   return (
-    <div className="fixed inset-0 z-50 w-full max-w-md mx-auto bg-[#F5F3F0] flex flex-col font-sans animate-in slide-in-from-bottom-2 duration-300">
+    <div className="fixed inset-0 z-50 w-full max-w-[480px] mx-auto h-full bg-[#E0DDD9] flex flex-col font-sans animate-in slide-in-from-bottom-2 duration-300">
       {/* Header */}
       <header className="bg-white px-4 py-4 border-b border-[#E0DDD9] flex items-center justify-between shadow-sm shrink-0">
         <div>
@@ -301,7 +301,7 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center">
         <div className="w-full max-w-lg mx-auto h-full flex flex-col">
-          
+
           {screen === 'TEMPLATE_SELECT' && (
             <div className="flex-1 flex flex-col">
               <h2 className="text-lg font-display font-bold text-[#1C1917] mb-4">Select Template</h2>
@@ -340,18 +340,17 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
               {/* Temp Result Overlay */}
               {tempResult && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#F5F3F0]/80 backdrop-blur-sm rounded-3xl animate-in fade-in duration-200">
-                  <div className={`px-6 py-4 rounded-2xl flex items-center gap-3 shadow-lg border ${
-                    tempResult.status === 'pass' ? 'bg-green-50 border-green-200 text-green-700' :
-                    tempResult.status === 'concern' ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                    'bg-red-50 border-red-200 text-red-700'
-                  }`}>
+                  <div className={`px-6 py-4 rounded-2xl flex items-center gap-3 shadow-lg border ${tempResult.status === 'pass' ? 'bg-green-50 border-green-200 text-green-700' :
+                      tempResult.status === 'concern' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                        'bg-red-50 border-red-200 text-red-700'
+                    }`}>
                     {tempResult.status === 'pass' && <CheckCircle2 className="w-6 h-6" />}
                     {tempResult.status === 'concern' && <AlertTriangle className="w-6 h-6" />}
                     {tempResult.status === 'fail' && <AlertCircle className="w-6 h-6" />}
                     <span className="font-bold text-lg">
                       {tempResult.status === 'pass' ? '✓ Logged' :
-                       tempResult.status === 'concern' ? '⚠ Flagged' :
-                       '✗ Issue'}
+                        tempResult.status === 'concern' ? '⚠ Flagged' :
+                          '✗ Issue'}
                     </span>
                   </div>
                 </div>
@@ -375,11 +374,10 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
                     <>
                       <button
                         onClick={handleMicToggle}
-                        className={`w-20 h-20 rounded-full flex items-center justify-center shadow-md transition-all ${
-                          isRecording
+                        className={`w-20 h-20 rounded-full flex items-center justify-center shadow-md transition-all ${isRecording
                             ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                             : 'bg-[#1A56DB] hover:bg-blue-700'
-                        }`}
+                          }`}
                       >
                         <Mic className={`w-8 h-8 ${isRecording ? 'text-white' : 'text-white'}`} />
                       </button>
@@ -441,11 +439,10 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
                         <p className="text-xs font-bold text-[#1C1917]">Step {res.step_number}</p>
                         {res.notes && <p className="text-[11px] text-[#6B6560] mt-1 line-clamp-2">{res.notes}</p>}
                       </div>
-                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                        res.status === 'pass' ? 'bg-green-100 text-green-700' :
-                        res.status === 'concern' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
+                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${res.status === 'pass' ? 'bg-green-100 text-green-700' :
+                          res.status === 'concern' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                        }`}>
                         {res.status.toUpperCase()}
                       </div>
                     </div>
