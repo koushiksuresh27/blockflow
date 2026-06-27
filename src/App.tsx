@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Landing from './pages/Landing';
-import GetStarted from './pages/GetStarted';
-import ResidentSignup from './pages/ResidentSignup';
+import JoinSociety from './pages/JoinSociety';
 import Onboarding from './pages/Onboarding';
 import DashboardPage from './pages/DashboardPage';
 import AuthCallback from './pages/AuthCallback';
@@ -52,8 +51,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/get-started" element={<GetStarted />} />
-        <Route path="/resident-signup" element={<ResidentSignup />} />
+        <Route path="/join/:inviteCode" element={<JoinSociety />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />

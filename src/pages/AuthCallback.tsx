@@ -92,7 +92,28 @@ export default function AuthCallback() {
         return;
       }
 
-      // Step 3: Brand new user logic
+      // Step 3: Check pending invite join
+      const pendingJoin = localStorage.getItem('pending_join');
+      
+      if (pendingJoin && !existingProfile) {
+        const joinData = JSON.parse(pendingJoin);
+        localStorage.removeItem('pending_join');
+      
+        await supabase.from('users').insert({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email,
+          email: session.user.email,
+          role: 'resident',
+          status: 'pending',
+          society_id: joinData.society_id,
+          flat_number: joinData.flat_number
+        });
+      
+        navigate('/pending', { replace: true });
+        return;
+      }
+
+      // Step 4: Brand new user logic
       const pendingSocietyId = localStorage.getItem('pendingSocietyId');
       
       if (pendingSocietyId) {
@@ -120,7 +141,7 @@ export default function AuthCallback() {
         navigate('/pending', { replace: true });
       } else {
         // Fallback for unexpected case where no profile exists but no pending society ID
-        navigate('/get-started', { replace: true });
+        navigate('/onboarding', { replace: true });
       }
     }
 

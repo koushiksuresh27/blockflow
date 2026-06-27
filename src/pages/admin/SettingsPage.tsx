@@ -17,6 +17,7 @@ interface SocietySettings {
   address: string;
   city: string;
   sla_defaults: SlaDefaults;
+  invite_code: string;
 }
 
 export default function SettingsPage() {
@@ -37,7 +38,7 @@ export default function SettingsPage() {
 
       const { data, error: e } = await supabase
         .from('societies')
-        .select('id, name, address, city, sla_defaults')
+        .select('id, name, address, city, sla_defaults, invite_code')
         .eq('id', profile.society_id)
         .single();
 
@@ -52,6 +53,7 @@ export default function SettingsPage() {
         address: data.address,
         city: data.city,
         sla_defaults: defaults as SlaDefaults,
+        invite_code: data.invite_code,
       });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error loading settings');
@@ -162,6 +164,35 @@ export default function SettingsPage() {
                     style={{ width: '100%', maxWidth: 400, padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Invite Link */}
+            <div style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, overflow: 'hidden' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid #E0DDD9', background: '#F5F3F0' }}>
+                <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 15, color: '#1C1917', margin: 0 }}>Resident Invite Link</h2>
+              </div>
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${window.location.origin}/join/${settings.invite_code}`}
+                    style={{ flex: 1, padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: '1px solid #E0DDD9', borderRadius: 8, outline: 'none', background: '#F5F3F0', color: '#1C1917' }}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/join/${settings.invite_code}`);
+                      toast('success', 'Copied', 'Invite link copied to clipboard.');
+                    }}
+                    style={{ padding: '9px 16px', background: '#1C1917', color: '#FFFFFF', borderRadius: 8, border: 'none', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+                  >
+                    Copy Link
+                  </button>
+                </div>
+                <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#6B6560', margin: 0 }}>
+                  Share this with residents to let them join
+                </p>
               </div>
             </div>
 

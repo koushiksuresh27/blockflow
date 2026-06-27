@@ -31,7 +31,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-4 font-code-sm text-[12px] uppercase tracking-wider">
             <Link className="hidden sm:block hover:underline underline-offset-4" to="/login">LOGIN</Link>
-            <Link className="btn-primary px-4 py-2 font-bold" to="/get-started">GET STARTED</Link>
+            <Link className="btn-primary px-4 py-2 font-bold" to="/onboarding">GET STARTED</Link>
           </div>
         </div>
       </header>
@@ -48,6 +48,14 @@ export default function Landing() {
             <p className="font-body-md text-[#6a635e] max-w-md leading-relaxed mb-8 border-l-2 border-[#1C1917] pl-4 -mt-4">
               One platform to run your entire community.
             </p>
+            <div className="flex flex-col items-start gap-3 mt-4">
+              <Link to="/onboarding" className="btn-primary px-6 py-3 font-bold uppercase tracking-wider font-code-sm inline-block">
+                Get Started
+              </Link>
+              <p className="font-code-sm text-[11px] text-[#6B6560] max-w-xs leading-tight mt-1">
+                Already a resident? Ask your estate manager for an invite link to join.
+              </p>
+            </div>
           </div>
           <div className="w-full md:w-1/2 h-[50vh] md:h-full min-h-[500px] border-t-2 md:border-t-0 md:border-l-2 border-[#1C1917] relative bg-[#1C1917]/5 flex items-center justify-center fade-in-up delay-200">
             <div className="w-full max-w-sm industrial-border bg-[#EDEBE6] p-6 shadow-[8px_8px_0_0_#1C1917]">
@@ -281,7 +289,7 @@ export default function Landing() {
                 <li className="flex items-center gap-2">[+] Voice complaints in regional languages</li>
                 <li className="flex items-center gap-2">[+] Gate pass & community board</li>
               </ul>
-              <Link to="/get-started" className="w-full btn-secondary py-3 font-code-sm font-bold uppercase tracking-wider text-center">Get Started</Link>
+              <Link to="/onboarding" className="w-full btn-secondary py-3 font-code-sm font-bold uppercase tracking-wider text-center">Get Started</Link>
             </div>
 
             <div className="industrial-border p-8 flex flex-col bg-[#1C1917] text-[#EDEBE6] fade-in-up delay-100 relative">

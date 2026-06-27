@@ -55,6 +55,7 @@ export default function Onboarding() {
       if (!authData.user) throw new Error('Failed to create account.');
 
       // Step B: Insert society
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const { data: society, error: socError } = await supabase
         .from('societies')
         .insert({
@@ -64,6 +65,7 @@ export default function Onboarding() {
           total_towers: Number(towers),
           total_flats: Number(flats),
           plan: 'free',
+          invite_code: inviteCode
         })
         .select()
         .single();
@@ -90,11 +92,45 @@ export default function Onboarding() {
         name: numTowers === 1 ? 'Main Block' : 'Tower ' + String.fromCharCode(65 + i),
       }));
       
-      const { error: towersError } = await supabase
+      const { data: insertedTowers, error: towersError } = await supabase
         .from('towers')
-        .insert(towersData);
+        .insert(towersData)
+        .select();
         
       if (towersError) throw new Error(towersError.message);
+
+      // Step D2: Auto-seed flats
+      if (insertedTowers) {
+        const numFlats = Number(flats);
+        const flatsPerTower = Math.ceil(numFlats / numTowers);
+        const flatsPerFloor = 4;
+        const floorCount = Math.ceil(flatsPerTower / flatsPerFloor);
+  
+        const flatsToInsert: any[] = [];
+        
+        for (const tower of insertedTowers) {
+          const towerPrefix = numTowers === 1 ? '' : (tower.name.split(' ')[1] + '-');
+          let flatsCreated = 0;
+          for (let floor = 1; floor <= floorCount; floor++) {
+            for (let flatNum = 1; flatNum <= flatsPerFloor; flatNum++) {
+              if (flatsCreated >= flatsPerTower) break;
+              const flatNumberStr = `${towerPrefix}${floor}${String(flatNum).padStart(2, '0')}`;
+              flatsToInsert.push({
+                society_id: society.id,
+                tower_id: tower.id,
+                flat_number: flatNumberStr,
+                is_claimed: false
+              });
+              flatsCreated++;
+            }
+          }
+        }
+  
+        if (flatsToInsert.length > 0) {
+          const { error: flatsError } = await supabase.from('flats').insert(flatsToInsert);
+          if (flatsError) console.error('Failed to seed flats:', flatsError);
+        }
+      }
 
       // Step E: Navigate to success
       setStep(4);

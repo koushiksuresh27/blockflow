@@ -79,7 +79,7 @@ export default function ResidentsPage() {
       let query = supabase
         .from('users')
         .select(`
-          id, name, phone, role, status, created_at,
+          id, name, phone, role, status, created_at, flat_number,
           apartment:apartments!apartment_id(
             flat_number, floor_number,
             tower:towers!tower_id(name)
@@ -107,9 +107,9 @@ export default function ResidentsPage() {
         role:         r.role ?? 'resident',
         status:       r.status ?? 'pending',
         created_at:   r.created_at,
-        flat_number:  r.apartment?.flat_number ?? null,
+        flat_number:  r.flat_number || r.apartment?.flat_number || null,
         floor_number: r.apartment?.floor_number ?? null,
-        tower_name:   r.apartment?.tower?.name ?? null,
+        tower_name:   (r.flat_number ? r.flat_number.split('-')[0] : null) || r.apartment?.tower?.name || null,
       })));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load residents.');
