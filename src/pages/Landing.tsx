@@ -31,7 +31,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-4 font-code-sm text-[12px] uppercase tracking-wider">
             <Link className="hidden sm:block hover:underline underline-offset-4" to="/login">LOGIN</Link>
-            <Link className="btn-primary px-4 py-2 font-bold" to="/onboarding">GET STARTED</Link>
+            <Link className="btn-primary px-4 py-2 font-bold" to="/get-started">GET STARTED</Link>
           </div>
         </div>
       </header>
@@ -53,11 +53,6 @@ export default function Landing() {
             <div className="w-full max-w-sm industrial-border bg-[#EDEBE6] p-6 shadow-[8px_8px_0_0_#1C1917]">
               <div className="flex justify-between items-center border-b-2 border-[#1C1917] pb-2 mb-4">
                 <span className="font-code-sm text-[12px] font-bold">OVERVIEW</span>
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-[#1C1917] rounded-full animate-pulse"></div>
-                  <div className="w-2 h-2 bg-[#1C1917]/30 rounded-full"></div>
-                  <div className="w-2 h-2 bg-[#1C1917]/30 rounded-full"></div>
-                </div>
               </div>
               <BlockFlowHubSpoke />
             </div>
@@ -286,7 +281,7 @@ export default function Landing() {
                 <li className="flex items-center gap-2">[+] Voice complaints in regional languages</li>
                 <li className="flex items-center gap-2">[+] Gate pass & community board</li>
               </ul>
-              <a href="/onboarding" className="w-full btn-secondary py-3 font-code-sm font-bold uppercase tracking-wider text-center">Get Started</a>
+              <Link to="/get-started" className="w-full btn-secondary py-3 font-code-sm font-bold uppercase tracking-wider text-center">Get Started</Link>
             </div>
 
             <div className="industrial-border p-8 flex flex-col bg-[#1C1917] text-[#EDEBE6] fade-in-up delay-100 relative">

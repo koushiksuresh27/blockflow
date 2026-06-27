@@ -5,7 +5,6 @@ import { textToSpeech, playBase64Audio } from '../../lib/sarvamTTS'
 import { Microphone, SoundHigh, SoundOff, SendDiagonal } from 'iconoir-react'
 
 const WORKFLOW_URL = import.meta.env.VITE_WORKFLOW_URL || 'http://localhost:3001'
-const SOCIETY_ID = import.meta.env.VITE_SOCIETY_ID || 'eafc59c7-4148-44ee-b66b-256a5338718b'
 
 interface ActionTaken {
   tool: string
@@ -126,11 +125,21 @@ export default function EstateManagerAgent() {
   
   const [mode, setMode] = useState<'assistant' | 'agent'>('assistant')
   const [adminId, setAdminId] = useState<string | null>(null)
+  const [societyId, setSocietyId] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setAdminId(user.id)
-    })
+    const fetchSociety = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      setAdminId(user.id)
+      const { data: profile } = await supabase
+        .from('users')
+        .select('society_id')
+        .eq('id', user.id)
+        .single()
+      setSocietyId(profile?.society_id || null)
+    }
+    fetchSociety()
   }, [])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -205,7 +214,7 @@ export default function EstateManagerAgent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: transcript,
-          society_id: SOCIETY_ID,
+          society_id: societyId,
           admin_id: adminId,
           conversation_history: conversationHistory,
           plan: mode === 'agent' ? 'growth' : 'free',
@@ -281,10 +290,10 @@ export default function EstateManagerAgent() {
 
   // Load morning briefing on first open
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && messages.length === 0 && societyId) {
       loadMorningBriefing()
     }
-  }, [isOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, societyId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadMorningBriefing = async () => {
     setIsBriefingLoading(true)
@@ -293,7 +302,7 @@ export default function EstateManagerAgent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          society_id: SOCIETY_ID,
+          society_id: societyId,
           admin_id: adminId,
           response_language: LANGUAGE_NAMES[responseLanguage] || 'English'
         }),
@@ -340,7 +349,7 @@ export default function EstateManagerAgent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
-          society_id: SOCIETY_ID,
+          society_id: societyId,
           admin_id: adminId,
           conversation_history: conversationHistory,
           plan: mode === 'agent' ? 'growth' : 'free',

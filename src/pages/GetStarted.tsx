@@ -14,7 +14,7 @@ export default function GetStarted() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: #D7DADC;
+          background: #EDEBE6;
           padding: 24px;
           box-sizing: border-box;
         }
@@ -40,7 +40,7 @@ export default function GetStarted() {
           font-family: 'Inter', sans-serif;
           font-weight: 400;
           font-size: 15px;
-          color: #6B6560;
+          color: #1C1917;
           margin: 0;
         }
         .get-started-cards-row {
@@ -53,7 +53,7 @@ export default function GetStarted() {
           margin-bottom: 20px;
         }
         .get-started-card {
-          background: #FFFFFF;
+          background: #E3DDD0;
           border: 1px solid #E0DDD9;
           border-radius: 20px;
           padding: 32px 28px;
@@ -91,7 +91,7 @@ export default function GetStarted() {
           font-family: 'Inter', sans-serif;
           font-weight: 400;
           font-size: 13px;
-          color: #6B6560;
+          color: #1C1917;
           line-height: 1.6;
           margin: 0 0 24px 0;
         }
@@ -111,26 +111,19 @@ export default function GetStarted() {
           transition: background 0.2s ease;
           margin-top: auto;
         }
-        .btn-estate {
+        .btn-action {
           background: #D97706;
           color: #FFFFFF;
         }
-        .btn-estate:hover {
+        .btn-action:hover {
           background: #B45309;
-        }
-        .btn-resident {
-          background: #1C1917;
-          color: #D7DADC;
-        }
-        .btn-resident:hover {
-          background: #2C2925;
         }
         .get-started-login-line {
           margin-top: 0;
           font-family: 'Inter', sans-serif;
           font-weight: 400;
           font-size: 13px;
-          color: #6B6560;
+          color: #1C1917;
           text-align: center;
         }
         .get-started-login-link {
@@ -173,7 +166,7 @@ export default function GetStarted() {
             onClick={() => navigate('/onboarding')}
           >
             <div className="get-started-icon-circle">
-              <Building color="#D7DADC" width={26} height={26} strokeWidth={1.5} />
+              <Building color="#EDEBE6" width={26} height={26} strokeWidth={1.5} />
             </div>
             <h2 className="get-started-card-title">
               Estate Manager
@@ -181,7 +174,7 @@ export default function GetStarted() {
             <p className="get-started-card-desc">
               Setting up a new housing society on BlockFlow?
             </p>
-            <button className="get-started-btn btn-estate">
+            <button className="get-started-btn btn-action">
               Create Society &rarr;
             </button>
           </div>
@@ -192,7 +185,7 @@ export default function GetStarted() {
             onClick={() => navigate('/resident-signup')}
           >
             <div className="get-started-icon-circle">
-              <Home color="#D7DADC" width={26} height={26} strokeWidth={1.5} />
+              <Home color="#EDEBE6" width={26} height={26} strokeWidth={1.5} />
             </div>
             <h2 className="get-started-card-title">
               Resident
@@ -200,7 +193,7 @@ export default function GetStarted() {
             <p className="get-started-card-desc">
               Your society is already on BlockFlow? Join and get started.
             </p>
-            <button className="get-started-btn btn-resident">
+            <button className="get-started-btn btn-action">
               Join My Society &rarr;
             </button>
           </div>

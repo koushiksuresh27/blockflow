@@ -38,17 +38,17 @@ function Stars({ score }: { score: number }) {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  open: '#3B82F6',        
-  triaged: '#8B5CF6',     
-  assigned: '#6366F1',    
-  accepted: '#06B6D4',    
-  in_progress: '#F59E0B', 
-  on_hold: '#6B6560',     
-  resolved: '#10B981',    
-  verified: '#14B8A6',    
-  closed: '#9C9894',      
-  escalated: '#F43F5E',   
-  reopened: '#F97316',    
+  open: '#3B82F6',
+  triaged: '#8B5CF6',
+  assigned: '#6366F1',
+  accepted: '#06B6D4',
+  in_progress: '#F59E0B',
+  on_hold: '#6B6560',
+  resolved: '#10B981',
+  verified: '#14B8A6',
+  closed: '#9C9894',
+  escalated: '#F43F5E',
+  reopened: '#F97316',
 };
 
 export default function AnalyticsPage() {
@@ -190,29 +190,6 @@ export default function AnalyticsPage() {
           <p style={{ fontFamily: 'Inter', fontSize: 15, color: '#6B6560', margin: 0 }}>Overview of complaint metrics and performance</p>
         </div>
 
-        {/* TEMP: WhatsApp test button */}
-        <button
-          onClick={async () => {
-            const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-              body: {
-                technicianPhone: '+919886218304',
-                technicianName: 'John',
-                complaintTitle: 'Test complaint',
-                complaintDescription: 'Test description',
-                flatLocation: 'A-101',
-                priority: 'high',
-                slaDeadline: '2 Jun 10:00 AM'
-              }
-            })
-            console.log('data:', JSON.stringify(data))
-            console.log('error:', JSON.stringify(error))
-            alert(JSON.stringify({ data, error }))
-          }}
-          style={{ background: '#BE123C', color: '#FFFFFF', padding: '8px 16px', borderRadius: 8, border: 'none', marginBottom: 24, cursor: 'pointer', fontFamily: 'Inter', fontSize: 13 }}
-        >
-          Test WhatsApp
-        </button>
-
         {error && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 24, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
             <AlertCircle className="w-4 h-4" />{error}
@@ -257,7 +234,7 @@ export default function AnalyticsPage() {
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E0DDD9" />
                         <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontFamily: 'Inter', fontSize: 12, fill: '#6B6560' }} />
                         <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontFamily: 'Inter', fontSize: 12, fill: '#1C1917' }} width={100} />
-                        <RechartsTooltip 
+                        <RechartsTooltip
                           cursor={{ fill: '#F5F3F0' }}
                           contentStyle={{ borderRadius: 8, border: '1px solid #E0DDD9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontSize: 13 }}
                         />
@@ -290,7 +267,7 @@ export default function AnalyticsPage() {
                             <Cell key={entry.name} fill={STATUS_COLORS[entry.rawStatus] || '#E0DDD9'} stroke="none" />
                           ))}
                         </Pie>
-                        <RechartsTooltip 
+                        <RechartsTooltip
                           contentStyle={{ borderRadius: 8, border: '1px solid #E0DDD9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontFamily: 'Inter', fontSize: 13 }}
                         />
                         <Legend iconType="circle" wrapperStyle={{ fontFamily: 'Inter', fontSize: 12, color: '#6B6560' }} />

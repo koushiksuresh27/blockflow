@@ -215,10 +215,24 @@ function CommunityCard({ complaint, techName, isExpanded, updates, onToggle }: C
 }
 
 
-const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
-
 export default function ComplaintsPage() {
   const [activeTab, setActiveTab] = useState<'community' | 'resident'>('community');
+
+  const [societyId, setSocietyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSociety = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('users')
+        .select('society_id')
+        .eq('id', user.id)
+        .single()
+      setSocietyId(profile?.society_id || null)
+    }
+    fetchSociety()
+  }, []);
 
   const [communityComplaints, setCommunityComplaints] = useState<CommunityComplaint[]>([]);
   const [techNames, setTechNames] = useState<Record<string, string>>({});
@@ -242,12 +256,12 @@ export default function ComplaintsPage() {
         supabase
           .from('community_complaints')
           .select('*')
-          .eq('society_id', SOCIETY_ID)
+          .eq('society_id', societyId)
           .order('created_at', { ascending: false }),
         supabase
           .from('technicians')
           .select('id, users(name)')
-          .eq('society_id', SOCIETY_ID),
+          .eq('society_id', societyId),
       ]);
 
       if (cErr) throw new Error(cErr.message);
@@ -269,7 +283,7 @@ export default function ComplaintsPage() {
     } finally {
       setLoadingCommunity(false);
     }
-  }, []);
+  }, [societyId]);
 
   const fetchUpdates = useCallback(async (complaintId: string) => {
     setUpdatesMap((prev) => ({ ...prev, [complaintId]: null }));
@@ -319,7 +333,7 @@ export default function ComplaintsPage() {
           id, title, category, priority, status, created_at,
           submitted_user:users!submitted_by(name)
         `)
-        .eq('society_id', profile?.society_id ?? SOCIETY_ID)
+        .eq('society_id', profile?.society_id ?? societyId)
         .order('created_at', { ascending: false })
         .limit(200);
 
@@ -343,9 +357,11 @@ export default function ComplaintsPage() {
   }, []);
 
   useEffect(() => {
-    fetchCommunity();
-    fetchResident();
-  }, [fetchCommunity, fetchResident]);
+    if (societyId) {
+      fetchCommunity();
+      fetchResident();
+    }
+  }, [fetchCommunity, fetchResident, societyId]);
 
   const cardBase: React.CSSProperties = {
     background: '#FFFFFF',

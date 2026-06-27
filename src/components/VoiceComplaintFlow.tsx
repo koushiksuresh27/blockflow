@@ -125,12 +125,26 @@ export default function VoiceComplaintFlow() {
     try {
       const { data: userData } = await supabase.auth.getUser();
 
+      let residentSocietyId = null;
+      if (userData?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('society_id')
+          .eq('id', userData.user.id)
+          .single();
+        residentSocietyId = profile?.society_id;
+      }
+
+      if (!residentSocietyId) {
+        throw new Error('Society ID not found');
+      }
+
       const { error } = await supabase.from('complaints').insert({
         title: transcript.slice(0, 80),
         description: transcript,
         category: suggestion?.category || 'Other',
         priority: suggestion?.priority || 'medium',
-        society_id: 'eafc59c7-4148-44ee-b66b-256a5338718b',
+        society_id: residentSocietyId,
         resident_id: userData?.user?.id || null,
         status: 'open',
       });

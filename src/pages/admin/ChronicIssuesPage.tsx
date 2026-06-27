@@ -3,7 +3,7 @@ import { WarningTriangle, Check, Eye, EditPencil } from 'iconoir-react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
 
-const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
+
 
 interface ChronicIssue {
   id: string;
@@ -96,6 +96,22 @@ const SkeletonCard = () => (
 export default function ChronicIssuesPage() {
   const [activeTab, setActiveTab] = useState<'chronic' | 'rootcause' | 'patterns'>('chronic');
 
+  const [societyId, setSocietyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSociety = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('users')
+        .select('society_id')
+        .eq('id', user.id)
+        .single()
+      setSocietyId(profile?.society_id || null)
+    }
+    fetchSociety()
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     activeChronicCount: 0,
@@ -115,6 +131,7 @@ export default function ChronicIssuesPage() {
   const [ticketNotes, setTicketNotes] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
+    if (!societyId) return;
     setLoading(true);
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -131,20 +148,20 @@ export default function ChronicIssuesPage() {
       ] = await Promise.all([
         // Stats
         supabase.from('chronic_issues').select('*', { count: 'exact', head: true })
-          .eq('society_id', SOCIETY_ID).eq('status', 'active'),
+          .eq('society_id', societyId).eq('status', 'active'),
         supabase.from('root_cause_tickets').select('*', { count: 'exact', head: true })
-          .eq('society_id', SOCIETY_ID).eq('status', 'open'),
+          .eq('society_id', societyId).eq('status', 'open'),
         supabase.from('incident_clusters').select('*', { count: 'exact', head: true })
-          .eq('society_id', SOCIETY_ID).gte('created_at', thirtyDaysAgo),
+          .eq('society_id', societyId).gte('created_at', thirtyDaysAgo),
         supabase.from('complaint_fingerprints').select('*', { count: 'exact', head: true })
-          .eq('society_id', SOCIETY_ID),
+          .eq('society_id', societyId),
         // Tab Data
         supabase.from('chronic_issues').select('*')
-          .eq('society_id', SOCIETY_ID).order('created_at', { ascending: false }),
+          .eq('society_id', societyId).order('created_at', { ascending: false }),
         supabase.from('root_cause_tickets').select('*')
-          .eq('society_id', SOCIETY_ID).order('created_at', { ascending: false }),
+          .eq('society_id', societyId).order('created_at', { ascending: false }),
         supabase.from('incident_clusters').select('*')
-          .eq('society_id', SOCIETY_ID).order('created_at', { ascending: false }).limit(50),
+          .eq('society_id', societyId).order('created_at', { ascending: false }).limit(50),
       ]);
 
       setStats({
@@ -169,11 +186,13 @@ export default function ChronicIssuesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [societyId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (societyId) {
+      fetchData();
+    }
+  }, [fetchData, societyId]);
 
   const handleResolveIssue = async (id: string) => {
     try {

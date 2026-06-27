@@ -4,15 +4,29 @@ import { supabase } from '../../lib/supabase';
 import { generateDailyBriefing } from '../../lib/gemini';
 import type { BriefingData } from '../../lib/gemini';
 
-const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
-
 export default function AIDailyBriefing() {
   const [briefingText, setBriefingText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [timestamp, setTimestamp] = useState('');
+  const [societyId, setSocietyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSociety = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('users')
+        .select('society_id')
+        .eq('id', user.id)
+        .single()
+      setSocietyId(profile?.society_id || null)
+    }
+    fetchSociety()
+  }, []);
 
   const load = useCallback(async () => {
+    if (!societyId) return;
     setLoading(true);
     setError('');
     try {
@@ -35,13 +49,13 @@ export default function AIDailyBriefing() {
         supabase.from('complaints').select('*', { count: 'exact', head: true }).eq('status', 'resolved'),
         supabase.from('complaints').select('*', { count: 'exact', head: true }).lt('sla_deadline', new Date().toISOString()).not('status', 'in', '("resolved","closed","verified")'),
         supabase.from('complaints').select('category'),
-        supabase.from('technicians').select('*', { count: 'exact', head: true }).eq('society_id', SOCIETY_ID),
-        supabase.from('technicians').select('*', { count: 'exact', head: true }).eq('society_id', SOCIETY_ID).eq('is_available', true),
+        supabase.from('technicians').select('*', { count: 'exact', head: true }).eq('society_id', societyId),
+        supabase.from('technicians').select('*', { count: 'exact', head: true }).eq('society_id', societyId).eq('is_available', true),
         supabase.from('maintenance_schedules').select('*', { count: 'exact', head: true }).lt('next_due_date', new Date().toISOString()),
         supabase.from('alerts').select('*', { count: 'exact', head: true }),
-        supabase.from('societies').select('name').eq('id', SOCIETY_ID).single(),
-        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('society_id', SOCIETY_ID).eq('status', 'active'),
-        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('society_id', SOCIETY_ID).eq('status', 'active').lt('contract_end', new Date(Date.now() + 30*24*60*60*1000).toISOString()).gt('contract_end', new Date().toISOString())
+        supabase.from('societies').select('name').eq('id', societyId).single(),
+        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('society_id', societyId).eq('status', 'active'),
+        supabase.from('vendors').select('*', { count: 'exact', head: true }).eq('society_id', societyId).eq('status', 'active').lt('contract_end', new Date(Date.now() + 30*24*60*60*1000).toISOString()).gt('contract_end', new Date().toISOString())
       ]);
 
       let topCategory = 'None';
@@ -79,11 +93,13 @@ export default function AIDailyBriefing() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [societyId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (societyId) {
+      load();
+    }
+  }, [load, societyId]);
 
   // Parsing the briefing text
   const lines = briefingText.split('\n').map(l => l.trim()).filter(Boolean);

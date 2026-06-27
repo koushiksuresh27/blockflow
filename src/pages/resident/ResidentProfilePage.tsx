@@ -74,13 +74,17 @@ export default function ResidentProfilePage() {
 
     // 3. Fetch Maintenance (Current Month)
     const currentMonthStr = format(new Date(), 'yyyy-MM');
-    const societyId = profileData?.society_id || 'eafc59c7-4148-44ee-b66b-256a5338718b';
+    const societyId = profileData?.society_id || null;
     
-    const { data: feesData } = await supabase
-      .from('maintenance_fees')
-      .select('*')
-      .eq('society_id', societyId)
-      .order('month', { ascending: false });
+    let feesData = null;
+    if (societyId) {
+      const { data } = await supabase
+        .from('maintenance_fees')
+        .select('*')
+        .eq('society_id', societyId)
+        .order('month', { ascending: false });
+      feesData = data;
+    }
     
     // We get last 6 months fees
     const feesMap = new Map();

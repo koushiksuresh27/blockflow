@@ -6,9 +6,23 @@ import { VENDOR_SERVICE_TYPES, VENDOR_STATUS_COLORS } from '../../constants/vend
 import { Plus, EditPencil, Trash, CloudUpload } from 'iconoir-react';
 import VendorImportModal from '../../components/admin/VendorImportModal';
 
-const SOCIETY_ID = 'eafc59c7-4148-44ee-b66b-256a5338718b';
-
 export default function VendorsPage() {
+  const [societyId, setSocietyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSociety = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('users')
+        .select('society_id')
+        .eq('id', user.id)
+        .single()
+      setSocietyId(profile?.society_id || null)
+    }
+    fetchSociety()
+  }, []);
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -24,11 +38,12 @@ export default function VendorsPage() {
   const [formError, setFormError] = useState('');
 
   const loadVendors = useCallback(async () => {
+    if (!societyId) return;
     try {
       const { data, error } = await supabase
         .from('vendors')
         .select('*')
-        .eq('society_id', SOCIETY_ID)
+        .eq('society_id', societyId)
         .order('company_name', { ascending: true });
         
       if (error) throw error;
@@ -38,7 +53,7 @@ export default function VendorsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [societyId]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -47,8 +62,10 @@ export default function VendorsPage() {
   };
 
   useEffect(() => {
-    loadVendors();
-  }, [loadVendors]);
+    if (societyId) {
+      loadVendors();
+    }
+  }, [loadVendors, societyId]);
 
   // Derived metrics
   const now = new Date();
@@ -122,7 +139,7 @@ export default function VendorsPage() {
     setFormError('');
     
     const payload = {
-      society_id: SOCIETY_ID,
+      society_id: societyId,
       company_name: form.company_name.trim(),
       service_type: form.service_type,
       contact_person: form.contact_person?.trim() || null,
@@ -514,9 +531,9 @@ export default function VendorsPage() {
         </div>
       )}
 
-      {showImportModal && (
+      {showImportModal && societyId && (
         <VendorImportModal
-          societyId={SOCIETY_ID}
+          societyId={societyId}
           onClose={() => setShowImportModal(false)}
           onImportComplete={() => {
             alert('Vendors imported successfully!')
