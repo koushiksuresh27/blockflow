@@ -277,6 +277,16 @@ export default function Onboarding() {
             >
               Continue &rarr;
             </button>
+            <p style={{
+              fontFamily: 'Inter',
+              fontSize: '13px',
+              color: '#9C9894',
+              textAlign: 'center',
+              marginTop: '16px'
+            }}>
+              Already a resident? Ask your estate 
+              manager for an invite link to join.
+            </p>
           </div>
         )}
 

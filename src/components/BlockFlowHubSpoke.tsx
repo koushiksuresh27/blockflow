@@ -9,9 +9,9 @@ const ROLES = [
 
 const MODULES = [
     { label: "AI Automation", angle: 300 },
-    { label: "Community", angle: 30 },
-    { label: "Documents", angle: 120 },
-    { label: "Analytics", angle: 210 },
+    { label: "Voice Input", angle: 30 },
+    { label: "Complaint DNA", angle: 120 },
+    { label: "Doc Vision", angle: 210 },
 ];
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -46,8 +46,8 @@ export default function BlockFlowHubSpoke() {
             ctx.beginPath();
             ctx.arc(0, 0, outerR, 0, Math.PI * 2);
             ctx.setLineDash([4, 8]);
-            ctx.strokeStyle = "rgba(28,25,23,0.15)";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(28,25,23,0.45)";
+            ctx.lineWidth = 1.5;
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.restore();
@@ -58,26 +58,28 @@ export default function BlockFlowHubSpoke() {
                 const x = cx + outerR * Math.cos(a);
                 const y = cy + outerR * Math.sin(a);
 
-                // dot
+                // Mask behind dot
                 ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(28,25,23,0.3)";
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = "#F5F4F0";
                 ctx.fill();
 
-                // label
-                ctx.save();
-                ctx.translate(x, y);
+                // Dot
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(28,25,23,0.4)";
+                ctx.fill();
+
+                // Label moves with ring, text stays upright
+                const labelOffset = outerR + 22;
+                const lx = cx + labelOffset * Math.cos(a);
+                const ly = cy + labelOffset * Math.sin(a);
+
                 ctx.font = "500 10px 'JetBrains Mono', monospace";
                 ctx.fillStyle = "rgba(28,25,23,0.5)";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-
-                // offset label outward from dot
-                const labelOffset = 22;
-                const lx = labelOffset * Math.cos(a);
-                const ly = labelOffset * Math.sin(a);
                 ctx.fillText(label.toUpperCase(), lx, ly);
-                ctx.restore();
             });
 
             // Inner spokes + animated dots

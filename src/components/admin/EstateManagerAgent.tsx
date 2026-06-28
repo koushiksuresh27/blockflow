@@ -122,7 +122,7 @@ export default function EstateManagerAgent() {
   const [isOpen, setIsOpen] = useState(false)
   const [conversationHistory, setConversationHistory] = useState<object[]>([])
   const [isBriefingLoading, setIsBriefingLoading] = useState(false)
-  
+
   const [mode, setMode] = useState<'assistant' | 'agent'>('assistant')
   const [adminId, setAdminId] = useState<string | null>(null)
   const [societyId, setSocietyId] = useState<string | null>(null)
@@ -255,7 +255,7 @@ export default function EstateManagerAgent() {
         .replace(/\*\*/g, '')
         .replace(/→ Next action:/g, 'Next action:')
         .trim()
-      
+
       const finalText = cleanText.slice(0, 480)
       const audioBase64 = await textToSpeech(finalText, responseLanguage, 'anushka')
       const audio = playBase64Audio(audioBase64)
@@ -496,10 +496,10 @@ export default function EstateManagerAgent() {
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  fontFamily: 'Space Grotesk', 
-                  fontWeight: 600, 
+                  fontFamily: 'Space Grotesk',
+                  fontWeight: 600,
                   fontSize: '14px',
-                  color: '#FFFFFF', 
+                  color: '#FFFFFF',
                   margin: 0,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -625,7 +625,7 @@ export default function EstateManagerAgent() {
                 color: '#92400E',
                 fontWeight: '500',
               }}>
-                Agent Mode Active — Aria can take actions on your behalf
+                Agent Mode Active — Aria can assign tasks to technicians
               </span>
             </div>
           )}
@@ -942,10 +942,10 @@ export default function EstateManagerAgent() {
                   animation: isRecording ? 'pulse 1.5s infinite' : 'none'
                 }}
               >
-                <Microphone 
-                  width={16} height={16} 
+                <Microphone
+                  width={16} height={16}
                   strokeWidth={1.5}
-                  color={isRecording ? '#FFFFFF' : '#6B6560'} 
+                  color={isRecording ? '#FFFFFF' : '#6B6560'}
                 />
               </button>
 
@@ -971,7 +971,7 @@ export default function EstateManagerAgent() {
                   color={input.trim() && !isLoading ? '#FFFFFF' : '#9C9894'} />
               </button>
             </div>
-            
+
             {isProcessingVoice && (
               <p style={{
                 fontSize: '11px',

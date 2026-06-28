@@ -83,6 +83,21 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
     }
   };
 
+  // Re-fetch every time component renders (tab becomes active)
+  useEffect(() => {
+    fetchVoicePrefs();
+  }, []);
+
+  // Also poll every 3 seconds while component is mounted
+  // so any settings changes are picked up
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchVoicePrefs();
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [technicianId]);
+
   const fetchTemplates = async () => {
     try {
       const res = await fetch(`${WORKFLOW_URL}/audit/templates/${societyId}`);
@@ -102,10 +117,43 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
     try {
       const cleanText = text.replace(/[🚨⚠️📋✅🔒🤖\*]/g, '').trim();
       const finalText = cleanText.slice(0, 480);
-      const audioBase64 = await textToSpeech(finalText, prefLang, prefVoice);
+      
+      let textToSpeak = finalText;
+      
+      // Translate if not English
+      if (prefLang !== 'en-IN') {
+        try {
+          const transRes = await fetch('https://api.sarvam.ai/translate', {
+            method: 'POST',
+            headers: {
+              'api-subscription-key': import.meta.env.VITE_SARVAM_API_KEY,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              input: finalText,
+              source_language_code: 'en-IN',
+              target_language_code: prefLang,
+              speaker_gender: 'Female',
+              mode: 'formal',
+              model: 'mayura:v1',
+              enable_preprocessing: false
+            })
+          });
+          if (transRes.ok) {
+            const transData = await transRes.json();
+            textToSpeak = transData.translated_text || finalText;
+          }
+        } catch (transErr) {
+          console.error('Translation failed, using English:', transErr);
+        }
+      }
+      
+      console.log('Speaking:', textToSpeak.slice(0, 50), 'lang:', prefLang);
+      
+      const audioBase64 = await textToSpeech(textToSpeak, prefLang, prefVoice);
       const audio = playBase64Audio(audioBase64);
       currentAudioRef.current = audio;
-
+      
       audio.onended = () => {
         currentAudioRef.current = null;
       };
