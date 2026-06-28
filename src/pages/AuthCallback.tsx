@@ -61,15 +61,41 @@ export default function AuthCallback() {
       }
 
       // Step 2: Check existing profile by auth id
-      const { data: existingProfile } = await supabase
+      const { data: existingProfiles } = await supabase
         .from('users')
         .select('*')
         .eq('id', session.user.id)
-        .maybeSingle();
+        .limit(1);
+      
+      const existingProfile = existingProfiles?.[0];
 
       console.log('Existing profile by id:', existingProfile);
 
       if (cancelled) return;
+
+      // Step 3: Check pending invite join (takes priority over existing profile)
+      const pendingJoin = localStorage.getItem('pending_join');
+      
+      if (pendingJoin) {
+        const joinData = JSON.parse(pendingJoin);
+        localStorage.removeItem('pending_join');
+      
+        // Use upsert WITHOUT ignoreDuplicates: true.
+        // This cleanly updates existing users AND inserts brand new ones
+        // without ever creating duplicates.
+        await supabase.from('users').upsert({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email,
+          email: session.user.email,
+          role: 'resident',
+          status: 'pending',
+          society_id: joinData.society_id,
+          flat_number: joinData.flat_number
+        }, { onConflict: 'id' });
+      
+        navigate('/pending', { replace: true });
+        return;
+      }
 
       if (existingProfile) {
         if (existingProfile.status === 'rejected') {
@@ -92,27 +118,6 @@ export default function AuthCallback() {
         return;
       }
 
-      // Step 3: Check pending invite join
-      const pendingJoin = localStorage.getItem('pending_join');
-      
-      if (pendingJoin && !existingProfile) {
-        const joinData = JSON.parse(pendingJoin);
-        localStorage.removeItem('pending_join');
-      
-        await supabase.from('users').insert({
-          id: session.user.id,
-          name: session.user.user_metadata?.full_name || session.user.email,
-          email: session.user.email,
-          role: 'resident',
-          status: 'pending',
-          society_id: joinData.society_id,
-          flat_number: joinData.flat_number
-        });
-      
-        navigate('/pending', { replace: true });
-        return;
-      }
-
       // Step 4: Brand new user logic
       const pendingSocietyId = localStorage.getItem('pendingSocietyId');
       
@@ -122,7 +127,7 @@ export default function AuthCallback() {
         const pendingTower = localStorage.getItem('pendingResidentTower');
         const pendingFlat = localStorage.getItem('pendingResidentFlat');
 
-        await supabase.from('users').insert({
+        await supabase.from('users').upsert({
           id: session.user.id,
           name: pendingName || session.user.user_metadata?.full_name || session.user.email,
           email: session.user.email,
@@ -131,7 +136,7 @@ export default function AuthCallback() {
           society_id: pendingSocietyId,
           tower: pendingTower || null,
           flat_number: pendingFlat || null,
-        });
+        }, { onConflict: 'id', ignoreDuplicates: true });
 
         localStorage.removeItem('pendingSocietyId');
         localStorage.removeItem('pendingResidentName');

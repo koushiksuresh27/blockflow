@@ -2,9 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useTechProfile } from './TechnicianLayout';
 import type { CommunityComplaint } from '../../types/communityComplaint';
+import CommunityManagement from '../../components/technician/CommunityManagement';
 
 export default function CommunityIssuesTab() {
   const { profile } = useTechProfile();
+  const [activeTab, setActiveTab] = useState<'issues' | 'management'>('issues');
   const [complaints, setComplaints] = useState<CommunityComplaint[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -52,38 +54,57 @@ export default function CommunityIssuesTab() {
   if (!profile) return null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F5F3F0] pb-24 font-inter">
-      <div className="bg-white px-6 pt-12 pb-6 border-b border-[#E0DDD9] sticky top-0 z-10 shadow-none">
-        <h1 className="text-[22px] font-bold text-[#1C1917] tracking-tight font-['Space_Grotesk']">
-          Community Issues
-        </h1>
-        <p className="text-sm font-medium text-[#6B6560] mt-1">
-          Assigned to you
-        </p>
+    <div style={{ minHeight: '100vh', background: '#EDEBE6' }}>
+      <div style={{ background: '#FFFFFF', padding: '20px 16px 16px', borderBottom: '1px solid #E0DDD9' }}>
+        <h1 style={{ fontFamily: 'Recoleta', fontSize: '24px', color: '#1C1917', margin: 0 }}>Community</h1>
+        <p style={{ fontFamily: 'Inter', fontSize: '13px', color: '#9C9894', margin: '4px 0 0' }}>Issues and your societies</p>
       </div>
 
-      <div className="p-5 flex flex-col gap-4">
-        {loading ? (
-          <div className="flex justify-center p-8">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" style={{animation:'spin 1s linear infinite'}}>
-              <style>{`@keyframes spin{from{transform:rotate(0deg)} to{transform:rotate(360deg)}}`}</style>
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-            </svg>
+      <div style={{ padding: '16px' }}>
+        <div style={{ background: '#F5F3F0', borderRadius: '50px', padding: '4px', display: 'flex' }}>
+          <button
+            onClick={() => setActiveTab('issues')}
+            style={{ flex: 1, padding: '10px 16px', borderRadius: '50px', border: 'none', fontFamily: 'Inter', fontWeight: 500, fontSize: '14px', cursor: 'pointer', background: activeTab === 'issues' ? '#1C1917' : 'transparent', color: activeTab === 'issues' ? '#FFFFFF' : '#9C9894', transition: 'all 0.2s ease' }}
+          >
+            Community Issues
+          </button>
+          <button
+            onClick={() => setActiveTab('management')}
+            style={{ flex: 1, padding: '10px 16px', borderRadius: '50px', border: 'none', fontFamily: 'Inter', fontWeight: 500, fontSize: '14px', cursor: 'pointer', background: activeTab === 'management' ? '#1C1917' : 'transparent', color: activeTab === 'management' ? '#FFFFFF' : '#9C9894', transition: 'all 0.2s ease' }}
+          >
+            My Communities
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 16px', paddingBottom: '96px' }}>
+        {activeTab === 'issues' ? (
+          <div className="flex flex-col gap-4">
+            {loading ? (
+              <div className="flex justify-center p-8">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" style={{animation:'spin 1s linear infinite'}}>
+                  <style>{`@keyframes spin{from{transform:rotate(0deg)} to{transform:rotate(360deg)}}`}</style>
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+              </div>
+            ) : complaints.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-[#6B6560] font-medium font-inter">No active community issues.</p>
+              </div>
+            ) : (
+              complaints.map(complaint => (
+                <CommunityComplaintTechCard 
+                  key={complaint.id} 
+                  complaint={complaint} 
+                  currentUserId={profile.userId}
+                  onUpdate={fetchComplaints}
+                />
+              ))
+            )}
           </div>
-        ) : complaints.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#6B6560] font-medium font-inter">No active community issues.</p>
-          </div>
-        ) : (
-          complaints.map(complaint => (
-            <CommunityComplaintTechCard 
-              key={complaint.id} 
-              complaint={complaint} 
-              currentUserId={profile.userId}
-              onUpdate={fetchComplaints}
-            />
-          ))
-        )}
+        ) : profile.techId ? (
+          <CommunityManagement technicianId={profile.techId} currentUserId={profile.userId} />
+        ) : null}
       </div>
     </div>
   );

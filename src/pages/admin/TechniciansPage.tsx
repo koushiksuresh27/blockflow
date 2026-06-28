@@ -31,6 +31,23 @@ interface SecurityStaff {
   status: string;
 }
 
+interface PendingRequest {
+  id: string;
+  technician_id: string;
+  society_id: string;
+  status: string;
+  technicians: {
+    id: string;
+    users: {
+      name: string;
+      email: string;
+    };
+  };
+  societies: {
+    name: string;
+  };
+}
+
 const SPEC_OPTIONS = [
   'Plumbing', 'Electrical', 'Carpentry', 'HVAC',
   'Civil/Structural', 'Housekeeping', 'Lift/Elevator', 'General',
@@ -71,20 +88,69 @@ function AddTechModal({ societyId, onClose, onAdded }: { societyId: string; onCl
 
     setSaving(true);
     try {
-      const newUserId = crypto.randomUUID();
-      const { error: userErr } = await supabase.from('users').insert({
-        id: newUserId, name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim() || null, role: 'technician', status: 'active',
-        ...(societyId && { society_id: societyId }),
-      });
-      if (userErr) throw new Error(userErr.message);
+      let userId: string;
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email.trim())
+        .single();
 
-      const { error: techErr } = await supabase.from('technicians').insert({
-        user_id: newUserId, specializations: specs, is_available: true, performance_score: 0,
-        ...(societyId && { society_id: societyId }),
-      });
-      if (techErr) throw new Error(techErr.message);
+      if (existingUser) {
+        userId = existingUser.id;
+      } else {
+        userId = crypto.randomUUID();
+        const { error: userErr } = await supabase.from('users').insert({
+          id: userId, name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim() || null, role: 'technician', status: 'active',
+          ...(societyId && { society_id: societyId }),
+        });
+        if (userErr) throw new Error(userErr.message);
+      }
+
+      const { data: existingTech } = await supabase
+        .from('technicians')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (existingTech) {
+        if (societyId) {
+          const { error: tsErr } = await supabase
+            .from('technician_societies')
+            .upsert({
+              technician_id: existingTech.id,
+              society_id: societyId,
+              status: 'active',
+              is_available: true,
+            }, {
+              onConflict: 'technician_id,society_id'
+            });
+          if (tsErr) throw new Error(tsErr.message);
+        }
+      } else {
+        const { data: newTechRow, error: techErr } = await supabase
+          .from('technicians')
+          .insert({
+            user_id: userId, specializations: specs, is_available: true, performance_score: 0,
+            ...(societyId && { society_id: societyId }),
+          })
+          .select('id')
+          .single();
+        if (techErr) throw new Error(techErr.message);
+
+        if (societyId) {
+          const { error: tsErr } = await supabase
+            .from('technician_societies')
+            .insert({
+              technician_id: newTechRow.id,
+              society_id: societyId,
+              status: 'active',
+              is_available: true,
+            });
+          if (tsErr) throw new Error(tsErr.message);
+        }
+      }
 
       toast('success', 'Technician added', 'They can sign in with Google using their phone number.');
       onAdded(); onClose();
@@ -94,23 +160,23 @@ function AddTechModal({ societyId, onClose, onAdded }: { societyId: string; onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, boxShadow: '0 24px 48px rgba(0,0,0,0.15)', width: '100%', maxWidth: 420 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E0DDD9' }}>
-          <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 17, color: '#1C1917', margin: 0 }}>Add Technician</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B6560', padding: 4 }}><X className="w-4 h-4" /></button>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div role="dialog" aria-modal="true" style={{ background: '#FFFFFF', borderRadius: 20, padding: 32, width: '90%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+          <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 20, color: '#1C1917', margin: 0 }}>Add Technician</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9C9894', padding: 0 }}><X className="w-5 h-5" /></button>
         </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
           {[
             { id: 'tech-name',  label: 'Full Name',      val: name,  set: setName,  type: 'text',  required: true,  placeholder: 'e.g. Ramesh Kumar'     },
             { id: 'tech-email', label: 'Email *',         val: email, set: setEmail, type: 'email', required: true,  placeholder: 'ramesh@example.com'     },
             { id: 'tech-phone', label: 'Phone (optional)', val: phone, set: setPhone, type: 'tel',   required: false, placeholder: '+91 9876543210'         },
           ].map(f => (
             <div key={f.id}>
-              <label htmlFor={f.id} style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>{f.label}</label>
+              <label htmlFor={f.id} style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>{f.label}</label>
               <input id={f.id} type={f.type} value={f.val} placeholder={f.placeholder}
                 onChange={e => f.set(e.target.value)}
-                style={{ width: '100%', padding: '9px 14px', fontFamily: 'Inter', fontSize: 14, border: errors[f.id] ? '1px solid #DC2626' : '1px solid #E0DDD9', borderRadius: 8, outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '10px 14px', fontFamily: 'Inter', fontSize: 14, color: '#1C1917', background: '#F5F3F0', border: errors[f.id] ? '1px solid #DC2626' : '1px solid #E0DDD9', borderRadius: 10, outline: 'none', boxSizing: 'border-box' }}
               />
               {errors[f.id] && <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#DC2626', margin: '4px 0 0' }}>{errors[f.id]}</p>}
             </div>
@@ -130,17 +196,17 @@ function AddTechModal({ societyId, onClose, onAdded }: { societyId: string; onCl
               })}
             </div>
           </div>
-          <div style={{ padding: 12, background: '#F5F3F0', borderRadius: 8 }}>
-            <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#6B6560', display: 'flex', gap: 8, margin: 0 }}>
-              <AlertCircle className="w-4 h-4 shrink-0" style={{ color: '#9C9894', marginTop: 1 }} />
+          <div style={{ padding: '12px 16px', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 10 }}>
+            <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#92400E', display: 'flex', gap: 8, margin: 0 }}>
+              <AlertCircle className="w-4 h-4 shrink-0" style={{ color: '#92400E', marginTop: 2 }} />
               <span>Ask them to sign in with Google using the <strong>same email</strong> registered here.</span>
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, padding: '0 24px 20px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, color: '#1C1917', background: '#F5F3F0', border: 'none', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
           <button id="add-tech-submit" onClick={handleSubmit} disabled={saving}
-            style={{ flex: 1, padding: '10px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 13, color: '#FFFFFF', background: saving ? '#2C2925' : '#1C1917', border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            style={{ flex: 1, padding: '12px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, color: '#FFFFFF', background: saving ? '#2C2925' : '#1C1917', border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             {saving ? 'Adding…' : 'Add Technician'}
@@ -190,39 +256,39 @@ function AddSecurityModal({ societyId, onClose, onAdded }: { societyId: string; 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" className="bg-surface-container border border-outline-variant/30 rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-outline-variant/20">
-          <h2 className="font-headline-sm text-headline-sm text-on-surface">Add Security Staff</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-container-high transition"><X className="w-4 h-4 text-on-surface-variant" /></button>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div role="dialog" aria-modal="true" style={{ background: '#FFFFFF', borderRadius: 20, padding: 32, width: '90%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+          <h2 style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 20, color: '#1C1917', margin: 0 }}>Add Security Staff</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9C9894', padding: 0 }}><X className="w-5 h-5" /></button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
           {[
             { id: 'sec-name',  label: 'Full Name',       val: name,  set: setName,  type: 'text',  placeholder: 'e.g. Suresh Kumar'      },
             { id: 'sec-email', label: 'Email *',          val: email, set: setEmail, type: 'email', placeholder: 'suresh@example.com'      },
             { id: 'sec-phone', label: 'Phone (optional)', val: phone, set: setPhone, type: 'tel',   placeholder: '+91 9876543210'          },
           ].map(f => (
             <div key={f.id}>
-              <label htmlFor={f.id} className="block text-sm font-semibold text-on-surface-variant mb-1.5">{f.label}</label>
+              <label htmlFor={f.id} style={{ fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 13, color: '#6B6560', display: 'block', marginBottom: 6 }}>{f.label}</label>
               <input id={f.id} type={f.type} value={f.val} placeholder={f.placeholder}
                 onChange={e => f.set(e.target.value)}
-                className={`w-full px-4 py-2.5 text-sm border rounded-xl bg-surface-container-lowest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition ${errors[f.id] ? 'border-error' : 'border-outline-variant/30'}`}
+                style={{ width: '100%', padding: '10px 14px', fontFamily: 'Inter', fontSize: 14, color: '#1C1917', background: '#F5F3F0', border: errors[f.id] ? '1px solid #DC2626' : '1px solid #E0DDD9', borderRadius: 10, outline: 'none', boxSizing: 'border-box' }}
               />
-              {errors[f.id] && <p className="mt-1 text-xs text-error">{errors[f.id]}</p>}
+              {errors[f.id] && <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#DC2626', margin: '4px 0 0' }}>{errors[f.id]}</p>}
             </div>
           ))}
 
-          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-            <p className="text-xs text-blue-700 font-medium flex gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-blue-500" />
-              <span><strong>Important:</strong> The email you enter here must match their Google account email. This is how their account gets linked automatically when they sign in.</span>
+          <div style={{ padding: '12px 16px', background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 10 }}>
+            <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#92400E', display: 'flex', gap: 8, margin: 0 }}>
+              <AlertCircle className="w-4 h-4 shrink-0" style={{ color: '#92400E', marginTop: 2 }} />
+              <span>Ask them to sign in with Google using the <strong>same email</strong> registered here.</span>
             </p>
           </div>
         </div>
-        <div className="flex gap-3 px-6 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold text-on-surface-variant border border-outline-variant/30 rounded-xl hover:bg-surface-container-high transition">Cancel</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, color: '#1C1917', background: '#F5F3F0', border: 'none', borderRadius: 10, cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleSubmit} disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-primary hover:brightness-110 disabled:opacity-60 rounded-xl transition"
+            style={{ flex: 1, padding: '12px 24px', fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 14, color: '#FFFFFF', background: saving ? '#2C2925' : '#1C1917', border: 'none', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
             {saving ? 'Adding…' : 'Add Staff'}
@@ -251,34 +317,52 @@ export default function TechniciansPage() {
   const [showAddSec, setShowAddSec] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
+  // Pending Join Requests state
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loadingPending, setLoadingPending] = useState(true);
+
   // Shared
-  const [societyId, setSocietyId] = useState('');
+  const [societyId, setSocietyId] = useState<string | null>(null);
 
   // ── Load technicians ──────────────────────────────────────────────────────
 
   const loadTechnicians = useCallback(async () => {
     setTechError('');
     try {
+      console.log('loadTechnicians: societyId state at start =', societyId);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      console.log('loadTechnicians: Fetching admin profile for society_id...');
       const { data: profile } = await supabase.from('users').select('society_id').eq('id', user.id).single();
-      const sid = profile?.society_id ?? '';
+      const sid = profile?.society_id ?? null;
+      console.log('loadTechnicians: Admin profile fetched. sid =', sid, 'type =', typeof sid);
       setSocietyId(sid);
 
-      let query = supabase.from('technicians').select(`
-        id, specializations, performance_score, is_available, user_id,
-        tech_user:users!user_id(name, phone),
-        all_complaints:complaints!assigned_tech_id(status, sla_deadline, updated_at),
-        ratings_data:ratings!technician_id(score)
+      let query = supabase.from('technician_societies').select(`
+        status, is_available,
+        technicians (
+          id, specializations, performance_score, user_id,
+          tech_user:users!user_id(name, phone),
+          all_complaints:complaints!assigned_tech_id(status, sla_deadline, updated_at),
+          ratings_data:ratings!technician_id(score)
+        )
       `);
-      if (sid) query = query.eq('society_id', sid);
+      console.log('loadTechnicians: About to run technician query. Using sid =', sid);
+      if (sid && sid.length > 0) {
+        query = query.eq('society_id', sid).eq('status', 'active');
+      } else {
+        console.warn('loadTechnicians: sid is missing or empty, query will be unscoped!');
+      }
 
       const { data, error: e } = await query;
       if (e) throw new Error(e.message);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setTechnicians((data ?? []).map((r: any) => {
+      setTechnicians((data ?? []).map((row: any) => {
+        const r = row.technicians;
+        if (!r) return null;
+        
         const allC = r.all_complaints ?? [];
         const completed = allC.filter((c: { status: string }) => ['closed', 'verified', 'resolved'].includes(c.status));
         const slaMisses = completed.filter((c: { sla_deadline: string; updated_at: string }) =>
@@ -286,15 +370,16 @@ export default function TechniciansPage() {
         const openTasks = allC.filter((c: { status: string }) => !['closed', 'verified', 'resolved'].includes(c.status)).length;
         const ratingScores: number[] = (r.ratings_data ?? []).map((x: { score: number }) => x.score);
         const avgRating = ratingScores.length > 0 ? ratingScores.reduce((a: number, b: number) => a + b, 0) / ratingScores.length : 0;
+        
         return {
           id: r.id, user_id: r.user_id,
           name: r.tech_user?.name ?? 'Unknown', phone: r.tech_user?.phone ?? '',
           specializations: r.specializations ?? [], performance_score: r.performance_score ?? 0,
-          is_available: r.is_available, avg_rating: avgRating,
+          is_available: row.is_available, avg_rating: avgRating,
           rating_count: ratingScores.length, completed_jobs: completed.length,
           sla_misses: slaMisses, open_tasks: openTasks,
         };
-      }));
+      }).filter(Boolean) as Technician[]);
     } catch (e: unknown) {
       setTechError(e instanceof Error ? e.message : 'Error');
     } finally { setLoadingTech(false); }
@@ -330,7 +415,41 @@ export default function TechniciansPage() {
     } finally { setLoadingSec(false); }
   }, []);
 
-  useEffect(() => { loadTechnicians(); loadSecurity(); }, [loadTechnicians, loadSecurity]);
+  // ── Load pending join requests ────────────────────────────────────────────
+
+  const loadPendingRequests = useCallback(async () => {
+    setLoadingPending(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase.from('users').select('society_id').eq('id', user.id).single();
+      const sid = profile?.society_id ?? '';
+      if (!sid) return;
+
+      const { data, error } = await supabase
+        .from('technician_societies')
+        .select(`
+          *,
+          technicians(
+            id,
+            users(name, email)
+          ),
+          societies(name)
+        `)
+        .eq('status', 'pending')
+        .eq('society_id', sid);
+
+      if (error) throw error;
+      setPendingRequests(data as any[]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPending(false);
+    }
+  }, []);
+
+  useEffect(() => { loadTechnicians(); loadSecurity(); loadPendingRequests(); }, [loadTechnicians, loadSecurity, loadPendingRequests]);
 
   const toggleAvailable = async (t: Technician) => {
     const newVal = !t.is_available;
@@ -341,6 +460,24 @@ export default function TechniciansPage() {
       toast('error', 'Update failed', e.message);
     } else {
       toast('success', 'Availability updated', `${t.name} marked as ${newVal ? 'available' : 'busy'}.`);
+    }
+  };
+
+  const handlePendingAction = async (requestId: string, newStatus: 'active' | 'inactive') => {
+    try {
+      const { error } = await supabase
+        .from('technician_societies')
+        .update({ status: newStatus })
+        .eq('id', requestId);
+      if (error) throw error;
+      
+      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+      toast('success', `Request ${newStatus === 'active' ? 'approved' : 'declined'}`);
+      if (newStatus === 'active') {
+        loadTechnicians();
+      }
+    } catch (e: unknown) {
+      toast('error', 'Failed to update request', e instanceof Error ? e.message : 'Error');
     }
   };
 
@@ -397,6 +534,41 @@ export default function TechniciansPage() {
         {/* TECHNICIANS TAB */}
         {activeTab === 'technicians' && (
           <>
+            {/* Pending Requests Section */}
+            {pendingRequests.length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <h3 style={{ fontFamily: 'Space Grotesk', fontWeight: 600, fontSize: 16, color: '#1C1917', marginBottom: 12 }}>
+                  Pending Join Requests
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                  {pendingRequests.map(req => (
+                    <div key={req.id} style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <p style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 14, color: '#1C1917', margin: 0 }}>
+                          <span style={{ fontWeight: 600 }}>{req.technicians?.users?.name}</span> wants to join <span style={{ fontWeight: 600 }}>{req.societies?.name}</span>
+                        </p>
+                        <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#6B6560', margin: '2px 0 0' }}>{req.technicians?.users?.email}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <button 
+                          onClick={() => handlePendingAction(req.id, 'inactive')}
+                          style={{ padding: '6px 12px', borderRadius: 8, fontFamily: 'Inter', fontWeight: 500, fontSize: 12, border: '1px solid #FCD34D', color: '#92400E', background: 'transparent', cursor: 'pointer' }}
+                        >
+                          Decline
+                        </button>
+                        <button 
+                          onClick={() => handlePendingAction(req.id, 'active')}
+                          style={{ padding: '6px 12px', borderRadius: 8, fontFamily: 'Inter', fontWeight: 500, fontSize: 12, border: 'none', color: '#FFFFFF', background: '#D97706', cursor: 'pointer' }}
+                        >
+                          Approve
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {techError && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 16, background: '#FFF1F2', border: '1px solid #FCA5A5', borderRadius: 12, marginBottom: 16, fontFamily: 'Inter', fontSize: 14, color: '#BE123C' }}>
                 <AlertCircle className="w-4 h-4" />{techError}
@@ -555,8 +727,8 @@ export default function TechniciansPage() {
       </div>
 
       {/* Modals */}
-      {showAddTech && <AddTechModal societyId={societyId} onClose={() => setShowAddTech(false)} onAdded={loadTechnicians} />}
-      {showAddSec  && <AddSecurityModal societyId={societyId} onClose={() => setShowAddSec(false)} onAdded={loadSecurity} />}
+      {showAddTech && <AddTechModal societyId={societyId || ''} onClose={() => setShowAddTech(false)} onAdded={loadTechnicians} />}
+      {showAddSec  && <AddSecurityModal societyId={societyId || ''} onClose={() => setShowAddSec(false)} onAdded={loadSecurity} />}
 
       {/* Remove Confirmation */}
       {confirmRemoveId && (
