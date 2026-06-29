@@ -213,7 +213,7 @@ async function generateFingerprint(complaint) {
 
   try {
     const completion = await groqClients[0].chat.completions.create({
-      model: 'llama-3.3-8b-instant',
+      model: 'llama-3.1-8b-instant',
       messages: [{
         role: 'system',
         content: `You are a maintenance complaint analyzer. Extract the core asset and fault from complaints. Return ONLY valid JSON.`
@@ -2360,8 +2360,55 @@ app.post('/import/vendors/confirm', async (req, res) => {
 })
 
 // ─── Audit Flow Endpoints ─────────────────────────────────────────────────────
-async function validateAuditStep(i, p, r) { try { return JSON.parse((await groq.chat.completions.create({ messages: [{ role: 'user', content: `Inst: ${i}\nPass: ${p}\nResp: ${r}\nRespond JSON: {"status": "pass" | "concern" | "fail", "notes": "..."}` }], model: 'llama3-8b-8192', temperature: 0, response_format: { type: 'json_object' } })).choices[0]?.message?.content || '{"status":"concern","notes":"Parse error"}'); } catch (e) { return { status: 'concern', notes: 'AI error' }; } }
-async function generateAuditSummary(s) { try { return (await groq.chat.completions.create({ messages: [{ role: 'user', content: `Summarize in 2 short sentences.\n\n${s.map(x => `Step ${x.step_number}: ${x.status}`).join('\n')}` }], model: 'llama3-8b-8192', temperature: 0 })).choices[0]?.message?.content || 'Audit completed.'; } catch (e) { return 'Audit completed.'; } }
+async function validateAuditStep(i, p, r) {
+  try {
+    const prompt = `You are evaluating a technician's 
+spoken response during a maintenance 
+inspection.
+
+Instruction given: ${i}
+Pass criteria: ${p}
+Technician response: ${r}
+
+IMPORTANT RULES:
+- The technician may respond in ANY 
+  language (Hindi, Tamil, Kannada, 
+  English, etc.) — treat all languages 
+  equally
+- Simple confirmations like "yes", 
+  "haan", "aamaam", "sari", "ho", 
+  "okay", "done", "checked" ALWAYS 
+  count as passing if the criteria 
+  asks for confirmation
+- Only flag if the response clearly 
+  indicates a problem, refusal, or 
+  is completely unrelated
+- If response is empty or unclear, 
+  return concern
+- Be lenient — technicians are doing 
+  physical inspections and giving 
+  brief verbal confirmations
+
+Respond with ONLY this JSON:
+{"status": "pass" | "concern" | "fail", 
+ "notes": "one line explanation"}`;
+
+    const completion = await groqClients[0].chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0,
+      max_tokens: 120,
+      response_format: { type: 'json_object' }
+    });
+
+    const parsed = JSON.parse(completion.choices[0]?.message?.content || '{"status":"concern","notes":"Parse error"}');
+    console.log('Audit eval result:', parsed.status, 'for response:', r);
+    return parsed;
+  } catch (e) {
+    return { status: 'concern', notes: 'AI error' };
+  }
+}
+async function generateAuditSummary(s) { try { return (await groq.chat.completions.create({ messages: [{ role: 'user', content: `Summarize in 2 short sentences.\n\n${s.map(x => `Step ${x.step_number}: ${x.status}`).join('\n')}` }], model: 'llama-3.1-8b-instant', temperature: 0 })).choices[0]?.message?.content || 'Audit completed.'; } catch (e) { return 'Audit completed.'; } }
 app.get('/audit/templates/:societyId', async (req, res) => {
   try {
     const { data, error } = await supabase.from('sop_templates').select('id, name, equipment_type').eq('society_id', req.params.societyId);
