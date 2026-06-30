@@ -20,30 +20,31 @@ export const LANGUAGES = [
 
 export async function transcribeAudio(
   audioBlob: Blob,
-  languageCode: string = 'hi-IN'
+  languageCode: string = 'en-IN'
 ): Promise<string> {
-  const formData = new FormData()
-  // Strip codec suffix - Sarvam rejects it
-  const mimeType = audioBlob.type.split(';')[0] || 'audio/webm'
-  const file = new File([audioBlob], 'recording.webm', { type: mimeType })
+  const WORKFLOW_URL = 
+    import.meta.env.VITE_WORKFLOW_URL || 
+    'http://localhost:3001'
   
+  const formData = new FormData()
+  const mimeType = audioBlob.type
+    .split(';')[0] || 'audio/webm'
+  const file = new File(
+    [audioBlob], 
+    'recording.webm', 
+    { type: mimeType }
+  )
   formData.append('file', file)
-  formData.append('model', 'saarika:v2.5')
-  formData.append('language_code', languageCode)
+  formData.append('language_code', 
+    languageCode)
 
-  const response = await fetch('https://api.sarvam.ai/speech-to-text', {
-    method: 'POST',
-    headers: {
-      'api-subscription-key': import.meta.env.VITE_SARVAM_API_KEY
-    },
-    body: formData
-  })
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`Sarvam STT failed (${response.status}): ${err}`)
-  }
-
+  const response = await fetch(
+    `${WORKFLOW_URL}/sarvam/transcribe`,
+    {
+      method: 'POST',
+      body: formData
+    }
+  )
   const data = await response.json()
   return data.transcript || ''
 }

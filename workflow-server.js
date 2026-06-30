@@ -7,6 +7,7 @@ const { createClient } = require('@supabase/supabase-js')
 const Groq = require('groq-sdk')
 const multer = require('multer')
 const os = require('os')
+const fs = require('fs')
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -2443,6 +2444,170 @@ app.post('/audit/validate-step', async (req, res) => {
     } else { res.json({ ...result, is_complete }); }
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
+
+// ─── AI Suggest Endpoint ──────────────────────────────────────────────────────
+
+app.post('/ai/suggest', async (req, res) => {
+  try {
+    const { transcript } = req.body
+    
+    if (!transcript?.trim()) {
+      return res.status(400).json({ 
+        error: 'transcript is required' 
+      })
+    }
+
+    const completion = await 
+      groqClients[0].chat.completions
+      .create({
+        model: 'llama-3.1-8b-instant',
+        temperature: 0,
+        max_tokens: 150,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a maintenance 
+complaint analyzer for an apartment society.
+Extract category and priority from the 
+complaint description.
+
+Categories (pick exactly one):
+Plumbing, Electrical, Carpentry, HVAC, 
+Civil/Structural, Housekeeping, 
+Lift/Elevator, General
+
+Priority (pick exactly one):
+low, medium, high, critical
+
+Respond ONLY with valid JSON, no markdown,
+no explanation:
+{"category":"...","priority":"...","confidence": a number between 0 and 100 
+representing how certain you are}`
+          },
+          {
+            role: 'user',
+            content: transcript.trim()
+          }
+        ]
+      })
+
+    const text = completion.choices[0]
+      ?.message?.content?.trim() || ''
+    
+    // Same cleanup pattern as DNA 
+    // fingerprint function
+    const clean = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim()
+    
+    const parsed = JSON.parse(clean)
+    
+    console.log('[AI Suggest] Result:', 
+      parsed, 'for:', 
+      transcript.slice(0, 50))
+    
+    res.json(parsed)
+    
+  } catch (err) {
+    console.error('[AI Suggest] Error:', 
+      err.message)
+    res.status(500).json({ 
+      error: err.message,
+      category: 'General',
+      priority: 'medium',
+      confidence: 50
+    })
+  }
+})
+
+// ─── Sarvam Proxy Endpoints ───────────────────────────────────────────────────
+
+app.post('/sarvam/transcribe', upload.single('file'), async (req, res) => {
+  try {
+    const formData = new FormData()
+    const fileBuffer = fs.readFileSync(req.file.path)
+    const blob = new Blob([fileBuffer], { type: req.file.mimetype })
+    formData.append('file', blob, req.file.originalname)
+    formData.append('model', 'saarika:v2.5')
+    formData.append('language_code', req.body.language_code || 'en-IN')
+
+    const response = await fetch('https://api.sarvam.ai/speech-to-text', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': process.env.SARVAM_API_KEY
+      },
+      body: formData
+    })
+    const data = await response.json()
+    
+    // Clean up temp file
+    fs.unlinkSync(req.file.path)
+    
+    res.json({ transcript: data.transcript || '' })
+  } catch (err) {
+    console.error('STT error:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.post('/sarvam/tts', async (req, res) => {
+  try {
+    const { text, language_code, speaker } = req.body
+    
+    const response = await fetch('https://api.sarvam.ai/text-to-speech', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': process.env.SARVAM_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: [text.slice(0, 500)],
+        target_language_code: language_code || 'en-IN',
+        speaker: speaker || 'anushka',
+        pitch: 0,
+        pace: 1.0,
+        loudness: 1.0,
+        speech_sample_rate: 22050,
+        enable_preprocessing: true,
+        model: 'bulbul:v2'
+      })
+    })
+    const data = await response.json()
+    res.json({ audio: data.audios[0] })
+  } catch (err) {
+    console.error('TTS error:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.post('/sarvam/translate', async (req, res) => {
+  try {
+    const { input, source_language_code, target_language_code } = req.body
+    
+    const response = await fetch('https://api.sarvam.ai/translate', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': process.env.SARVAM_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input,
+        source_language_code: source_language_code || 'en-IN',
+        target_language_code,
+        speaker_gender: 'Female',
+        mode: 'formal',
+        model: 'mayura:v1',
+        enable_preprocessing: false
+      })
+    })
+    const data = await response.json()
+    res.json({ translated_text: data.translated_text || input })
+  } catch (err) {
+    console.error('Translate error:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
 

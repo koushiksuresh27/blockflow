@@ -123,26 +123,22 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
       // Translate if not English
       if (prefLang !== 'en-IN') {
         try {
-          const transRes = await fetch('https://api.sarvam.ai/translate', {
-            method: 'POST',
-            headers: {
-              'api-subscription-key': import.meta.env.VITE_SARVAM_API_KEY,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              input: finalText,
-              source_language_code: 'en-IN',
-              target_language_code: prefLang,
-              speaker_gender: 'Female',
-              mode: 'formal',
-              model: 'mayura:v1',
-              enable_preprocessing: false
-            })
-          });
-          if (transRes.ok) {
-            const transData = await transRes.json();
-            textToSpeak = transData.translated_text || finalText;
-          }
+          const transRes = await fetch(
+            `${WORKFLOW_URL}/sarvam/translate`,
+            {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json' 
+              },
+              body: JSON.stringify({
+                input: finalText,
+                source_language_code: 'en-IN',
+                target_language_code: prefLang
+              })
+            }
+          )
+          const transData = await transRes.json()
+          textToSpeak = transData.translated_text || finalText
         } catch (transErr) {
           console.error('Translation failed, using English:', transErr);
         }

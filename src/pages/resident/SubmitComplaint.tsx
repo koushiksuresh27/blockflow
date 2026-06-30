@@ -145,7 +145,7 @@ export default function SubmitComplaint() {
 
   const handleSuggestion = (sugg: ComplaintSuggestion) => {
     setSuggestion(sugg);
-    if (sugg.confidence > 0.6) {
+    if (sugg.confidence > 60) {
       setCategory((prevCat) => (!prevCat || prevCat === 'Other' ? sugg.category : prevCat));
       setPriority((prevPri) => {
         if (!prevPri || prevPri === 'low') {
@@ -408,7 +408,7 @@ export default function SubmitComplaint() {
                 onSuggestion={handleSuggestion}
               />
 
-              {suggestion && suggestion.confidence > 0.5 && (
+              {suggestion && suggestion.confidence > 50 && (
                 <div style={{
                   background: '#FEF3C7',
                   border: '1px solid #D97706',
@@ -437,7 +437,7 @@ export default function SubmitComplaint() {
                       fontFamily: 'Inter',
                       lineHeight: '1.5'
                     }}>
-                      Category: <strong>{suggestion.category}</strong> · Priority: <strong>{suggestion.priority}</strong> · Confidence: {Math.round(suggestion.confidence * 100)}%
+                      Category: <strong>{suggestion.category}</strong> · Priority: <strong>{suggestion.priority}</strong> · Confidence: {Math.round(suggestion.confidence)}%
                     </p>
                   </div>
                   <button

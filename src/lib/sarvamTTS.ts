@@ -3,48 +3,26 @@ export async function textToSpeech(
   languageCode: string = 'hi-IN',
   speaker: string = 'anushka'
 ): Promise<string> {
-
-  // Sarvam TTS has a character limit per request
-  // Truncate if needed
-  const maxLength = 500
-  const truncatedText = text.length > maxLength
-    ? text.slice(0, maxLength) + '...'
-    : text
+  const WORKFLOW_URL = 
+    import.meta.env.VITE_WORKFLOW_URL || 
+    'http://localhost:3001'
 
   const response = await fetch(
-    'https://api.sarvam.ai/text-to-speech',
+    `${WORKFLOW_URL}/sarvam/tts`,
     {
       method: 'POST',
-      headers: {
-        'api-subscription-key':
-          import.meta.env.VITE_SARVAM_API_KEY,
-        'Content-Type': 'application/json'
+      headers: { 
+        'Content-Type': 'application/json' 
       },
       body: JSON.stringify({
-        inputs: [truncatedText],
-        target_language_code: languageCode,
-        speaker: speaker,
-        pitch: 0,
-        pace: 1.0,
-        loudness: 1.0,
-        speech_sample_rate: 22050,
-        enable_preprocessing: true,
-        model: 'bulbul:v2'
+        text,
+        language_code: languageCode,
+        speaker
       })
     }
   )
-
-  if (!response.ok) {
-    const err = await response.text()
-    throw new Error(
-      `Sarvam TTS error: ${response.status} ${err}`
-    )
-  }
-
   const data = await response.json()
-  
-  // Returns base64 audio
-  return data.audios[0]
+  return data.audio
 }
 
 export function playBase64Audio(
