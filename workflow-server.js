@@ -67,15 +67,18 @@ app.use(express.json())
 
 // ─── Supabase & Groq Clients ──────────────────────────────────────────────────
 
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
+  SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY ||
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY
 )
 
 // Service-role client — bypasses RLS for privileged server-side queries
 const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL,
+  SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 )
 
