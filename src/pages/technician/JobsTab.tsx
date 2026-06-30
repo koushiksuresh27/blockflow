@@ -6,6 +6,68 @@ import { useToast } from '../../components/Toast';
 import CompleteJobModal from './CompleteJobModal';
 import RejectBottomSheet from './RejectBottomSheet';
 
+const WORKFLOW_URL = 
+  import.meta.env.VITE_WORKFLOW_URL || 
+  'http://localhost:3001'
+
+const translateText = async (
+  text: string,
+  targetLang: string
+): Promise<string> => {
+  if (!text?.trim()) return text
+  if (targetLang === 'en-IN') return text
+  
+  const isEnglish = 
+    /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(
+      text.trim()
+    )
+  if (isEnglish && targetLang === 'en-IN') 
+    return text
+  
+  try {
+    const res = await fetch(
+      `${WORKFLOW_URL}/sarvam/translate`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input: text,
+          source_language_code: 'auto',
+          target_language_code: targetLang
+        })
+      }
+    )
+    if (!res.ok) return text
+    const data = await res.json()
+    return data.translated_text || text
+  } catch {
+    return text
+  }
+}
+
+function TranslatedText({ 
+  text, 
+  targetLang 
+}: { 
+  text: string
+  targetLang: string 
+}) {
+  const [translated, setTranslated] = useState(text)
+  
+  useEffect(() => {
+    if (targetLang === 'en-IN') {
+      setTranslated(text)
+      return
+    }
+    translateText(text, targetLang)
+      .then(setTranslated)
+  }, [text, targetLang])
+  
+  return <span>{translated}</span>
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Priority = 'low' | 'medium' | 'high' | 'critical';
@@ -125,11 +187,12 @@ function Stars({ score }: { score: number }) {
 // ─── Active Task Card ────────────────────────────────────────────────────────
 
 function ActiveTaskCard({
-  task, userId, transitioning, onAccept, onReject, onStart, onComplete,
+  task, userId, transitioning, onAccept, onReject, onStart, onComplete, prefLang
 }: {
   task: ActiveTask; userId: string; transitioning: boolean;
   onAccept: (id: string) => void; onReject: (task: ActiveTask) => void;
   onStart: (id: string) => void; onComplete: (id: string) => void;
+  prefLang: string;
 }) {
   const p = PRIORITY_LABEL[task.priority];
   const bar = PRIORITY_BAR[task.priority];
@@ -142,7 +205,7 @@ function ActiveTaskCard({
       <div className="flex-1 p-4 space-y-3">
         <div>
           <h3 className="text-sm font-semibold text-[#1C1917] font-inter">
-            {task.title}
+            <TranslatedText text={task.title} targetLang={prefLang} />
             {task.flat_number ? <span className="text-[#6B6560] font-normal"> · {task.flat_number}</span> : null}
           </h3>
           <div className="flex items-center gap-2 mt-1">
@@ -294,6 +357,25 @@ async function loadCompleted(techId: string): Promise<CompletedTask[]> {
 
 export default function JobsTab() {
   const { profile } = useTechProfile();
+  const [prefLang, setPrefLang] = useState<string>('en-IN')
+
+  useEffect(() => {
+    const fetchPrefLang = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { data } = await supabase
+        .from('technicians')
+        .select('preferred_language')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (data?.preferred_language) {
+        setPrefLang(data.preferred_language)
+      }
+    }
+    fetchPrefLang()
+  }, [])
   const toast = useToast();
 
   const [subTab, setSubTab] = useState<'active' | 'completed'>('active');
@@ -435,6 +517,7 @@ export default function JobsTab() {
                     onReject={(t) => setRejectTarget(t)}
                     onStart={handleStart}
                     onComplete={(id) => setCompleteTarget(id)}
+                    prefLang={prefLang}
                   />
                 ))}
               </div>
@@ -460,7 +543,9 @@ export default function JobsTab() {
                   <article key={task.id} className="bg-[#FFFFFF] rounded-[16px] shadow-none border border-[#E0DDD9] p-4 font-inter">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-[#1C1917] font-inter truncate">{task.title}</h3>
+                        <h3 className="text-sm font-semibold text-[#1C1917] font-inter truncate">
+                          <TranslatedText text={task.title} targetLang={prefLang} />
+                        </h3>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-[#9C9894]">{task.category}</span>
                           <span className="w-1 h-1 rounded-full bg-[#E0DDD9]" />

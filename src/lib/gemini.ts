@@ -6,6 +6,16 @@ export interface ComplaintSuggestion {
   category: string
   priority: string
   confidence: number
+  title_en?: string
+  description_en?: string
+}
+
+export interface BriefingData {
+  summary: string
+  priority: string
+  alerts: string[]
+  totalComplaints?: number
+  [key: string]: unknown
 }
 
 export async function analyzeComplaint(

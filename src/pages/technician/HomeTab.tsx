@@ -9,6 +9,47 @@ import RejectBottomSheet from './RejectBottomSheet';
 import AuditFlow from '../../components/technician/AuditFlow';
 import { Mic } from 'lucide-react';
 
+const WORKFLOW_URL = 
+  import.meta.env.VITE_WORKFLOW_URL || 
+  'http://localhost:3001'
+
+const translateText = async (
+  text: string,
+  targetLang: string
+): Promise<string> => {
+  if (!text?.trim()) return text
+  if (targetLang === 'en-IN') return text
+  
+  const isEnglish = 
+    /^[a-zA-Z0-9\s.,!?'"()-]+$/.test(
+      text.trim()
+    )
+  if (isEnglish && targetLang === 'en-IN') 
+    return text
+  
+  try {
+    const res = await fetch(
+      `${WORKFLOW_URL}/sarvam/translate`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input: text,
+          source_language_code: 'auto',
+          target_language_code: targetLang
+        })
+      }
+    )
+    if (!res.ok) return text
+    const data = await res.json()
+    return data.translated_text || text
+  } catch {
+    return text
+  }
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Priority = 'low' | 'medium' | 'high' | 'critical';
@@ -134,14 +175,8 @@ function getInitials(name: string) {
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
 function TaskCard({
-  task,
-  userId,
-  techId,
-  transitioning,
-  onAccept,
-  onReject,
-  onStart,
-  onComplete,
+  task, userId, techId, transitioning,
+  onAccept, onReject, onStart, onComplete, prefLang
 }: {
   task: Task;
   userId: string;
@@ -151,7 +186,35 @@ function TaskCard({
   onReject: (task: Task) => void;
   onStart: (id: string) => void;
   onComplete: (id: string) => void;
+  prefLang: string;
 }) {
+  const [translatedTitle, setTranslatedTitle] = useState<string>(task.title_en || task.title || '')
+  const [translatedDesc, setTranslatedDesc] = useState<string>(task.description_en || task.description || '')
+  const [isTranslating, setIsTranslating] = useState(false)
+
+  useEffect(() => {
+    if (!task) return
+    
+    setTranslatedTitle(task.title_en || task.title || '')
+    setTranslatedDesc(task.description_en || task.description || '')
+    
+    if (prefLang === 'en-IN') return
+    
+    const translate = async () => {
+      setIsTranslating(true)
+      try {
+        const [t, d] = await Promise.all([
+          translateText(task.title_en || task.title || '', prefLang),
+          translateText(task.description_en || task.description || '', prefLang)
+        ])
+        setTranslatedTitle(t)
+        setTranslatedDesc(d)
+      } finally {
+        setIsTranslating(false)
+      }
+    }
+    translate()
+  }, [task.id, prefLang])
   const p = PRIORITY_LABEL[task.priority];
   const bar = PRIORITY_BAR[task.priority];
   const statusPill = STATUS_PILL[task.status] ?? 'bg-gray-100 text-gray-500';
@@ -168,11 +231,23 @@ function TaskCard({
         {/* Title + category */}
         <div>
           <h3 className="text-sm font-semibold text-[#1C1917] leading-snug font-inter">
-            {task.title_en || task.title}
+            <span>
+              {translatedTitle}
+              {isTranslating && (
+                <span style={{ fontSize: '10px', color: '#9C9894', fontFamily: 'Inter', marginLeft: '6px' }}>
+                  translating...
+                </span>
+              )}
+              {!isTranslating && prefLang !== 'en-IN' && (
+                <span style={{ fontSize: '10px', color: '#9C9894', fontFamily: 'Inter', marginLeft: '6px' }}>
+                  translated
+                </span>
+              )}
+            </span>
             {task.flat_number ? <span className="text-[#6B6560] font-normal"> · {task.flat_number}</span> : null}
           </h3>
           <p className="text-xs text-[#6B6560] mt-1 line-clamp-2 leading-relaxed">
-            {task.description_en || task.description}
+            {translatedDesc}
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] ${p.bg} ${p.textColor}`}>
@@ -372,6 +447,26 @@ export default function HomeTab() {
   const [rejectTarget, setRejectTarget] = useState<Task | null>(null);
   const [completeTarget, setCompleteTarget] = useState<string | null>(null);
   const [showAuditFlow, setShowAuditFlow] = useState(false);
+
+  const [prefLang, setPrefLang] = useState<string>('en-IN')
+
+  useEffect(() => {
+    const fetchPrefLang = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { data } = await supabase
+        .from('technicians')
+        .select('preferred_language')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (data?.preferred_language) {
+        setPrefLang(data.preferred_language)
+      }
+    }
+    fetchPrefLang()
+  }, [])
 
   const techIdRef = useRef<string | null>(null);
   if (profile?.techId) techIdRef.current = profile.techId;
@@ -672,6 +767,7 @@ export default function HomeTab() {
                 onReject={(t) => setRejectTarget(t)}
                 onStart={handleStart}
                 onComplete={(id) => setCompleteTarget(id)}
+                prefLang={prefLang}
               />
             ))}
           </div>

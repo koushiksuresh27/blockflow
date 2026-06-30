@@ -69,7 +69,7 @@ export default function AIDailyBriefing() {
         topCategory = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
       }
 
-      const data: BriefingData = {
+      const data: Record<string, unknown> = {
         totalComplaints: totalComplaints ?? 0,
         pendingComplaints: pendingComplaints ?? 0,
         solvedComplaints: solvedComplaints ?? 0,
