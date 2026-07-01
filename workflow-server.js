@@ -3,6 +3,7 @@ require('dotenv').config()
 
 const express = require('express')
 const cors = require('cors')
+const rateLimit = require('express-rate-limit')
 const { createClient } = require('@supabase/supabase-js')
 const Groq = require('groq-sdk')
 const multer = require('multer')
@@ -2253,9 +2254,19 @@ If no vendor data is found, return {"vendors": []}`
   return result.vendors || []
 }
 
+app.set('trust proxy', 1)
+
+const sarvamLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many requests. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 // TEST endpoint — just verify Vision pipeline
 // returns extracted text correctly
-app.post('/import/test-vision', upload.single('file'), async (req, res) => {
+app.post('/import/test-vision', sarvamLimiter, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       error: 'No file uploaded'
@@ -2283,7 +2294,7 @@ app.post('/import/test-vision', upload.single('file'), async (req, res) => {
   }
 })
 
-app.post('/import/vendors/analyze', upload.single('file'), async (req, res) => {
+app.post('/import/vendors/analyze', sarvamLimiter, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       error: 'No file uploaded'
@@ -2311,7 +2322,7 @@ app.post('/import/vendors/analyze', upload.single('file'), async (req, res) => {
   }
 })
 
-app.post('/import/vendors/confirm', async (req, res) => {
+app.post('/import/vendors/confirm', sarvamLimiter, async (req, res) => {
   const { vendors, society_id: societyId } = req.body
 
   if (!vendors || !Array.isArray(vendors) || !societyId) {
@@ -2523,7 +2534,7 @@ representing how certain you are}`
 
 // ─── Sarvam Proxy Endpoints ───────────────────────────────────────────────────
 
-app.post('/sarvam/transcribe', upload.single('file'), async (req, res) => {
+app.post('/sarvam/transcribe', sarvamLimiter, upload.single('file'), async (req, res) => {
   try {
     const formData = new FormData()
     const fileBuffer = fs.readFileSync(req.file.path)
@@ -2551,7 +2562,7 @@ app.post('/sarvam/transcribe', upload.single('file'), async (req, res) => {
   }
 })
 
-app.post('/sarvam/tts', async (req, res) => {
+app.post('/sarvam/tts', sarvamLimiter, async (req, res) => {
   try {
     const { text, language_code, speaker } = req.body
     
@@ -2581,7 +2592,7 @@ app.post('/sarvam/tts', async (req, res) => {
   }
 })
 
-app.post('/sarvam/translate', async (req, res) => {
+app.post('/sarvam/translate', sarvamLimiter, async (req, res) => {
   try {
     const { input, source_language_code, target_language_code } = req.body
     

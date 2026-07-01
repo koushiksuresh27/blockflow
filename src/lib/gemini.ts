@@ -51,7 +51,8 @@ export async function analyzeComplaint(
 }
 
 export async function generateDailyBriefing(
-  context: Record<string, unknown>
+  context: Record<string, unknown>,
+  societyId: string
 ): Promise<string> {
   const response = await fetch(
     `${WORKFLOW_URL}/agent/briefing`,
@@ -61,8 +62,7 @@ export async function generateDailyBriefing(
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        society_id: 
-          import.meta.env.VITE_SOCIETY_ID,
+        society_id: societyId,
         context 
       })
     }

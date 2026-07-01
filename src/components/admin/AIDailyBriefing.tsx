@@ -84,7 +84,7 @@ export default function AIDailyBriefing() {
         expiringVendors: expiringVendors ?? 0,
       };
 
-      const resultText = await generateDailyBriefing(data);
+      const resultText = await generateDailyBriefing(data, societyId);
       setBriefingText(resultText);
       setTimestamp('Generated just now');
     } catch (e: unknown) {
