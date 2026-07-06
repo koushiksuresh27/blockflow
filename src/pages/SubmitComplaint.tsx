@@ -340,21 +340,8 @@ export default function SubmitComplaint() {
       <div className="w-full max-w-xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 mb-3">
-            <svg
-              className="w-5 h-5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
+          <div className="inline-flex items-center justify-center mb-3">
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Submit a Complaint</h1>
           <p className="mt-1 text-sm text-gray-500">

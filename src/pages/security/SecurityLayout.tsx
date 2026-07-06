@@ -137,7 +137,7 @@ export default function SecurityLayout() {
           </header>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto pb-[68px]">
+          <div className="flex-1 overflow-y-auto pb-[68px] bg-[#EDEBE6]">
             <Outlet />
           </div>
 

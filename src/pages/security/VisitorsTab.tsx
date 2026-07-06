@@ -110,7 +110,7 @@ export default function VisitorsTab() {
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-[#7C3AED]" /></div>
       ) : displayed.length === 0 ? (
-        <div className="text-center py-12 text-[#9C9894]">
+        <div className="text-center py-12 text-[#9C9894] bg-[#FFFFFF] border border-[#E0DDD9] rounded-[16px]">
           <div className="w-[64px] h-[64px] rounded-[16px] bg-[#F5F3FF] flex items-center justify-center mx-auto mb-4">
             <Group width={28} height={28} strokeWidth={1.5} color="#6D28D9" />
           </div>

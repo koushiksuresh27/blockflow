@@ -3,6 +3,7 @@ import {
   Loader2, AlertCircle, Plus, X, Star, Briefcase,
   Check, TrendingUp, AlertTriangle, ShieldCheck, Info, Trash2
 } from 'lucide-react';
+import { Trash } from 'iconoir-react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../components/AdminLayout';
 import { useToast } from '../../components/Toast';
@@ -310,6 +311,7 @@ export default function TechniciansPage() {
   const [loadingTech, setLoadingTech] = useState(true);
   const [techError, setTechError] = useState('');
   const [showAddTech, setShowAddTech] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Security state
   const [securityStaff, setSecurityStaff] = useState<SecurityStaff[]>([]);
@@ -593,9 +595,9 @@ export default function TechniciansPage() {
                   </div>
                 )}
                 {filteredTechnicians.map(t => (
-                  <div key={t.id} style={{ background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div key={t.id} style={{ position: 'relative', background: '#FFFFFF', border: '1px solid #E0DDD9', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Name + availability */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#F5F3F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 16, color: '#6B6560', flexShrink: 0 }}>
                           {t.name.charAt(0).toUpperCase()}
@@ -605,15 +607,31 @@ export default function TechniciansPage() {
                           <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#9C9894', margin: 0 }}>{t.phone || 'No phone'}</p>
                         </div>
                       </div>
-                      <button onClick={() => toggleAvailable(t)}
-                        style={{
-                          padding: '3px 10px', borderRadius: 20, fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 12, border: 'none', cursor: 'pointer',
-                          background: t.is_available ? '#F0FDF4' : '#F5F3F0',
-                          color: t.is_available ? '#15803D' : '#6B6560',
-                        }}
-                      >
-                        {t.is_available ? '● Available' : '○ Busy'}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => toggleAvailable(t)}
+                          style={{
+                            padding: '3px 10px', borderRadius: 20, fontFamily: 'Space Grotesk', fontWeight: 500, fontSize: 12, border: 'none', cursor: 'pointer',
+                            background: t.is_available ? '#F0FDF4' : '#F5F3F0',
+                            color: t.is_available ? '#15803D' : '#6B6560',
+                          }}
+                        >
+                          {t.is_available ? '● Available' : '○ Busy'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(t.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#9C9894',
+                            padding: '4px',
+                            borderRadius: '6px',
+                          }}
+                          title="Remove technician"
+                        >
+                          <Trash width={16} height={16} strokeWidth={1.5} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Specializations */}
@@ -629,32 +647,65 @@ export default function TechniciansPage() {
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                         <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Performance</span>
-                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 13, color: '#D97706' }}>{t.performance_score}/100</span>
+                        <span style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 13, color: '#D97706' }}>{t.performance_score}/5</span>
                       </div>
                       <div style={{ height: 4, background: '#F5F3F0', borderRadius: 2, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', background: '#D97706', borderRadius: 2, width: `${Math.min(t.performance_score, 100)}%`, transition: 'width 0.5s' }} />
+                        <div style={{ height: '100%', background: '#D97706', borderRadius: 2, width: `${(t.performance_score / 5) * 100}%`, transition: 'width 0.5s' }} />
                       </div>
                     </div>
 
-                    {/* Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, borderTop: '1px solid #F5F3F0', paddingTop: 12 }}>
-                      <div>
-                        <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Rating</p>
-                        <Stars score={t.performance_score} />
+                    {/* Stats or Confirm Delete */}
+                    {confirmDeleteId === t.id ? (
+                      <div style={{ borderTop: '1px solid #F5F3F0', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <p style={{ fontFamily: 'Inter', fontSize: 13, color: '#1C1917', margin: 0, textAlign: 'center' }}>
+                          Remove this technician from your society?
+                        </p>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            onClick={async () => {
+                              if (!societyId) return;
+                              await supabase
+                                .from('technician_societies')
+                                .update({ status: 'inactive' })
+                                .eq('technician_id', t.id)
+                                .eq('society_id', societyId);
+                              
+                              toast('success', 'Technician removed', 'They have been removed from your society.');
+                              setConfirmDeleteId(null);
+                              loadTechnicians();
+                            }}
+                            style={{ flex: 1, padding: '8px', fontFamily: 'Inter', fontWeight: 600, fontSize: 12, color: '#FFFFFF', background: '#DC2626', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                          >
+                            Yes, Remove
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            style={{ flex: 1, padding: '8px', fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#6B6560', background: '#F5F3F0', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Completed</p>
-                        <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: '#1C1917', margin: 0 }}>{t.completed_jobs} <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, color: '#9C9894' }}>jobs</span></p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, borderTop: '1px solid #F5F3F0', paddingTop: 12 }}>
+                        <div>
+                          <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Rating</p>
+                          <Stars score={t.performance_score} />
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Completed</p>
+                          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: '#1C1917', margin: 0 }}>{t.completed_jobs} <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, color: '#9C9894' }}>jobs</span></p>
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Active</p>
+                          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: '#1C1917', margin: 0 }}>{t.open_tasks} <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, color: '#9C9894' }}>open</span></p>
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>SLA Misses</p>
+                          <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: t.sla_misses > 0 ? '#DC2626' : '#1C1917', margin: 0 }}>{t.sla_misses}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>Active</p>
-                        <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: '#1C1917', margin: 0 }}>{t.open_tasks} <span style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 12, color: '#9C9894' }}>open</span></p>
-                      </div>
-                      <div>
-                        <p style={{ fontFamily: 'Inter', fontSize: 10, color: '#9C9894', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 4px' }}>SLA Misses</p>
-                        <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: 14, color: t.sla_misses > 0 ? '#DC2626' : '#1C1917', margin: 0 }}>{t.sla_misses}</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>

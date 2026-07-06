@@ -142,8 +142,8 @@ export default function ResidentProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-950">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+      <div className="min-h-screen flex items-center justify-center bg-[#EDEBE6]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#1C1917]" />
       </div>
     );
   }

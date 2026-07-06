@@ -142,13 +142,11 @@ export default function CompleteJobModal({
     const e: Record<string, string> = {};
     if (!beforePhoto) e.before = 'Before photo is required.';
     if (!afterPhoto)  e.after  = 'After photo is required.';
-    if (!notes.trim())            e.notes = 'Resolution notes are required.';
-    else if (notes.trim().length < 20) e.notes = 'Notes must be at least 20 characters.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const canSubmit = !!beforePhoto && !!afterPhoto && notes.trim().length >= 20;
+  const canSubmit = !!beforePhoto && !!afterPhoto;
 
   const uploadPhoto = async (pf: PhotoFile, type: 'before' | 'after') => {
     const ext  = pf.file.name.split('.').pop() ?? 'jpg';
@@ -191,7 +189,7 @@ export default function CompleteJobModal({
         action:       'resolved',
         old_status:   'in_progress',
         new_status:   'resolved',
-        note:         notes.trim(),
+        note:         notes.trim() || '',
       });
 
       setSuccess(true);
@@ -252,29 +250,16 @@ export default function CompleteJobModal({
           {/* Resolution notes */}
           <div>
             <label htmlFor="resolution-notes" className="text-sm font-semibold text-[#1C1917] mb-2 block">
-              Resolution Notes <span className="text-red-500">*</span>
-              <span className="ml-2 text-xs font-normal text-[#9C9894]">(min 20 characters)</span>
+              Completion Notes (optional)
             </label>
             <textarea
               id="resolution-notes"
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Describe what you fixed and how the issue was resolved…"
-              className={`w-full px-4 py-3 text-sm border rounded-[10px] resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition bg-[#F5F3F0] ${
-                errors.notes ? 'border-red-300 bg-red-50' : 'border-[#E0DDD9]'
-              }`}
+              placeholder="Add notes (optional)"
+              className="w-full px-4 py-3 text-sm border rounded-[10px] resize-none focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition bg-[#F5F3F0] border-[#E0DDD9]"
             />
-            <div className="flex items-center justify-between mt-1">
-              {errors.notes ? (
-                <p role="alert" className="text-xs text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" /> {errors.notes}
-                </p>
-              ) : <span />}
-              <p className={`text-xs ml-auto ${notes.length >= 20 ? 'text-green-500' : 'text-gray-400'}`}>
-                {notes.length}/20 min
-              </p>
-            </div>
           </div>
         </div>
 
@@ -282,7 +267,7 @@ export default function CompleteJobModal({
         <div className="px-5 py-4 border-t border-[#E0DDD9] space-y-3">
           {!canSubmit && (
             <p className="text-xs text-center text-[#9C9894]">
-              Upload both photos and add notes to enable submission
+              Upload both photos to enable submission
             </p>
           )}
           <div className="flex gap-3">
