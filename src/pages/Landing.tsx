@@ -1,5 +1,40 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const DASHBOARD_TABS = [
+  {
+    id: 'admin',
+    label: 'Estate Manager',
+    tag: 'AI POWERED',
+    image: '/admin.png',
+    portrait: false,
+    features: 'Complaint DNA · Aria AI Assistant · Auto-assignment · SLA tracking · Vendor Intelligence'
+  },
+  {
+    id: 'resident',
+    label: 'Resident',
+    tag: 'VOICE FIRST',
+    image: '/resident.png',
+    portrait: true,
+    features: 'Voice complaints · Real time tracking · Amenity booking · Gate passes'
+  },
+  {
+    id: 'technician',
+    label: 'Technician',
+    tag: 'MOBILE FIRST',
+    image: '/technician.png',
+    portrait: true,
+    features: 'Task queue · SLA countdown · Voice guided audits · Multi community'
+  },
+  {
+    id: 'security',
+    label: 'Security',
+    tag: 'GATE OPS',
+    image: '/security.png',
+    portrait: true,
+    features: 'Gate pass OTP · Visitor log · Staff tracking · Emergency alerts'
+  }
+];
 import { Link } from 'react-router-dom';
 import './Landing.css';
 import BlockFlowHubSpoke from "../components/BlockFlowHubSpoke";
@@ -14,6 +49,12 @@ export default function Landing() {
     { q: "Can residents use voice in their own language?", a: "Yes. Speak your complaint in Hindi, Tamil, Telugu, or several other Indian languages — Sarvam AI transcribes it and the system auto-suggests category and priority." },
     { q: "Is my society's data private?", a: "Yes. BlockFlow never sells data or shows ads. We charge a subscription, not your privacy." }
   ];
+
+  const [activeTab, setActiveTab] = useState('admin');
+
+  const current = DASHBOARD_TABS.find(
+    t => t.id === activeTab) || DASHBOARD_TABS[0];
+
   return (
     <div className="bg-[#EDEBE6] text-[#1C1917] font-body-md antialiased selection:bg-[#1C1917] selection:text-[#EDEBE6] relative min-h-screen">
 
@@ -59,9 +100,87 @@ export default function Landing() {
           </div>
         </section>
         {/**/}
-        <section className="py-24 px-6 max-w-[1440px] mx-auto relative" id="product">
-          <div className="font-code-sm text-[11px] text-[#1C1917]/70 mb-4 tracking-widest uppercase">The Problem</div>
-          <h2 className="font-display-lg text-4xl mb-12 max-w-xl">Problems We're Solving</h2>
+
+        <section className="py-12 px-6 border-t-2 border-[#1C1917]" id="product">
+          <div className="max-w-[1440px] mx-auto">
+
+            {/* Section header */}
+            <div className="mb-8">
+              <h2 className="font-headline-md text-4xl font-bold max-w-xl leading-tight">
+                One Platform, Four Experiences
+              </h2>
+              <p className="font-code-sm text-sm text-[#6a635e] mt-4 max-w-md">
+                Purpose built for every role in your society, not one cluttered interface trying to do everything.
+              </p>
+            </div>
+
+            {/* Tab bar */}
+            <div className="flex justify-center mb-6">
+              <div className="inline-flex border-2 border-[#1C1917] overflow-hidden">
+                {DASHBOARD_TABS.map((tab, i) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`px-5 py-2 font-code-sm text-[11px] uppercase tracking-widest transition-all duration-200 text-center ${i < DASHBOARD_TABS.length - 1 ? 'border-r-2 border-[#1C1917]' : ''
+                      } ${activeTab === tab.id
+                        ? 'bg-[#1C1917] text-[#EDEBE6]'
+                        : 'bg-transparent text-[#1C1917]/60 hover:bg-[#1C1917]/10 hover:text-[#1C1917]'
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview panel */}
+            <div className="industrial-border overflow-hidden">
+
+              {/* Panel header */}
+              <div className="flex justify-between items-center px-6 py-4 bg-[#1C1917] border-b-2 border-[#1C1917]">
+                <span className="font-headline-md font-bold text-[#EDEBE6] text-lg uppercase tracking-wider">
+                  {current.label}
+                </span>
+              </div>
+
+              {/* Screenshot area */}
+              <div className="bg-[#1C1917]/5 relative overflow-hidden w-full" style={{ height: '380px' }}>
+                {DASHBOARD_TABS.map(tab => (
+                  <div
+                    key={tab.id}
+                    className="absolute inset-0 flex items-start justify-center transition-opacity duration-300"
+                    style={{
+                      opacity: activeTab === tab.id ? 1 : 0,
+                      pointerEvents: activeTab === tab.id ? 'auto' : 'none'
+                    }}
+                  >
+                    {tab.portrait ? (
+                      /* Mobile screenshots — centered portrait */
+                      <img
+                        src={tab.image}
+                        alt={tab.label}
+                        className="h-full w-auto object-cover object-top"
+                      />
+                    ) : (
+                      /* Desktop screenshots — fill full width */
+                      <img
+                        src={tab.image}
+                        alt={tab.label}
+                        className="w-full h-full object-cover object-top"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/**/}
+        <section className="py-14 px-6 max-w-[1440px] mx-auto relative" id="problems">
+          <h2 className="font-headline-md text-4xl mb-12 max-w-xl">Problems We're Solving</h2>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(250px,auto)]">
 
             <div className="md:col-span-8 industrial-border p-8 bg-[#1C1917] text-[#EDEBE6] flex flex-col justify-between fade-in-up">
@@ -111,11 +230,10 @@ export default function Landing() {
           </div>
         </section>
         {/**/}
-        <section className="pt-12 pb-12 border-y-2 border-[#1C1917] relative" id="solutions">
+        <section className="py-12 border-y-2 border-[#1C1917] relative" id="solutions">
           <div className="absolute inset-0 blueprint-bg pointer-events-none"></div>
           <div className="max-w-[1440px] mx-auto px-6 relative z-10">
-            <div className="font-code-sm text-[11px] text-[#1C1917]/70 mb-4 tracking-widest uppercase">The Platform</div>
-            <h2 className="font-display-lg text-5xl leading-none mb-24 max-w-2xl">Built For Every Role</h2>
+            <h2 className="font-headline-md text-5xl leading-none mb-24 max-w-2xl">Built For Every Role</h2>
 
             {/* BLOCK 1 - ADMIN */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-32">
@@ -264,9 +382,9 @@ export default function Landing() {
           </div>
         </section>
         {/**/}
-        <section className="pt-12 pb-12 px-6 max-w-[1440px] mx-auto" id="pricing">
+        <section className="py-14 px-6 max-w-[1440px] mx-auto" id="pricing">
           <div className="font-code-sm text-[11px] text-[#1C1917]/70 mb-4 tracking-widest uppercase">Pricing</div>
-          <h2 className="font-display-lg text-4xl mb-12 text-center">Simple, Honest Pricing</h2>
+          <h2 className="font-headline-md text-4xl mb-12 text-center">Simple, Honest Pricing</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
 
             <div className="border-2 border-[#1C1917] p-8 flex flex-col relative fade-in-up">
@@ -301,9 +419,9 @@ export default function Landing() {
           </div>
         </section>
         {/**/}
-        <section className="pt-12 pb-24 px-6 max-w-[1440px] mx-auto" id="faq">
+        <section className="py-14 px-6 max-w-[1440px] mx-auto" id="faq">
           <div className="font-code-sm text-[11px] text-[#1C1917]/70 mb-4 tracking-widest uppercase">FAQ</div>
-          <h2 className="font-display-lg text-4xl mb-12 max-w-xl">Common Questions</h2>
+          <h2 className="font-headline-md text-4xl mb-12 max-w-xl">Common Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl">
             {faqs.map((item, i) => (
               <div key={i} className="industrial-border bg-[#EDEBE6]">
