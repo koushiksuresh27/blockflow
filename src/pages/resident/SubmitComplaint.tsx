@@ -67,7 +67,7 @@ export default function SubmitComplaint() {
   const [category, setCategory] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [description, setDescription] = useState('');
-  const [lang, setLang] = useState<SarvamLanguage>('hi-IN');
+  const [lang, setLang] = useState<SarvamLanguage>('auto');
   const [suggestion, setSuggestion] = useState<ComplaintSuggestion | null>(null);
   const [preferredSlot, setPreferredSlot] = useState('');
   const [files, setFiles] = useState<AttachedFile[]>([]);
@@ -394,6 +394,7 @@ export default function SubmitComplaint() {
                   onChange={(e) => setLang(e.target.value as SarvamLanguage)}
                   className="text-xs font-sans bg-white border border-[#E0DDD9] rounded-[6px] px-2 py-1 outline-none focus:ring-1 focus:ring-[#1C1917]"
                 >
+                  <option value="auto">Auto-detect language</option>
                   {LANGUAGE_OPTIONS.map((opt) => (
                     <option key={opt.code} value={opt.code}>
                       {opt.label}

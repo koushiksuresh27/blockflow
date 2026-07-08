@@ -147,7 +147,6 @@ export default function EstateManagerAgent() {
 
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
-  const [voiceLanguage, setVoiceLanguage] = useState('hi-IN')
   const [responseLanguage, setResponseLanguage] = useState('en-IN')
   const [ttsEnabled, setTtsEnabled] = useState(true)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
@@ -190,10 +189,9 @@ export default function EstateManagerAgent() {
 
   const processVoiceInput = async (blob: Blob) => {
     try {
-      // Step 1: Sarvam STT
-      const result = await transcribeAudio(blob, voiceLanguage)
-      const transcript = result
-      if (!transcript || typeof transcript !== 'string' || transcript.trim() === '') {
+      // Step 1: Sarvam STT (backend Speech LID auto-detects language)
+      const { transcript } = await transcribeAudio(blob, 'en-IN')
+      if (!transcript || transcript.trim() === '') {
         setIsProcessingVoice(false)
         return
       }
@@ -796,7 +794,7 @@ export default function EstateManagerAgent() {
             background: '#FFFFFF',
             borderRadius: '0 0 16px 16px'
           }}>
-            {/* Language selector for voice */}
+            {/* Language selectors */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -804,37 +802,6 @@ export default function EstateManagerAgent() {
               marginBottom: '8px',
               flexWrap: 'wrap'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{
-                  fontSize: '11px',
-                  color: '#9C9894',
-                  fontFamily: 'Inter'
-                }}>
-                  Voice language:
-                </span>
-                <select
-                  value={voiceLanguage}
-                  onChange={(e) => setVoiceLanguage(e.target.value)}
-                  disabled={isRecording}
-                  style={{
-                    fontSize: '11px',
-                    color: '#1C1917',
-                    background: '#F5F3F0',
-                    border: '1px solid #E0DDD9',
-                    borderRadius: '6px',
-                    padding: '3px 6px',
-                    fontFamily: 'Inter',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {LANGUAGES.map(l => (
-                    <option key={l.code} value={l.code}>
-                      {l.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div style={{
                 display: 'flex',
                 alignItems: 'center',

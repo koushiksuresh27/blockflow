@@ -19,7 +19,8 @@ export interface BriefingData {
 }
 
 export async function analyzeComplaint(
-  transcript: string
+  transcript: string,
+  detectedLanguage?: string | null
 ): Promise<ComplaintSuggestion> {
   const response = await fetch(
     `${WORKFLOW_URL}/ai/suggest`,
@@ -28,13 +29,16 @@ export async function analyzeComplaint(
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ transcript })
+      body: JSON.stringify({
+        transcript,
+        detected_language: detectedLanguage ?? null
+      })
     }
   )
 
   if (!response.ok) {
     throw new Error(
-      'AI suggestion failed: ' + 
+      'AI suggestion failed: ' +
       response.status
     )
   }
@@ -44,7 +48,7 @@ export async function analyzeComplaint(
     category: data.category || 'General',
     priority: data.priority || 'medium',
     confidence: Math.min(
-      Math.round(data.confidence || 50), 
+      Math.round(data.confidence || 50),
       100
     )
   }

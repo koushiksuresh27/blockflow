@@ -769,7 +769,11 @@ Upgrade to Growth Plan to let me handle this automatically."
 DO NOT call action tools in assistant mode.
 Only call: get_complaints, get_chronic_issues, get_technicians, get_vendors, get_sla_status, get_society_stats, get_root_cause_tickets`
 
-  const systemPrompt = `You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
+  const systemPrompt = `CRITICAL: Never write raw function call syntax in your response text. Never output text like <function=tool_name>{}</function> or [function=tool_name] in your messages. Tool calls are handled automatically by the system — only write natural language in your responses.
+
+CRITICAL: This rule applies in ALL languages including Hindi, Kannada, Tamil, and any other language you respond in. Even when responding in Hindi, never include any function call syntax in the response text.
+
+You are Aria — BlockFlow's Estate Operations Intelligence for this residential society.
 
 You are NOT a generic chatbot. You are a seasoned facility management expert with deep knowledge of Indian residential societies, AMC contracts, monsoon preparedness, and infrastructure maintenance.
 
@@ -1243,6 +1247,12 @@ async function executeTool(toolName, args, societyId, adminId) {
         Date.now() + (slaHours[args.priority] || 8) * 60 * 60 * 1000
       ).toISOString()
 
+      // Detect language of the complaint description
+      const detectedLang = args.description
+        ? await detectLanguage(args.description)
+        : null
+      console.log('[CREATE-COMPLAINT] Detected language:', detectedLang)
+
       const { data: complaint, error } = await supabaseAdmin
         .from('complaints')
         .insert({
@@ -1256,7 +1266,8 @@ async function executeTool(toolName, args, societyId, adminId) {
           flat_number: args.location || 'Common Area',
           status: assignedTechId ? 'assigned' : 'open',
           assigned_tech_id: assignedTechId,
-          sla_deadline: slaDeadline
+          sla_deadline: slaDeadline,
+          detected_language: detectedLang
         })
         .select()
         .single()
@@ -2254,6 +2265,81 @@ If no vendor data is found, return {"vendors": []}`
   return result.vendors || []
 }
 
+// ─── Sarvam Language Identification Helper ───────────────────────────────────
+
+async function detectLanguage(text) {
+  try {
+    const response = await fetch(
+      'https://api.sarvam.ai/text-lid',
+      {
+        method: 'POST',
+        headers: {
+          'api-subscription-key': process.env.SARVAM_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input: text
+        })
+      }
+    )
+
+    if (!response.ok) {
+      console.error('[LANG-ID] Failed:', response.status)
+      return null
+    }
+
+    const data = await response.json()
+    console.log('[LANG-ID] Detected:', data.language_code, 'for text:', text.slice(0, 50))
+    return data.language_code || null
+
+  } catch (err) {
+    console.error('[LANG-ID] Error:', err.message)
+    return null
+  }
+}
+
+// ─── Sarvam Speech Language Identification Helper ─────────────────────────────
+
+async function detectSpeechLanguage(filePath) {
+  try {
+    const formData = new FormData()
+    const fileBuffer = fs.readFileSync(filePath)
+    const blob = new Blob(
+      [fileBuffer],
+      { type: 'audio/webm' }
+    )
+    formData.append('file', blob, 'recording.webm')
+
+    const response = await fetch(
+      'https://api.sarvam.ai/audio-lid',
+      {
+        method: 'POST',
+        headers: {
+          'api-subscription-key': process.env.SARVAM_API_KEY
+        },
+        body: formData
+      }
+    )
+
+    if (!response.ok) {
+      console.error(
+        '[SPEECH-LID] Failed:',
+        response.status,
+        await response.text()
+      )
+      return null
+    }
+
+    const data = await response.json()
+    console.log('[SPEECH-LID] Detected language:', data.language_code)
+    return data.language_code || null
+
+  } catch (err) {
+    console.error('[SPEECH-LID] Error:', err.message)
+    return null
+  }
+}
+
 app.set('trust proxy', 1)
 
 const sarvamLimiter = rateLimit({
@@ -2461,12 +2547,20 @@ app.post('/audit/validate-step', async (req, res) => {
 app.post('/ai/suggest', async (req, res) => {
   try {
     const { transcript } = req.body
-    
+
     if (!transcript?.trim()) {
       return res.status(400).json({ 
         error: 'transcript is required' 
       })
     }
+
+    const detectedLanguage = await detectLanguage(transcript)
+
+    console.log('[AI-SUGGEST] Language:', detectedLanguage)
+
+    const languageContext = detectedLanguage && detectedLanguage !== 'en-IN'
+      ? `Note: The complaint is written in ${detectedLanguage}. Understand it accordingly.`
+      : ''
 
     const completion = await 
       groqClients[0].chat.completions
@@ -2481,6 +2575,7 @@ app.post('/ai/suggest', async (req, res) => {
 complaint analyzer for an apartment society.
 Extract category and priority from the 
 complaint description.
+${languageContext}
 
 Categories (pick exactly one):
 Plumbing, Electrical, Carpentry, HVAC, 
@@ -2518,7 +2613,10 @@ representing how certain you are}`
       parsed, 'for:', 
       transcript.slice(0, 50))
     
-    res.json(parsed)
+    res.json({
+      ...parsed,
+      detected_language: detectedLanguage
+    })
     
   } catch (err) {
     console.error('[AI Suggest] Error:', 
@@ -2536,28 +2634,106 @@ representing how certain you are}`
 
 app.post('/sarvam/transcribe', sarvamLimiter, upload.single('file'), async (req, res) => {
   try {
+    const filePath = req.file.path
+    const requestedLanguage = req.body.language_code || 'en-IN'
+
+    // Step 1: Detect language from audio automatically
+    const detectedLanguage = await detectSpeechLanguage(filePath)
+
+    // Use detected language if found, otherwise use what user selected
+    const languageToUse = detectedLanguage || requestedLanguage
+
+    console.log(
+      '[STT] Using language:', languageToUse,
+      '(detected:', detectedLanguage,
+      ', requested:', requestedLanguage, ')'
+    )
+
+    // Step 2: Transcribe with correct language
     const formData = new FormData()
-    const fileBuffer = fs.readFileSync(req.file.path)
-    const blob = new Blob([fileBuffer], { type: req.file.mimetype })
+    const fileBuffer = fs.readFileSync(filePath)
+    const blob = new Blob(
+      [fileBuffer],
+      { type: req.file.mimetype.split(';')[0] || 'audio/webm' }
+    )
     formData.append('file', blob, req.file.originalname)
     formData.append('model', 'saarika:v2.5')
-    formData.append('language_code', req.body.language_code || 'en-IN')
+    formData.append('language_code', languageToUse)
 
-    const response = await fetch('https://api.sarvam.ai/speech-to-text', {
-      method: 'POST',
-      headers: {
-        'api-subscription-key': process.env.SARVAM_API_KEY
-      },
-      body: formData
-    })
+    const response = await fetch(
+      'https://api.sarvam.ai/speech-to-text',
+      {
+        method: 'POST',
+        headers: {
+          'api-subscription-key': process.env.SARVAM_API_KEY
+        },
+        body: formData
+      }
+    )
+
     const data = await response.json()
-    
+    const firstTranscript = data.transcript || ''
+
+    // Step 3: Text LID on transcript to detect true language
+    const textLang = await detectLanguage(firstTranscript)
+
+    let finalTranscript = firstTranscript
+    let finalLang = textLang || detectedLanguage || requestedLanguage
+
+    // Step 4: If Text LID found a non-English language that differs from
+    // what we used, re-transcribe — catches Romanized output from wrong lang
+    if (textLang && textLang !== 'en-IN' && textLang !== languageToUse) {
+      console.log(
+        '[STT] Text LID says', textLang,
+        'but transcribed with', languageToUse,
+        '— re-transcribing with correct language'
+      )
+      const formData2 = new FormData()
+      const blob2 = new Blob([fileBuffer], { type: 'audio/webm' })
+      formData2.append('file', blob2, 'recording.webm')
+      formData2.append('model', 'saarika:v2.5')
+      formData2.append('language_code', textLang)
+
+      const response2 = await fetch(
+        'https://api.sarvam.ai/speech-to-text',
+        {
+          method: 'POST',
+          headers: {
+            'api-subscription-key': process.env.SARVAM_API_KEY
+          },
+          body: formData2
+        }
+      )
+      const data2 = await response2.json()
+      if (data2.transcript) {
+        finalTranscript = data2.transcript
+        finalLang = textLang
+        console.log('[STT] Re-transcribed in', textLang, ':', finalTranscript.slice(0, 50))
+      }
+    }
+
     // Clean up temp file
-    fs.unlinkSync(req.file.path)
-    
-    res.json({ transcript: data.transcript || '' })
+    fs.unlinkSync(filePath)
+
+    console.log('[STT] Final transcript:', finalTranscript.slice(0, 50))
+    console.log(
+      '[STT] Speech LID:', detectedLanguage,
+      '| Text LID:', textLang,
+      '| Final lang:', finalLang
+    )
+
+    res.json({
+      transcript: finalTranscript,
+      detected_language: finalLang,
+      language_used: finalLang
+    })
+
   } catch (err) {
     console.error('STT error:', err)
+    // Clean up temp file if exists
+    if (req.file?.path) {
+      try { fs.unlinkSync(req.file.path) } catch {}
+    }
     res.status(500).json({ error: err.message })
   }
 })
@@ -2594,8 +2770,16 @@ app.post('/sarvam/tts', sarvamLimiter, async (req, res) => {
 
 app.post('/sarvam/translate', sarvamLimiter, async (req, res) => {
   try {
-    const { input, source_language_code, target_language_code } = req.body
-    
+    const {
+      input,
+      source_language_code,
+      target_language_code,
+      detected_language
+    } = req.body
+
+    // Use detected language if available, fall back to provided source or auto
+    const sourceLanguage = detected_language || source_language_code || 'auto'
+
     const response = await fetch('https://api.sarvam.ai/translate', {
       method: 'POST',
       headers: {
@@ -2604,7 +2788,7 @@ app.post('/sarvam/translate', sarvamLimiter, async (req, res) => {
       },
       body: JSON.stringify({
         input,
-        source_language_code: source_language_code || 'en-IN',
+        source_language_code: sourceLanguage,
         target_language_code,
         speaker_gender: 'Female',
         mode: 'formal',

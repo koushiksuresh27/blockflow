@@ -245,8 +245,8 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
   const handleVoiceSubmit = async (blob: Blob) => {
     setIsProcessing(true);
     try {
-      const text = await transcribeAudio(blob, prefLang);
-      if (!text || typeof text !== 'string' || text.trim() === '') {
+      const { transcript: text } = await transcribeAudio(blob, prefLang);
+      if (!text || text.trim() === '') {
         setIsProcessing(false);
         return;
       }

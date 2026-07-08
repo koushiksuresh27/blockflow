@@ -109,9 +109,13 @@ export default function VoiceRecorder({
       // ── Step 1: Transcribe via Sarvam ──────────────────────────────────────
       setStatus('transcribing');
       let transcript = '';
+      let detectedLanguage: string | null = null;
       try {
-        const result = await transcribeAudio(audioBlob, selectedLanguage);
-        transcript = result;
+        // When 'auto', pass 'en-IN' as fallback — backend Speech LID overrides it
+        const langCode = selectedLanguage === 'auto' ? 'en-IN' : selectedLanguage
+        const result = await transcribeAudio(audioBlob, langCode);
+        transcript = result.transcript;
+        detectedLanguage = result.detectedLanguage;
         if (!transcript.trim()) {
           setErrorMsg('No speech detected. Please speak clearly and try again.');
           setStatus('error');
@@ -128,7 +132,7 @@ export default function VoiceRecorder({
       // ── Step 2: AI suggestion via Gemini ───────────────────────────────────
       setStatus('suggesting');
       try {
-        const suggestion = await suggestComplaintDetails(transcript);
+        const suggestion = await suggestComplaintDetails(transcript, detectedLanguage);
         onSuggestion(suggestion);
       } catch (err) {
         // Non-fatal — transcript already succeeded

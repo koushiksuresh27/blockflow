@@ -30,6 +30,7 @@ export default function VoiceComplaintFlow() {
   const [errorMsg, setErrorMsg] = useState('');
   const [transcript, setTranscript] = useState('');
   const [suggestion, setSuggestion] = useState<ComplaintSuggestion | null>(null);
+  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -39,6 +40,7 @@ export default function VoiceComplaintFlow() {
     setErrorMsg('');
     setTranscript('');
     setSuggestion(null);
+    setDetectedLanguage(null);
     chunksRef.current = [];
   }, []);
 
@@ -86,17 +88,17 @@ export default function VoiceComplaintFlow() {
 
       setState('processing');
       try {
-        const result = await transcribeAudio(audioBlob);
-        const t = result;
+        const { transcript: t, detectedLanguage: lang } = await transcribeAudio(audioBlob);
         if (!t.trim()) {
           setErrorMsg('No speech detected. Please speak clearly and try again.');
           setState('error');
           return;
         }
         setTranscript(t);
+        setDetectedLanguage(lang);
 
         try {
-          const sugg = await suggestComplaintDetails(t);
+          const sugg = await suggestComplaintDetails(t, lang);
           setSuggestion(sugg);
         } catch (err) {
           console.warn('AI suggestion failed:', err);
@@ -147,6 +149,7 @@ export default function VoiceComplaintFlow() {
         society_id: residentSocietyId,
         resident_id: userData?.user?.id || null,
         status: 'open',
+        detected_language: detectedLanguage,
       });
 
       if (error) throw error;
