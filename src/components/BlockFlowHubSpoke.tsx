@@ -8,7 +8,7 @@ const ROLES = [
 ];
 
 const MODULES = [
-    { label: "AI Automation", angle: 300 },
+    { label: "Automation", angle: 300 },
     { label: "Voice Input", angle: 30 },
     { label: "Complaint DNA", angle: 120 },
     { label: "Doc Vision", angle: 210 },
