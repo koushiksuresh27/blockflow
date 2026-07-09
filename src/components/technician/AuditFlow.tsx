@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Mic, Loader2, CheckCircle2, AlertTriangle, AlertCircle, ChevronRight, SkipForward } from 'lucide-react';
 import { transcribeAudio } from '../../lib/sarvam';
+import type { SarvamLanguage } from '../../lib/sarvam';
 import { textToSpeech, playBase64Audio } from '../../lib/sarvamTTS';
 import { supabase } from '../../lib/supabase';
 
@@ -245,7 +246,7 @@ export default function AuditFlow({ societyId, technicianId, onClose }: AuditFlo
   const handleVoiceSubmit = async (blob: Blob) => {
     setIsProcessing(true);
     try {
-      const { transcript: text } = await transcribeAudio(blob, prefLang);
+      const { transcript: text } = await transcribeAudio(blob, prefLang as SarvamLanguage);
       if (!text || text.trim() === '') {
         setIsProcessing(false);
         return;
