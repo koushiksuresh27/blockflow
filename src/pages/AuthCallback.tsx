@@ -37,12 +37,7 @@ export default function AuthCallback() {
       if (cancelled) return;
 
       if (preCreated && preCreated.id !== session.user.id) {
-        // Link Google auth id to pre-created profile
-        await supabase
-          .from('users')
-          .update({ id: session.user.id })
-          .eq('email', session.user.email)
-          .in('role', ['technician', 'security']);
+        const old = preCreated;
 
         // Delete any wrongly-created resident profile
         await supabase
@@ -51,7 +46,49 @@ export default function AuthCallback() {
           .eq('id', session.user.id)
           .eq('role', 'resident');
 
-        switch (preCreated.role) {
+        // Step 1: Get the technician record
+        const { data: techRecord } = await supabase
+          .from('technicians')
+          .select('id')
+          .eq('user_id', old.id)
+          .maybeSingle();
+
+        // Step 2: Delete old public.users row
+        await supabase
+          .from('users')
+          .delete()
+          .eq('id', old.id);
+
+        // Step 3: Insert new row with real auth id
+        await supabase
+          .from('users')
+          .insert({
+            id: session.user.id,
+            name: old.name,
+            email: session.user.email,
+            role: old.role,
+            society_id: old.society_id,
+            status: old.status,
+            phone: old.phone || null,
+            flat_number: old.flat_number || null
+          });
+
+        // Step 4: Update technicians to point 
+        // to new user id
+        if (techRecord) {
+          await supabase
+            .from('technicians')
+            .update({ user_id: session.user.id })
+            .eq('id', techRecord.id);
+
+          // Step 5: Update technician_societies
+          await supabase
+            .from('technician_societies')
+            .update({ technician_id: techRecord.id })
+            .eq('technician_id', techRecord.id);
+        }
+
+        switch (old.role) {
           case 'technician':
             navigate('/technician', { replace: true }); break;
           case 'security':
