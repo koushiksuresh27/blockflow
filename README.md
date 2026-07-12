@@ -99,9 +99,9 @@ BlockFlow integrates multiple Sarvam AI APIs across the resident, technician, an
  
 ## 📽️ Demo & Deliverables
  
-- **Demo Video Link (Mandatory):** `[https://www.loom.com/share/769a9b07976e4fb09a6b7b82b1c1a7f6]`  
-- **Deployment Link (Recommended):** `[https://blockflow-eight.vercel.app/]`  
-- **Pitch Deck / PPT (Optional):** `[https://pitch.com/v/blockflow-b6eexr]`  
+- **Demo Video Link (Mandatory):** `https://www.youtube.com/watch?v=0wPXpQ5wClE`  
+- **Deployment Link (Recommended):** `https://blockflow-eight.vercel.app/`  
+- **Pitch Deck / PPT (Optional):** `https://pitch.com/v/blockflow-b6eexr`  
 ---
  
 ## ✅ Tasks & Bonus Checklist
@@ -120,7 +120,7 @@ BlockFlow integrates multiple Sarvam AI APIs across the resident, technician, an
 ### Local Setup:
 ```bash
 # Clone the repo
-git clone <your-repo-url>
+git clone https://github.com/koushiksuresh27/blockflow
 cd blockflow
  
 # Install frontend dependencies
@@ -167,7 +167,7 @@ node workflow-server.js
 - [Groq](https://groq.com/) — LLM inference (Llama 3.3 70B)
 - [Supabase](https://supabase.com/) — Database, Auth, Realtime, Storage
 - [Iconoir](https://iconoir.com/) — icon set
-- Claude(Free tier)/Antigravity IDE — AI assisted code editor used to implement and debug the build
+- Antigravity IDE — AI assisted code editor used to implement and debug the build
 ---
  
 ## 🏁 Final Words
